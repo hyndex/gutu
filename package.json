@@ -14,11 +14,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hyndex/Gutu.git"
+    "url": "git+https://github.com/hyndex/gutu.git"
   },
-  "homepage": "https://github.com/hyndex/Gutu",
+  "homepage": "https://github.com/hyndex/gutu",
   "bugs": {
-    "url": "https://github.com/hyndex/Gutu/issues"
+    "url": "https://github.com/hyndex/gutu/issues"
   },
   "keywords": [
     "gutu",

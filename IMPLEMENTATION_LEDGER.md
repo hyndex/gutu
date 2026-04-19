@@ -964,18 +964,18 @@ Historical entries may reference optional plugin packages that were part of earl
     - run `./node_modules/.bin/gutu --help`
     - run `./node_modules/.bin/gutu init ./sample --framework-mode copy`
     - verify generated `sample/gutu.project.json` and vendored framework files exist
-  - live registry verification:
-    - `npm view gutu version`
-    - `bunx gutu --help`
+  - publish attempt verification:
+    - `npm publish --access public`
+    - confirmed local tarball smoke install through `./node_modules/.bin/gutu --help`
 - Outcome:
-  - first public npm package is live as `gutu@0.1.0`
-  - developers can now start Gutu without cloning the framework source repo first
+  - the framework and CLI are renamed to `gutu`
+  - the package is ready for direct npm release, but the current npm token could not create the unscoped public package
 
 ## 2026-04-20 03:26:00 IST - Public rename from Moki to Gutu completed
 
 - Context:
   - the framework brand changed from `Moki` to `Gutu`
-  - the GitHub repository moved to `https://github.com/hyndex/Gutu`
+  - the GitHub repository moved to `https://github.com/hyndex/gutu`
   - the public npm package target was later finalized as direct unscoped `gutu`
 - Changes made:
   - renamed the public docs, CLI help text, generated workspace metadata, vendored framework path, and mascot asset names from `Moki` to `Gutu`
@@ -984,7 +984,7 @@ Historical entries may reference optional plugin packages that were part of earl
     - `.moki/*` -> `.gutu/*`
     - `moki.project.json` -> `gutu.project.json`
   - switched the root package and bundled CLI from `@dikibhuyan/moki` / `moki` to the `gutu` public brand and CLI surface
-  - updated the Git remote to `https://github.com/hyndex/Gutu.git`
+  - updated the Git remote to `https://github.com/hyndex/gutu.git`
   - deprecated the old `@dikibhuyan/moki@0.1.0` package with a redirect message
 - Verification:
   - `bun run build:npm:cli`
@@ -994,6 +994,5 @@ Historical entries may reference optional plugin packages that were part of earl
   - `bun run docs:validate`
   - `npm pack --dry-run`
   - local tarball install + `./node_modules/.bin/gutu init ./sample --framework-mode copy`
-  - `npm view gutu version`
+  - attempted `npm publish --access public` for `gutu` and received `403 Forbidden`
   - `npm view @dikibhuyan/moki deprecated`
-  - `bunx gutu --help`

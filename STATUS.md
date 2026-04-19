@@ -38,8 +38,8 @@
 ## Completed Milestones
 
 - Renamed the public framework brand from `Moki` to `Gutu` across the CLI, generated workspace layout, docs, package metadata, and mascot assets.
-- Switched the Git remote to `https://github.com/hyndex/Gutu.git`.
-- Published the renamed CLI package to npm as `gutu`.
+- Switched the Git remote to `https://github.com/hyndex/gutu.git`.
+- Renamed the public CLI/package target to `gutu`, but the direct unscoped npm publish is still blocked by the current npm token permissions.
 - Deprecated `@dikibhuyan/moki@0.1.0` so existing users are redirected to the renamed package.
 - Verified the renamed release path by:
   - `bun run build:npm:cli`
@@ -47,19 +47,12 @@
   - `bun run gutu -- --help`
   - `bun run docs:index`
   - `bun run docs:validate`
-  - `npm view gutu version`
-  - `npm view @dikibhuyan/moki deprecated`
-  - `bunx gutu --help`
-  - local tarball install + `gutu init` scaffold smoke test
-- Published the first public Gutu CLI package to npm as `gutu`.
-- Updated the install story to support:
-  - `bunx gutu init ./my-product`
-  - `bun add -g gutu`
-  - `gutu init ./my-product`
+  - attempted `npm publish --access public` for `gutu` and received `403 Forbidden`
+- local tarball install + `gutu init` scaffold smoke test
+- Updated the install story to support the repo-local Gutu CLI today and the direct `bunx gutu init` path once the correct npm publish credential is provided.
 - Tightened the npm publish surface so the tarball ships the framework source distribution, docs, configs, and CLI entrypoint without nested build artifacts.
-- Verified the public package by:
-  - `npm view gutu version`
-  - `bunx gutu --help`
+- Verified the prepared package by:
+  - `npm pack --dry-run`
   - local tarball install + `gutu init` scaffold smoke test
 - Added a clean consumer-project initialization flow through `gutu init` / `platform init`.
 - Added a separate developer-workspace shape for product teams:

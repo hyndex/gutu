@@ -1010,10 +1010,10 @@ The easiest mental model is: start with the framework baseline, keep the built-i
 
 ### Current installation model
 
-Today, the cleanest way to start a Gutu product is:
+Today, the cleanest working way to start a Gutu product is:
 
-1. run the published Gutu CLI once,
-2. generate a **separate clean project workspace**,
+1. clone the Gutu framework repo once,
+2. run the local Gutu CLI to generate a **separate clean project workspace**,
 3. keep your product code in that new workspace,
 4. keep the framework vendored under `vendor/framework/gutu`.
 
@@ -1025,26 +1025,30 @@ That means your actual developer project stays tidy:
 - `vendor/framework/gutu` for the vendored framework distribution,
 - `vendor/plugins/*` and `vendor/libraries/*` for future external installs.
 
-Recommended flow:
+Recommended flow right now:
 
 ```bash
-bunx gutu init ./my-product
-cd ./my-product
+git clone https://github.com/hyndex/gutu.git
+cd gutu
+bun install
+bun run gutu -- init ../my-product
+cd ../my-product
 bun install
 ```
 
 By default, `gutu init` creates a clean consumer workspace and links the framework in a separated vendor directory. If you want a detached local copy instead of symlinks:
 
 ```bash
-bunx gutu init ./my-product --framework-mode copy
+bun run gutu -- init ../my-product --framework-mode copy
 ```
 
-If you prefer a global install:
+Planned direct public install target:
 
 ```bash
-bun add -g gutu
-gutu init ./my-product
+bunx gutu init ./my-product
 ```
+
+That exact npm release is not live yet from the current publisher account because the npm token available in this workspace is not authorized to create the unscoped public package. The framework and CLI are already renamed to `gutu`, and the publish path is prepared, but the current working install path remains the repo-local CLI shown above.
 
 ### What is not the main path yet
 
@@ -1056,11 +1060,11 @@ gutu make plugin crm
 gutu plugin install billing-suite
 ```
 
-That ecosystem and registry model is planned, and the design is already documented in [docs/ecosystem-cli-and-registries.md](./docs/ecosystem-cli-and-registries.md). For most product teams, the main public path is now the published CLI package. Cloning the framework repo is mainly for framework contributors and deep source-level customization.
+That ecosystem and registry model is planned, and the design is already documented in [docs/ecosystem-cli-and-registries.md](./docs/ecosystem-cli-and-registries.md). For now, the main working path is the repo-local CLI. A direct npm install experience is prepared but still waiting on the correct npm publish permission for the unscoped package name.
 
 ### Practical rule of thumb
 
-- If you want to **start a real Gutu product today**, generate a clean workspace with `gutu init`.
+- If you want to **start a real Gutu product today**, clone the repo and generate a clean workspace with `bun run gutu -- init`.
 - If you want to **consume individual framework packages later**, that becomes realistic once the package and registry publishing flow is formalized.
 
 ### Prerequisites
@@ -1128,7 +1132,7 @@ TEST_POSTGRES_URL=postgresql:///framework_platform_test bun test framework/core/
 
 | Command | Purpose |
 | --- | --- |
-| `bunx gutu init <target>` | create a clean consumer workspace with the framework vendored under `vendor/framework/gutu` |
+| `bunx gutu init <target>` | planned direct public install command once unscoped npm publish is enabled for the package |
 | `bun run gutu -- init <target>` | run the same generator from a local framework checkout |
 | `bun run scaffold` | regenerate the baseline workspace structure |
 | `bun run gutu -- --help` | show the public Gutu CLI command surface |
