@@ -2,9 +2,12 @@ import React from "react";
 
 import { formatPlatformDateTime } from "@platform/ui";
 
-import { documentFixtures, memoryCollectionsFixture } from "../../services/main.service";
+import { listMemoryCollections, listMemoryDocuments } from "../../services/main.service";
 
 export function AiRagAdminPage() {
+  const collections = listMemoryCollections();
+  const documents = listMemoryDocuments();
+
   return (
     <section data-plugin-page="ai-rag-memory" className="awb-surface-stack">
       <div className="awb-inline-banner">
@@ -12,7 +15,7 @@ export function AiRagAdminPage() {
         <span>Collections stay tenant-scoped, classified, and ready for deterministic reindexing.</span>
       </div>
       <div className="awb-inline-grid awb-inline-grid-2">
-        {memoryCollectionsFixture.map((collection) => {
+        {collections.map((collection) => {
           const documentCount = typeof collection.metadata?.documentCount === "number"
             ? collection.metadata.documentCount
             : 0;
@@ -45,7 +48,7 @@ export function AiRagAdminPage() {
       <div className="awb-form-card">
         <h3 className="awb-panel-title">Latest corpus updates</h3>
         <div className="awb-table">
-          {documentFixtures.map((document) => (
+          {documents.map((document) => (
             <div key={document.id} className="awb-table-row">
               <strong>{document.title}</strong>
               <span>{document.sourceKind}</span>

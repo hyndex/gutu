@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   AdminWorkbenchShell,
   composeAdminRegistry,
-  createMemoryAdminPreferenceStore,
+  createFileAdminPreferenceStore,
   resolveAdminDeskRoute,
   searchAdminRegistry,
   type AdminFavorite,
@@ -46,54 +46,57 @@ type RestrictedPreviewScenario = {
   requiredApprovals: string[];
 };
 
-const preferenceStore = createMemoryAdminPreferenceStore({
-  "admin-shell-workbench:tenant-platform:actor-admin": {
-    favorites: [
-      {
-        id: "dashboard.home",
-        label: "Desk Home",
-        href: "/admin",
-        kind: "page"
-      },
-      {
-        id: "ai.runs.page",
-        label: "Agent Runs",
-        href: "/admin/ai/runs",
-        kind: "page"
-      }
-    ],
-    recentItems: [],
-    savedViews: [
-      {
-        id: "dashboard.exports.processing",
-        label: "Processing Exports",
-        filterState: {
-          status: "processing"
+const preferenceStore = createFileAdminPreferenceStore({
+  fileName: "platform-dev-console-preferences.json",
+  initial: {
+    "admin-shell-workbench:tenant-platform:actor-admin": {
+      favorites: [
+        {
+          id: "dashboard.home",
+          label: "Desk Home",
+          href: "/admin",
+          kind: "page"
         },
-        sortState: [{ id: "createdAt", desc: true }],
-        columnVisibility: {
-          name: true,
-          owner: true
+        {
+          id: "ai.runs.page",
+          label: "Agent Runs",
+          href: "/admin/ai/runs",
+          kind: "page"
         }
-      }
-    ],
-    dashboards: [
-      {
-        id: "overview.default",
-        label: "Overview",
-        widgetIds: [
-          "dashboard.active-views",
-          "dashboard.export-health",
-          "dashboard.workflow-inbox",
-          "dashboard.plugin-health",
-          "ai.active-runs",
-          "ai.pending-approvals",
-          "ai.retrieval-health",
-          "ai.eval-regressions"
-        ]
-      }
-    ],
-    activeWorkspace: "overview"
+      ],
+      recentItems: [],
+      savedViews: [
+        {
+          id: "dashboard.exports.processing",
+          label: "Processing Exports",
+          filterState: {
+            status: "processing"
+          },
+          sortState: [{ id: "createdAt", desc: true }],
+          columnVisibility: {
+            name: true,
+            owner: true
+          }
+        }
+      ],
+      dashboards: [
+        {
+          id: "overview.default",
+          label: "Overview",
+          widgetIds: [
+            "dashboard.active-views",
+            "dashboard.export-health",
+            "dashboard.workflow-inbox",
+            "dashboard.plugin-health",
+            "ai.active-runs",
+            "ai.pending-approvals",
+            "ai.retrieval-health",
+            "ai.eval-regressions"
+          ]
+        }
+      ],
+      activeWorkspace: "overview"
+    }
   }
 });
 

@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-04-19T21:30:03.550Z",
-  "root": "/Users/chinmoybhuyan/Desktop/Personal/Framework",
+  "root": ".",
   "targets": [
     {
       "id": "@apps/docs",

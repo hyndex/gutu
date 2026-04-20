@@ -21,6 +21,11 @@ if (process.env.PLATFORM_REQUIRE_ENV_SIGNING === "true" && manifest.source !== "
   process.exit(1);
 }
 
+if ((process.env.GITHUB_REF_PROTECTED === "true" || (process.env.GITHUB_REF ?? "").startsWith("refs/tags/")) && manifest.releaseEligible !== true) {
+  console.error("Protected release verification requires a release-eligible signature.");
+  process.exit(1);
+}
+
 const payload = readFileSync(signedPath);
 const payloadSha256 = createHash("sha256").update(payload).digest("hex");
 if (payloadSha256 !== manifest.payloadSha256) {

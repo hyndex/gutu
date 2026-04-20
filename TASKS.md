@@ -433,10 +433,10 @@
   - [x] `platform mcp inspect`
   - [x] `platform mcp serve`
 - [ ] Stage AI4 - Close the remaining transport and release-gate gaps.
-  - [ ] move AI run state from deterministic built-in fixtures into full persistent control-plane storage
-  - [ ] add full long-running MCP transport serving instead of descriptor emission only
+  - [x] move AI run state from deterministic built-in fixtures into persistent control-plane storage
+  - [x] add full long-running MCP transport serving instead of descriptor emission only
   - [ ] add governed external MCP connector lifecycle with trust-tiered hosts and secrets
-  - [ ] wire eval regression thresholds into the root CI/release gates
+  - [x] wire eval regression thresholds into the root CI/release gates
 
 ## Agent Understanding Program - Semantic understanding and doc-pack layer
 

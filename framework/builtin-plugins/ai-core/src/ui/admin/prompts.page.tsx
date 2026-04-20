@@ -2,9 +2,10 @@ import React from "react";
 
 import { formatPlatformDateTime } from "@platform/ui";
 
-import { listPromptVersions, promptFixtures } from "../../services/main.service";
+import { getActivePromptTemplate, listPromptVersions } from "../../services/main.service";
 
 export function PromptsPage() {
+  const activeTemplate = getActivePromptTemplate();
   const promptVersions = listPromptVersions();
 
   return (
@@ -15,8 +16,8 @@ export function PromptsPage() {
       </div>
       <div className="awb-form-card">
         <h3 className="awb-panel-title">Active template</h3>
-        <p className="awb-muted-copy">{promptFixtures.template.label}</p>
-        <pre className="awb-code-panel">{promptFixtures.template.body}</pre>
+        <p className="awb-muted-copy">{activeTemplate.label}</p>
+        <pre className="awb-code-panel">{activeTemplate.body}</pre>
       </div>
       <div className="awb-form-card">
         <h3 className="awb-panel-title">Published versions</h3>

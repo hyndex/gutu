@@ -16,6 +16,8 @@ export {
   chunkFixtures,
   documentFixtures,
   ingestMemoryDocument,
+  listMemoryCollections,
+  listMemoryDocuments,
   reindexMemoryCollection,
   retrieveTenantKnowledge
 } from "./services/main.service";

@@ -22,6 +22,7 @@
   "dependencies": {
     "@platform/admin-contracts": "workspace:*",
     "@platform/ai-memory": "workspace:*",
+    "@platform/ai-runtime": "workspace:*",
     "@platform/chart": "workspace:*",
     "@platform/kernel": "workspace:*",
     "@platform/permissions": "workspace:*",

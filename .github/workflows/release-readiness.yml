@@ -29,6 +29,7 @@ jobs:
       DATABASE_URL: postgresql://platform_admin:platform_admin@127.0.0.1:5432/platform
       DATABASE_TEST_URL: postgresql://platform_admin:platform_admin@127.0.0.1:5432/platform
       TEST_POSTGRES_URL: postgresql://platform_admin:platform_admin@127.0.0.1:5432/platform
+      GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
       PLATFORM_REQUIRE_ENV_SIGNING: "true"
       PLATFORM_SIGNING_PRIVATE_KEY_PEM_B64: ${{ secrets.PLATFORM_SIGNING_PRIVATE_KEY_PEM_B64 }}
 
@@ -56,6 +57,9 @@ jobs:
       - name: Package release bundle
         run: bun run package:release
 
+      - name: Verify release bundle contents
+        run: bun run verify:release-bundle
+
       - name: Generate SBOM
         run: bun run sbom:generate
 
@@ -74,13 +78,13 @@ jobs:
       - name: Attest release bundle provenance
         uses: actions/attest-build-provenance@v3
         with:
-          subject-path: ${{ github.workspace }}/artifacts/release/platform-core-framework.tgz
+          subject-path: ${{ github.workspace }}/artifacts/release/gutu-framework-release.tgz
 
       - name: Attest release bundle SBOM
         uses: actions/attest-sbom@v3
         with:
-          subject-path: ${{ github.workspace }}/artifacts/release/platform-core-framework.tgz
-          sbom-path: ${{ github.workspace }}/artifacts/sbom/platform-sbom.cdx.json
+          subject-path: ${{ github.workspace }}/artifacts/release/gutu-framework-release.tgz
+          sbom-path: ${{ github.workspace }}/artifacts/sbom/gutu-framework-sbom.cdx.json
 
       - name: Upload release bundle
         if: always()

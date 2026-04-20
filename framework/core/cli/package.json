@@ -23,6 +23,7 @@
     "test:unit": "bun test tests/unit"
   },
   "dependencies": {
+    "@platform/agent-understanding": "workspace:*",
     "@platform/ai-guardrails": "workspace:*",
     "@platform/ai-mcp": "workspace:*",
     "@plugins/ai-core": "workspace:*",

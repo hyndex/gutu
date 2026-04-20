@@ -3,8 +3,11 @@ import {
   defineMemoryCollection,
   defineMemoryDocument,
   defineMemoryPolicy,
-  retrieveMemory
+  retrieveMemory,
+  type MemoryCollection,
+  type MemoryDocument
 } from "@platform/ai-memory";
+import { loadJsonState, updateJsonState } from "@platform/ai-runtime";
 import { normalizeActionInput } from "@platform/schema";
 
 export type IngestMemoryDocumentInput = {
@@ -124,12 +127,53 @@ export const retrievalFixture = Object.freeze(
   })
 );
 
+const aiRagStateFile = "ai-memory-rag.json";
+
+type ReindexRequest = {
+  id: string;
+  tenantId: string;
+  collectionId: string;
+  requestedAt: string;
+  queuedDocuments: number;
+};
+
+type AiRagState = {
+  collections: MemoryCollection[];
+  documents: MemoryDocument[];
+  reindexRequests: ReindexRequest[];
+};
+
+function seedAiRagState(): AiRagState {
+  return normalizeAiRagState({
+    collections: [...memoryCollectionsFixture],
+    documents: [...documentFixtures],
+    reindexRequests: []
+  });
+}
+
+function loadAiRagState(): AiRagState {
+  return normalizeAiRagState(loadJsonState(aiRagStateFile, seedAiRagState));
+}
+
+function persistAiRagState(updater: (state: AiRagState) => AiRagState): AiRagState {
+  return normalizeAiRagState(updateJsonState(aiRagStateFile, seedAiRagState, updater));
+}
+
+export function listMemoryCollections(): MemoryCollection[] {
+  return loadAiRagState().collections.sort((left, right) => left.label.localeCompare(right.label));
+}
+
+export function listMemoryDocuments(): MemoryDocument[] {
+  return loadAiRagState().documents.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+}
+
 export function ingestMemoryDocument(input: IngestMemoryDocumentInput): {
   ok: true;
   chunkCount: number;
   collectionId: string;
 } {
   normalizeActionInput(input);
+  const createdAt = new Date().toISOString();
   const document = defineMemoryDocument({
     id: `memory-document:${input.sourceObjectId}`,
     collectionId: input.collectionId,
@@ -140,13 +184,21 @@ export function ingestMemoryDocument(input: IngestMemoryDocumentInput): {
     body: input.body,
     tenantId: input.tenantId,
     classification: input.classification,
-    createdAt: "2026-04-19T10:00:00.000Z",
-    updatedAt: "2026-04-19T10:00:00.000Z"
+    createdAt,
+    updatedAt: createdAt
   });
 
-  const chunks = chunkMemoryDocument(document, {
-    chunkSize: 24,
-    overlap: 6
+  const chunks = buildRuntimeChunks([document]);
+
+  persistAiRagState((state) => {
+    if (!state.collections.some((collection) => collection.id === input.collectionId)) {
+      throw new Error(`Unknown memory collection '${input.collectionId}'.`);
+    }
+
+    return {
+      ...state,
+      documents: [document, ...state.documents.filter((entry) => entry.id !== document.id)]
+    };
   });
 
   return {
@@ -162,10 +214,11 @@ export function retrieveTenantKnowledge(input: RetrievalRequestInput): {
   chunkIds: string[];
 } {
   normalizeActionInput(input);
+  const state = loadAiRagState();
   const retrieval = retrieveMemory({
-    collections: [...memoryCollectionsFixture],
-    documents: [...documentFixtures],
-    chunks: [...chunkFixtures],
+    collections: [...state.collections],
+    documents: [...state.documents],
+    chunks: buildRuntimeChunks(state.documents),
     query: {
       tenantId: input.tenantId,
       text: input.query,
@@ -193,8 +246,54 @@ export function reindexMemoryCollection(input: ReindexMemoryCollectionInput): {
   queuedDocuments: number;
 } {
   normalizeActionInput(input);
+  const nextState = persistAiRagState((state) => {
+    if (!state.collections.some((collection) => collection.id === input.collectionId)) {
+      throw new Error(`Unknown memory collection '${input.collectionId}'.`);
+    }
+
+    const queuedDocuments = state.documents.filter((document) => document.collectionId === input.collectionId).length;
+    return {
+      ...state,
+      reindexRequests: [
+        {
+          id: `reindex:${input.collectionId}:${state.reindexRequests.length + 1}`,
+          tenantId: input.tenantId,
+          collectionId: input.collectionId,
+          requestedAt: new Date().toISOString(),
+          queuedDocuments
+        },
+        ...state.reindexRequests
+      ]
+    };
+  });
+
   return {
     ok: true,
-    queuedDocuments: documentFixtures.filter((document) => document.collectionId === input.collectionId).length
+    queuedDocuments: nextState.documents.filter((document) => document.collectionId === input.collectionId).length
+  };
+}
+
+function buildRuntimeChunks(documents: MemoryDocument[]) {
+  return documents.flatMap((document) => chunkMemoryDocument(document, { chunkSize: 18, overlap: 4 }));
+}
+
+function normalizeAiRagState(state: AiRagState): AiRagState {
+  const documentCountByCollection = new Map<string, number>();
+  for (const document of state.documents) {
+    documentCountByCollection.set(document.collectionId, (documentCountByCollection.get(document.collectionId) ?? 0) + 1);
+  }
+
+  return {
+    collections: state.collections.map((collection) =>
+      defineMemoryCollection({
+        ...collection,
+        metadata: {
+          ...(collection.metadata ?? {}),
+          documentCount: documentCountByCollection.get(collection.id) ?? 0
+        }
+      })
+    ),
+    documents: state.documents.map((document) => defineMemoryDocument(document)),
+    reindexRequests: [...state.reindexRequests]
   };
 }

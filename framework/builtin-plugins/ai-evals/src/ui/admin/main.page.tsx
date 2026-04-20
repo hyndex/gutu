@@ -2,15 +2,11 @@ import React from "react";
 
 import { ChartSurface, createBarChartOption } from "@platform/chart";
 
-import {
-  baselineFixture,
-  candidateEvalRunFixture,
-  comparisonFixture,
-  datasetFixture,
-  regressionGateResultFixture
-} from "../../services/main.service";
+import { getCurrentEvalSummary } from "../../services/main.service";
 
 export function AiEvalsAdminPage() {
+  const summary = getCurrentEvalSummary();
+
   return (
     <section data-plugin-page="ai-evals" className="awb-surface-stack">
       <div className="awb-inline-banner">
@@ -20,15 +16,15 @@ export function AiEvalsAdminPage() {
       <div className="awb-inline-grid awb-inline-grid-3">
         <div className="awb-mini-stat">
           <span className="awb-mini-stat-label">Dataset cases</span>
-          <strong className="awb-mini-stat-value">{datasetFixture.cases.length}</strong>
+          <strong className="awb-mini-stat-value">{summary.dataset.cases.length}</strong>
         </div>
         <div className="awb-mini-stat">
           <span className="awb-mini-stat-label">Candidate pass rate</span>
-          <strong className="awb-mini-stat-value">{candidateEvalRunFixture.passRate}</strong>
+          <strong className="awb-mini-stat-value">{summary.candidate.passRate}</strong>
         </div>
         <div className="awb-mini-stat">
           <span className="awb-mini-stat-label">Gate</span>
-          <strong className="awb-mini-stat-value">{regressionGateResultFixture.passed ? "Pass" : "Blocked"}</strong>
+          <strong className="awb-mini-stat-value">{summary.gate.passed ? "Pass" : "Blocked"}</strong>
         </div>
       </div>
       <ChartSurface
@@ -39,14 +35,14 @@ export function AiEvalsAdminPage() {
           series: [
             {
               name: "Baseline",
-              data: [baselineFixture.passRate, baselineFixture.averageScore, baselineFixture.citationRate]
+              data: [summary.baseline.passRate, summary.baseline.averageScore, summary.baseline.citationRate]
             },
             {
               name: "Candidate",
               data: [
-                candidateEvalRunFixture.passRate,
-                candidateEvalRunFixture.averageScore,
-                candidateEvalRunFixture.citationRate
+                summary.candidate.passRate,
+                summary.candidate.averageScore,
+                summary.candidate.citationRate
               ]
             }
           ]
@@ -57,15 +53,15 @@ export function AiEvalsAdminPage() {
         <dl className="awb-detail-grid">
           <div>
             <dt>Pass rate delta</dt>
-            <dd>{comparisonFixture.passRateDelta}</dd>
+            <dd>{summary.comparison.passRateDelta}</dd>
           </div>
           <div>
             <dt>Average score delta</dt>
-            <dd>{comparisonFixture.averageScoreDelta}</dd>
+            <dd>{summary.comparison.averageScoreDelta}</dd>
           </div>
           <div>
             <dt>Citation rate delta</dt>
-            <dd>{comparisonFixture.citationRateDelta}</dd>
+            <dd>{summary.comparison.citationRateDelta}</dd>
           </div>
         </dl>
       </div>

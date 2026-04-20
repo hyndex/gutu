@@ -100,17 +100,19 @@ TEST_POSTGRES_URL=postgresql:///framework_platform_test bun test framework/core/
 
 ## Artifact Expectations
 
-- `artifacts/release/platform-core-framework.tgz` is the release subject used for provenance and SBOM attestation.
-- `artifacts/sbom/platform-sbom.cdx.json` is the generated CycloneDX SBOM for the release bundle and workspace dependency graph.
+- `artifacts/release/gutu-framework-release.tgz` is the release subject used for provenance and SBOM attestation.
+- `artifacts/sbom/gutu-framework-sbom.cdx.json` is the generated CycloneDX SBOM for the release bundle and workspace dependency graph.
 - `artifacts/provenance/build-provenance.json` is the local provenance manifest built from the same verified workspace.
 - `artifacts/provenance/release-signature.json` is a verified detached signature record for the provenance manifest.
-- `artifacts/security/audit-report.json` records the Bun advisory scan for the reachable runtime and release dependency closure, excluding peer-only expansion paths that are not part of the framework artifact graph.
+- `artifacts/security/audit-runtime-report.json` records the Bun advisory scan for the release runtime dependency closure.
+- `artifacts/security/audit-developer-tooling-report.json` records advisory findings reachable from developer tooling only.
+- `artifacts/security/audit-full-workspace-report.json` records the full merged workspace closure for diagnostics.
 - `ops/postgres/platform-bootstrap.sql` is the generated source of truth for platform roles, schemas, RLS, and curated `api` views.
 - `ops/postgres/transaction-context.sql` provides a portable example of request-context initialization statements.
 - `STATUS.md`, `TASKS.md`, and `RISK_REGISTER.md` travel with release artifacts so deferred work and residual risk remain explicit.
 
 ## Signing Modes
 
-- Local development uses the checked-in dev test key under `tooling/signing/` when no environment-backed signing material is provided.
-- CI can use the same local dev test key to verify the full signing pipeline on every change.
+- Local development can use the checked-in dev test key under `tooling/signing/` when no environment-backed signing material is provided.
+- Dev-key signatures are marked non-release and are rejected automatically on protected refs and tags.
 - Release readiness requires `PLATFORM_REQUIRE_ENV_SIGNING=true` and fails if environment-provided signing material is missing or if the generated signature does not verify.

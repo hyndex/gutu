@@ -1,16 +1,16 @@
 import { mkdirSync, existsSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 
 import { defineGuardrailPolicy, sanitizePrompt } from "@platform/ai-guardrails";
-import { createMcpServerFromContracts } from "@platform/ai-mcp";
+import { createMcpRuntimeServer, serveMcpStdio } from "@platform/ai-mcp";
 import { createUnderstandingDocPack } from "@platform/agent-understanding";
 import {
   aiCoreActions,
   aiCoreResources,
-  approvalFixtures,
   approveAgentCheckpointDecision,
-  promptFixtures,
-  replayFixtures,
+  listPendingApprovals,
+  listPromptVersionCatalog,
+  listReplaySnapshots,
   submitAgentRun
 } from "@plugins/ai-core";
 import {
@@ -45,9 +45,9 @@ export const packageDescription =
 export type CliIo = {
   cwd: string;
   env: Record<string, string | undefined>;
-  stdin: NodeJS.ReadStream;
-  stdout: NodeJS.WriteStream | { write(chunk: string): unknown };
-  stderr: NodeJS.WriteStream | { write(chunk: string): unknown };
+  stdin: NodeJS.ReadableStream;
+  stdout: NodeJS.WritableStream | { write(chunk: string): unknown };
+  stderr: NodeJS.WritableStream | { write(chunk: string): unknown };
 };
 
 export async function runCli(argv: string[], io: CliIo): Promise<number> {
@@ -67,7 +67,7 @@ export async function runCli(argv: string[], io: CliIo): Promise<number> {
         initGutuWorkspace(io.cwd, {
           target,
           frameworkSource: optionalFlag(initArgs, "--framework-source"),
-          frameworkMode: readFlag(initArgs, "--framework-mode", "symlink") as "symlink" | "copy",
+          frameworkMode: optionalFlag(initArgs, "--framework-mode") as "symlink" | "copy" | undefined,
           force: readFlag(initArgs, "--force", "false") === "true"
         })
       );
@@ -105,17 +105,19 @@ export async function runCli(argv: string[], io: CliIo): Promise<number> {
     }
 
     if (command === "agent" && subcommand === "run") {
+      const promptVersions = listPromptVersionCatalog();
       return commandSuccess(io, submitAgentRun({
         tenantId: readFlag(rest, "--tenant", "tenant-platform"),
         actorId: readFlag(rest, "--actor", "actor-admin"),
         agentId: readFlag(rest, "--agent", "ops-triage-agent"),
-        promptVersionId: readFlag(rest, "--prompt-version", promptFixtures.versions[0]?.id ?? "prompt-version:ops-triage:v4"),
+        promptVersionId: readFlag(rest, "--prompt-version", promptVersions[0]?.id ?? "prompt-version:ops-triage:v4"),
         goal: readFlag(rest, "--goal", "Summarize open escalations and propose the next safe actions."),
         allowedToolIds: readMultiFlag(rest, "--tool", ["crm.contacts.list"])
       }));
     }
 
     if (command === "agent" && subcommand === "replay") {
+      const replayFixtures = listReplaySnapshots();
       const runId = readFlag(rest, "--run", replayFixtures[0]?.runId ?? "");
       const replay = replayFixtures.find((fixture) => fixture.runId === runId);
       if (!replay) {
@@ -125,26 +127,29 @@ export async function runCli(argv: string[], io: CliIo): Promise<number> {
     }
 
     if (command === "agent" && subcommand === "approve") {
+      const approvals = listPendingApprovals();
       return commandSuccess(io, approveAgentCheckpointDecision({
         tenantId: readFlag(rest, "--tenant", "tenant-platform"),
         actorId: readFlag(rest, "--actor", "actor-admin"),
-        runId: readFlag(rest, "--run", approvalFixtures[0]?.runId ?? "run:ops-triage:002"),
-        checkpointId: readFlag(rest, "--checkpoint", approvalFixtures[0]?.id ?? "checkpoint:ops-triage:002"),
+        runId: readFlag(rest, "--run", approvals[0]?.runId ?? "run:ops-triage:002"),
+        checkpointId: readFlag(rest, "--checkpoint", approvals[0]?.id ?? "checkpoint:ops-triage:002"),
         approved: readFlag(rest, "--approved", "true") !== "false",
         note: optionalFlag(rest, "--note")
       }));
     }
 
     if (command === "prompt" && subcommand === "validate") {
-      const body = readFlag(rest, "--body", promptFixtures.versions[0]?.body ?? "");
+      const promptVersions = listPromptVersionCatalog();
+      const body = readFlag(rest, "--body", promptVersions[0]?.body ?? "");
       return commandSuccess(io, sanitizePrompt(body, createCliPromptPolicy()));
     }
 
     if (command === "prompt" && subcommand === "diff") {
-      const leftId = readFlag(rest, "--left", promptFixtures.versions[1]?.id ?? "");
-      const rightId = readFlag(rest, "--right", promptFixtures.versions[0]?.id ?? "");
-      const left = promptFixtures.versions.find((version) => version.id === leftId);
-      const right = promptFixtures.versions.find((version) => version.id === rightId);
+      const promptVersions = listPromptVersionCatalog();
+      const leftId = readFlag(rest, "--left", promptVersions[1]?.id ?? "");
+      const rightId = readFlag(rest, "--right", promptVersions[0]?.id ?? "");
+      const left = promptVersions.find((version) => version.id === leftId);
+      const right = promptVersions.find((version) => version.id === rightId);
       if (!left || !right) {
         return commandFailure(io, "Unknown prompt version id.");
       }
@@ -187,10 +192,8 @@ export async function runCli(argv: string[], io: CliIo): Promise<number> {
     }
 
     if (command === "mcp" && subcommand === "serve") {
-      return commandSuccess(io, {
-        transport: "stdio",
-        server: buildMcpServer()
-      });
+      await serveMcpStdio(buildMcpServer(), io);
+      return 0;
     }
 
     if (command === "mcp" && subcommand === "inspect") {
@@ -198,14 +201,14 @@ export async function runCli(argv: string[], io: CliIo): Promise<number> {
       const toolId = optionalFlag(rest, "--tool");
       const resourceId = optionalFlag(rest, "--resource");
       if (toolId) {
-        const tool = server.tools.find((entry) => entry.id === toolId);
+        const tool = server.definition.tools.find((entry) => entry.id === toolId);
         return tool ? commandSuccess(io, tool) : commandFailure(io, `Unknown MCP tool '${toolId}'.`);
       }
       if (resourceId) {
-        const resource = server.resources.find((entry) => entry.id === resourceId);
+        const resource = server.definition.resources.find((entry) => entry.id === resourceId);
         return resource ? commandSuccess(io, resource) : commandFailure(io, `Unknown MCP resource '${resourceId}'.`);
       }
-      return commandSuccess(io, server);
+      return commandSuccess(io, server.definition);
     }
 
     if (command === "make" && subcommand === "ai-pack") {
@@ -278,17 +281,20 @@ export function scaffoldAiPack(cwd: string, packId: string): string {
 }
 
 function buildMcpServer() {
-  return createMcpServerFromContracts({
+  const promptVersions = listPromptVersionCatalog();
+
+  return createMcpRuntimeServer({
     id: "gutu-ai",
     label: "Gutu AI",
     actions: [...aiCoreActions, ...aiRagActions, ...aiEvalActions],
     resources: [...aiCoreResources, ...aiRagResources, ...aiEvalResources],
-    prompts: promptFixtures.versions.map((version) => ({
+    prompts: promptVersions.map((version) => ({
       id: version.id,
       title: version.templateId,
       description: version.changelog ?? "Prompt version",
       version: version.version,
-      arguments: []
+      arguments: [],
+      body: version.body
     }))
   });
 }
@@ -416,6 +422,6 @@ function helpText(): string {
 }
 
 function relativeFromCwd(cwd: string, target: string): string {
-  const relativePath = target.replace(`${resolve(cwd)}/`, "");
+  const relativePath = relative(resolve(cwd), resolve(target));
   return relativePath.length > 0 ? relativePath : ".";
 }

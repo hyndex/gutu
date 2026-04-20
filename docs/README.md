@@ -8,11 +8,11 @@ Current implementation layout note:
 - built-in shipped plugins now live under `framework/builtin-plugins/`
 - optional/business extensions continue to live under `plugins/`
 
-- [Goal.md](/Users/chinmoybhuyan/Desktop/Personal/Framework/docs/Goal.md)
-- [Developer_DeepDive.md](/Users/chinmoybhuyan/Desktop/Personal/Framework/docs/Developer_DeepDive.md)
-- [plugin-authoring.md](/Users/chinmoybhuyan/Desktop/Personal/Framework/docs/plugin-authoring.md)
-- [library-authoring.md](/Users/chinmoybhuyan/Desktop/Personal/Framework/docs/library-authoring.md)
-- [admin-ui-stack.md](/Users/chinmoybhuyan/Desktop/Personal/Framework/docs/admin-ui-stack.md)
-- [agent-understanding.md](/Users/chinmoybhuyan/Desktop/Personal/Framework/docs/agent-understanding.md)
+- [Goal.md](../Goal.md)
+- [Developer_DeepDive.md](./Developer_DeepDive.md)
+- [plugin-authoring.md](./plugin-authoring.md)
+- [library-authoring.md](./library-authoring.md)
+- [admin-ui-stack.md](./admin-ui-stack.md)
+- [agent-understanding.md](./agent-understanding.md)
 
-The root-level [Goal.md](/Users/chinmoybhuyan/Desktop/Personal/Framework/Goal.md) and [Developer_DeepDive.md](/Users/chinmoybhuyan/Desktop/Personal/Framework/Developer_DeepDive.md) remain the authoritative copies for this implementation stream.
+The root-level [Goal.md](../Goal.md) and [Developer_DeepDive.md](./Developer_DeepDive.md) remain the authoritative copies for this implementation stream.

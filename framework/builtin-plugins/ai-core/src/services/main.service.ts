@@ -10,6 +10,8 @@ import {
   pauseAgentRunForApproval,
   rejectCheckpoint,
   resumeAgentRun,
+  loadJsonState,
+  updateJsonState,
   type AgentRunRecord,
   type PromptTemplate,
   type PromptVersion
@@ -284,6 +286,12 @@ function buildPendingRun(): AgentRunRecord {
 }
 
 export const runFixtures = Object.freeze([buildCompletedRun(), buildPendingRun()]);
+const aiCoreStateFile = "ai-control-plane-core.json";
+
+type AiCoreState = {
+  promptVersions: PromptVersion[];
+  agentRuns: AgentRunRecord[];
+};
 
 export const approvalFixtures = Object.freeze(
   runFixtures.flatMap((run) =>
@@ -304,8 +312,50 @@ export const replayFixtures = Object.freeze(
   }))
 );
 
+function seedAiCoreState(): AiCoreState {
+  return {
+    promptVersions: [...promptFixtures.versions],
+    agentRuns: [...runFixtures]
+  };
+}
+
+function loadAiCoreState(): AiCoreState {
+  return loadJsonState(aiCoreStateFile, seedAiCoreState);
+}
+
+function persistAiCoreState(updater: (state: AiCoreState) => AiCoreState): AiCoreState {
+  return updateJsonState(aiCoreStateFile, seedAiCoreState, updater);
+}
+
+export function listAgentRuns(): AgentRunRecord[] {
+  return loadAiCoreState().agentRuns.sort((left, right) => right.startedAt.localeCompare(left.startedAt));
+}
+
+export function listReplaySnapshots() {
+  return listAgentRuns().map((run) => ({
+    runId: run.id,
+    fingerprint: run.replayFingerprint,
+    promptVersionId: run.promptVersionId,
+    policyDecisions: run.policyDecisions,
+    memorySnapshotRefs: run.memorySnapshotRefs
+  }));
+}
+
+export function listPromptVersionCatalog(): PromptVersion[] {
+  return loadAiCoreState().promptVersions.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+}
+
+export function getActivePromptTemplate(): PromptTemplate {
+  const latestVersion = listPromptVersionCatalog()[0];
+  return {
+    ...promptFixtures.template,
+    body: latestVersion?.body ?? promptFixtures.template.body,
+    version: latestVersion?.version ?? promptFixtures.template.version
+  };
+}
+
 export function listAgentRunSummaries() {
-  return runFixtures.map((run) => ({
+  return listAgentRuns().map((run) => ({
     id: run.id,
     tenantId: run.tenantId,
     agentId: run.agentId,
@@ -317,26 +367,31 @@ export function listAgentRunSummaries() {
 }
 
 export function listPromptVersions() {
-  return promptFixtures.versions.map((version) => ({
+  const latestVersionId = listPromptVersionCatalog()[0]?.id;
+  return listPromptVersionCatalog().map((version) => ({
     id: version.id,
     tenantId: "tenant-platform",
     templateId: version.templateId,
     version: version.version,
-    status: version.id === latestPromptVersion.id ? ("published" as const) : ("draft" as const),
+    status: version.id === latestVersionId ? ("published" as const) : ("draft" as const),
     publishedAt: version.createdAt,
     changelog: version.changelog
   }));
 }
 
 export function listPendingApprovals() {
-  return approvalFixtures.map((approval) => ({
-    id: approval.id,
-    tenantId: "tenant-platform",
-    runId: approval.runId,
-    toolId: approval.toolId,
-    state: approval.state,
-    requestedAt: approval.requestedAt
-  }));
+  return listAgentRuns().flatMap((run) =>
+    run.checkpoints
+      .filter((approval) => approval.state === "pending")
+      .map((approval) => ({
+        id: approval.id,
+        tenantId: run.tenantId,
+        runId: approval.runId,
+        toolId: approval.toolId ?? null,
+        state: approval.state,
+        requestedAt: approval.requestedAt
+      }))
+  );
 }
 
 export function submitAgentRun(input: SubmitAgentRunInput): {
@@ -386,6 +441,11 @@ export function submitAgentRun(input: SubmitAgentRunInput): {
       toolId: reviewTool.id
     });
 
+    persistAiCoreState((state) => ({
+      ...state,
+      agentRuns: [run, ...state.agentRuns.filter((existingRun) => existingRun.id !== run.id)]
+    }));
+
     return {
       ok: true,
       runId: run.id,
@@ -409,6 +469,11 @@ export function submitAgentRun(input: SubmitAgentRunInput): {
   });
   run = completeAgentRun(run);
 
+  persistAiCoreState((state) => ({
+    ...state,
+    agentRuns: [run, ...state.agentRuns.filter((existingRun) => existingRun.id !== run.id)]
+  }));
+
   return {
     ok: true,
     runId: run.id,
@@ -422,28 +487,56 @@ export function approveAgentCheckpointDecision(input: ApprovalDecisionInput): {
   checkpointState: "approved" | "rejected";
 } {
   normalizeActionInput(input);
-  const sourceRun = buildPendingRun();
-  const updated = input.approved
-    ? completeAgentRun(
-        resumeAgentRun(
-          approveCheckpoint(sourceRun, input.checkpointId, {
-            approverId: input.actorId,
-            approvedAt: "2026-04-18T11:15:00.000Z",
-            decisionNote: input.note
-          })
-        ),
-        "2026-04-18T11:15:02.000Z"
-      )
-    : rejectCheckpoint(sourceRun, input.checkpointId, {
-        approverId: input.actorId,
-        rejectedAt: "2026-04-18T11:15:00.000Z",
-        decisionNote: input.note
-      });
+  const nextState = persistAiCoreState((state) => {
+    const sourceRun = state.agentRuns.find((run) => run.id === input.runId);
+    if (!sourceRun) {
+      throw new Error(`Unknown AI run '${input.runId}'.`);
+    }
+
+    const checkpoint = sourceRun.checkpoints.find((entry) => entry.id === input.checkpointId);
+    if (!checkpoint) {
+      throw new Error(`Unknown approval checkpoint '${input.checkpointId}'.`);
+    }
+
+    if (checkpoint.state === "approved" || checkpoint.state === "rejected") {
+      return state;
+    }
+
+    const updatedRun = input.approved
+      ? completeAgentRun(
+          resumeAgentRun(
+            approveCheckpoint(sourceRun, input.checkpointId, {
+              approverId: input.actorId,
+              approvedAt: "2026-04-18T11:15:00.000Z",
+              decisionNote: input.note
+            })
+          ),
+          "2026-04-18T11:15:02.000Z"
+        )
+      : rejectCheckpoint(sourceRun, input.checkpointId, {
+          approverId: input.actorId,
+          rejectedAt: "2026-04-18T11:15:00.000Z",
+          decisionNote: input.note
+        });
+
+    return {
+      ...state,
+      agentRuns: state.agentRuns.map((run) => (run.id === updatedRun.id ? updatedRun : run))
+    };
+  });
+  const updated = nextState.agentRuns.find((run) => run.id === input.runId);
+  if (!updated) {
+    throw new Error(`Unknown AI run '${input.runId}'.`);
+  }
+  const checkpointState = updated.checkpoints.find((entry) => entry.id === input.checkpointId)?.state;
+  if (checkpointState !== "approved" && checkpointState !== "rejected") {
+    throw new Error(`Approval checkpoint '${input.checkpointId}' was not resolved.`);
+  }
 
   return {
     ok: true,
     status: updated.status === "completed" ? "completed" : "failed",
-    checkpointState: input.approved ? "approved" : "rejected"
+    checkpointState
   };
 }
 
@@ -455,10 +548,29 @@ export function publishPromptVersion(input: PublishPromptVersionInput): {
   normalizeActionInput(input);
   const sanitized = sanitizePrompt(input.body, runtimeGuardrails);
   const moderated = moderateOutput(sanitized.sanitizedPrompt, runtimeGuardrails);
+  const createdAt = new Date().toISOString();
+  const promptVersionId = input.templateId.startsWith("prompt-template:")
+    ? input.templateId.replace("prompt-template:", "prompt-version:") + `:${input.version}`
+    : `prompt-version:${input.templateId}:${input.version}`;
+
+  persistAiCoreState((state) => ({
+    ...state,
+    promptVersions: [
+      {
+        id: promptVersionId,
+        templateId: input.templateId,
+        version: input.version,
+        body: moderated.outputText,
+        createdAt,
+        ...(input.changelog ? { changelog: input.changelog } : {})
+      },
+      ...state.promptVersions.filter((version) => version.id !== promptVersionId)
+    ]
+  }));
 
   return {
     ok: true,
-    promptVersionId: `${input.templateId}:${input.version}`,
-    status: moderated.blocked ? "published" : "published"
+    promptVersionId,
+    status: "published"
   };
 }

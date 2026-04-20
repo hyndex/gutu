@@ -13,6 +13,10 @@ export {
 export { aiPolicy } from "./policies/default.policy";
 export {
   approvalFixtures,
+  getActivePromptTemplate,
+  listAgentRuns,
+  listReplaySnapshots,
+  listPromptVersionCatalog,
   promptFixtures,
   replayFixtures,
   runFixtures,

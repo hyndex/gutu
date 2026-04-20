@@ -67,7 +67,7 @@ Required filenames:
 
 The framework can generate a repository-wide understanding map at:
 
-- [docs/agent-understanding.index.json](/Users/chinmoybhuyan/Desktop/Personal/Framework/docs/agent-understanding.index.json)
+- [docs/agent-understanding.index.json](./agent-understanding.index.json)
 
 This is intended for:
 

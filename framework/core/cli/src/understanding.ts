@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import {
@@ -145,7 +145,7 @@ export async function buildUnderstandingIndex(
   const targets = await loadUnderstandingSummaries(root, options);
   const index: UnderstandingIndex = {
     generatedAt: new Date().toISOString(),
-    root,
+    root: ".",
     targets
   };
 
@@ -223,8 +223,15 @@ async function resolveTarget(root: string, selector?: string): Promise<TargetLoc
   }
 
   const targets = discoverWorkspaceTargets(root);
+  const normalizedSelector = normalizePathForComparison(selector);
   for (const target of targets) {
-    if (relative(root, target.dir) === selector || target.dir.endsWith(`/${selector}`)) {
+    const relativeTargetPath = normalizePathForComparison(relative(root, target.dir));
+    const absoluteTargetPath = normalizePathForComparison(target.dir);
+    if (
+      relativeTargetPath === normalizedSelector ||
+      absoluteTargetPath === normalizedSelector ||
+      absoluteTargetPath.endsWith(`/${normalizedSelector}`)
+    ) {
       return target;
     }
   }
@@ -240,8 +247,12 @@ async function resolveTarget(root: string, selector?: string): Promise<TargetLoc
 }
 
 function discoverTargetFromDirectory(root: string, candidate: string): TargetLocation {
+  const normalizedCandidate = normalizePathForComparison(candidate);
   const targets = discoverWorkspaceTargets(root)
-    .filter((target) => candidate === target.dir || candidate.startsWith(`${target.dir}/`))
+    .filter((target) => {
+      const normalizedTargetDir = normalizePathForComparison(target.dir);
+      return normalizedCandidate === normalizedTargetDir || normalizedCandidate.startsWith(`${normalizedTargetDir}/`);
+    })
     .sort((left, right) => right.dir.length - left.dir.length);
   const nearestTarget = targets[0];
   if (nearestTarget) {
@@ -347,7 +358,7 @@ async function loadManifestLike(root: string, target: TargetLocation): Promise<M
 
   return {
     id: packageJson.name ?? relative(root, target.dir),
-    displayName: humanizeIdentifier(packageJson.name?.split("/").at(-1) ?? target.dir.split("/").at(-1) ?? "App"),
+    displayName: humanizeIdentifier(packageJson.name?.split("/").at(-1) ?? basename(target.dir) ?? "App"),
     description:
       packageJson.description ??
       `Document what the app at ${relative(root, target.dir)} exists to demonstrate or operate.`,
@@ -650,6 +661,10 @@ function humanizeIdentifier(value: string): string {
     .filter(Boolean)
     .map((segment) => segment.slice(0, 1).toUpperCase() + segment.slice(1))
     .join(" ");
+}
+
+function normalizePathForComparison(value: string): string {
+  return value.replaceAll("\\", "/").replace(/\/+$/, "");
 }
 
 function inferPackageKind(targetDir: string): string | undefined {

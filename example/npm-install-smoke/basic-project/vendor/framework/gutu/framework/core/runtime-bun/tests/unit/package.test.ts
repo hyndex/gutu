@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { resolve } from "node:path";
 
 import {
   MissingEnvironmentVariableError,
@@ -14,6 +15,8 @@ import {
   readJsonFile,
   withTimeout
 } from "../../src";
+
+const repoRoot = resolve(import.meta.dir, "../../../../../");
 
 describe("runtime-bun", () => {
   it("exposes a stable package id", () => {
@@ -57,8 +60,8 @@ describe("runtime-bun", () => {
   });
 
   it("reads json files through the runtime wrapper", async () => {
-    const value = await readJsonFile<{ name: string }>("/Users/chinmoybhuyan/Desktop/Personal/Framework/package.json");
-    expect(value.name).toBe("@repo/platform");
+    const value = await readJsonFile<{ name: string }>(resolve(repoRoot, "package.json"));
+    expect(value.name).toBe("gutu");
   });
 
   it("enforces allowlisted hosts for runtime fetches", async () => {

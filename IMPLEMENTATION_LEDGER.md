@@ -2,6 +2,56 @@
 
 Historical entries may reference optional plugin packages that were part of earlier implementation waves before the repository was narrowed to the framework-only Git baseline.
 
+## 2026-04-20 23:40:00 IST - Production-readiness audit hardening
+
+- Reconciled the external production-readiness audit against the live repository and implemented the repo-shipped hardening items end to end.
+- Closed release-truth drift:
+  - release bundle now packages the real `framework/` tree
+  - release artifact naming is centralized on the `gutu` naming surface
+  - release bundle contents are verified after packaging
+- Closed boundary and docs-truth drift:
+  - added repo-wide manifest/import verification
+  - removed machine-local absolute paths from docs and generated understanding outputs
+  - added a docs truth audit
+- Hardened cross-platform CLI behavior:
+  - path handling now uses platform-safe helpers
+  - workspace init defaults to `copy` on Windows
+  - symlink vendoring downgrades safely when links are unavailable
+  - CI workspace-init smoke now covers Linux and Windows modes
+- Hardened release/security gates:
+  - protected refs and tags reject dev-key signing
+  - vulnerability auditing now emits runtime, developer-tooling, and full-workspace reports
+  - eval thresholds now gate the root release path
+- Added durable local operator/control-plane state:
+  - AI runs, approvals, prompt versions
+  - AI memory collections/documents
+  - AI eval runs
+  - admin workbench preferences
+- Replaced descriptor-only MCP serving with a long-running stdio MCP server:
+  - initialize
+  - tools/list
+  - tools/call
+  - resources/list
+  - resources/read
+  - prompts/list
+  - prompts/get
+- Added governance and lifecycle docs:
+  - `SECURITY.md`
+  - `CONTRIBUTING.md`
+  - `CODEOWNERS`
+  - `.github/dependabot.yml`
+  - `CHANGELOG.md`
+  - `docs/support-policy.md`
+  - `docs/compatibility-matrix.md`
+  - `docs/upgrade-and-migration.md`
+- Verification run for this wave:
+  - `bun run manifests:check`
+  - `bun run docs:truth`
+  - `bun run eval:gate`
+  - `bun run package:release && bun run verify:release-bundle`
+  - `bun run typecheck`
+  - package-local CLI, AI service, AI MCP runtime, and admin preference tests
+
 ## 2026-04-20 20:05:00 IST - Clean installable consumer workspace flow
 
 - Added a new clean-project generator in `@platform/cli`:

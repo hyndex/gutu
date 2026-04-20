@@ -9,6 +9,7 @@
 
 ## Current Phase
 
+- `Phase 20 - production-readiness audit hardening complete for repo-shipped surfaces`
 - `Phase 19 - Gutu rename and public package transition complete`
 - `Phase 18 - first public npm distribution live`
 - `Phase 17 - clean installable consumer workspace flow complete`
@@ -37,6 +38,21 @@
 
 ## Completed Milestones
 
+- Closed the 2026-04-20 production-readiness audit wave for repo-shipped surfaces:
+  - release bundle verification now checks the real `framework/` tree and shared artifact naming
+  - manifest boundary checks and docs truth audits are wired into root verification
+  - protected refs/tags reject dev-key signing and vulnerability reporting is split by runtime/tooling/full-workspace reachability
+  - eval-threshold enforcement is wired into the root gate
+  - AI runs, approvals, prompt versions, memory collections/documents, eval runs, and admin desk preferences now persist under `.gutu/state`
+  - `gutu mcp serve` now runs a long-lived stdio MCP server with initialize, list, call, read, and prompt-get flows
+  - governance docs now include `SECURITY.md`, `CONTRIBUTING.md`, `CODEOWNERS`, Dependabot, support/versioning policy, compatibility matrix, upgrade guide, and changelog discipline
+  - verification passed for:
+    - `bun run manifests:check`
+    - `bun run docs:truth`
+    - `bun run eval:gate`
+    - `bun run package:release && bun run verify:release-bundle`
+    - `bun run typecheck`
+    - package-local tests for CLI, AI persistence/services, AI MCP runtime, and admin preference persistence
 - Renamed the public framework brand from `Moki` to `Gutu` across the CLI, generated workspace layout, docs, package metadata, and mascot assets.
 - Switched the Git remote to `https://github.com/hyndex/gutu.git`.
 - Renamed the public CLI/package target to `gutu`, but the direct unscoped npm publish is still blocked by the current npm token permissions.
@@ -151,7 +167,7 @@
   - `tooling/scripts/workspace-task.mjs` now auto-discovers conventional `tests/unit`, `tests/integration`, `tests/contracts`, `tests/migrations`, and `tests/e2e` directories for phase-specific root test commands
   - added `.github/workflows/ci.yml`
   - added `.github/workflows/release-readiness.yml`
-  - added [docs/release-pipeline.md](/Users/chinmoybhuyan/Desktop/Personal/Framework/docs/release-pipeline.md)
+  - added [docs/release-pipeline.md](./docs/release-pipeline.md)
   - aligned `.env.example` and `.env.test.example` with the generated Postgres bootstrap defaults
 - Completed the remaining unchecked core-framework contract work:
   - `@platform/ui-shell` shared providers, navigation contracts, telemetry hooks, audit sinks, and command/notification buses
@@ -274,7 +290,7 @@
 - Added repo-level enforcement so admin-registered plugins cannot import the raw admin stack directly:
   - `eslint.config.mjs`
   - `packages/contracts/tests/contracts/admin-plugin-imports.test.ts`
-- Added [docs/admin-ui-stack.md](/Users/chinmoybhuyan/Desktop/Personal/Framework/docs/admin-ui-stack.md) and linked it from the repository readmes.
+- Added [docs/admin-ui-stack.md](./docs/admin-ui-stack.md) and linked it from the repository readmes.
 - Rewrote the root `README.md` into a full platform handbook covering:
   - purpose and positioning
   - AI-first developer experience
@@ -380,18 +396,18 @@
 - Environment note: the root framework workspace is now a git repository, but the cloned external references remain ignored under `ref/dashboard/*`.
 - Environment note: Docker is installed but the daemon is not running here, so local Postgres verification currently uses the resident server path instead of `docker compose`.
 - Deferred-by-plan note: the remaining domain, feature-pack, and vertical plugin hardening work is intentionally out of scope for the framework-first completion milestone.
-- AI note: the built-in AI packs currently use deterministic service fixtures for operator/demo behavior rather than a fully persisted control plane.
-- AI note: `platform mcp serve` currently emits governed MCP server descriptors over stdout; a long-running transport server is still a follow-on task.
-- AI note: eval datasets, baselines, and regression gates exist, but threshold enforcement is not yet wired into the root CI/release gate.
+- AI note: the built-in AI packs now persist local operator/control-plane state under `.gutu/state`, but deeper DB/workflow-backed multi-node durability is still a follow-on task.
+- AI note: `gutu mcp serve` now runs a governed stdio MCP server, but external connector lifecycle management remains a follow-on task.
 - Understanding note: docs validation is green for required doc-pack coverage, but the repo still emits warning-level findings for legacy packages whose inline resource/action/field semantics have not yet been deeply backfilled.
 
 ## Next Actions
 
 1. Reduce the remaining understanding warnings by backfilling inline semantic metadata across older legacy packages and plugins.
 2. Expand `@platform/cli` beyond AI-native flows into the full workspace/runtime orchestration surface.
-3. Move the AI control plane from fixture-backed built-in services into persistent workflow/job-backed runtime state.
-4. Add full MCP transport serving, external MCP connector governance, and eval-threshold release gating.
-5. Then resume the deferred plugin/business wave on top of the governed AI and ecosystem tooling.
+3. Move the locally persisted AI/admin control-plane state from file-backed durability into DB/workflow-backed runtime state where multi-node correctness matters.
+4. Add governed external MCP connector lifecycle management and provider-backed AI connector coverage.
+5. Add deeper Postgres migration orchestration and DB-backed booking-concurrency verification when those concrete repository surfaces land.
+6. Then resume the deferred plugin/business wave on top of the governed AI and ecosystem tooling.
 
 ## Latest Test Summary
 
@@ -537,11 +553,11 @@
 - `export PATH="$HOME/.bun/bin:$PATH" && bun run package:release`
   - exit code: `0`
   - produced:
-    - `artifacts/release/platform-core-framework.tgz`
+    - `artifacts/release/gutu-framework-release.tgz`
 - `export PATH="$HOME/.bun/bin:$PATH" && bun run sbom:generate`
   - exit code: `0`
   - produced:
-    - `artifacts/sbom/platform-sbom.cdx.json`
+    - `artifacts/sbom/gutu-framework-sbom.cdx.json`
 - `export PATH="$HOME/.bun/bin:$PATH" && bun run provenance:generate && bun run sign:artifacts && bun run verify:artifacts-signature`
   - exit code: `0`
   - produced and verified:

@@ -1,4 +1,7 @@
 import { describe, expect, it } from "bun:test";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -18,6 +21,7 @@ import { createShellProviders, createUiRegistry, defineUiSurface, registerUiSurf
 import {
   AdminWorkbenchShell,
   composeAdminRegistry,
+  createFileAdminPreferenceStore,
   createMemoryAdminPreferenceStore,
   filterAdminRegistryForPermissions,
   packageId,
@@ -275,5 +279,30 @@ describe("admin-shell-workbench", () => {
     expect(markup).toContain("Impersonating as support-agent");
     expect(markup).toContain("Contact Ada Lovelace");
     expect(markup).toContain("Pipeline");
+  });
+
+  it("persists admin preferences to disk for later operator sessions", () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "admin-workbench-state-"));
+    const store = createFileAdminPreferenceStore({ stateDir });
+    const scope = {
+      shellId: "admin-shell-workbench",
+      tenantId: "tenant-1",
+      actorId: "support-agent"
+    };
+
+    store.toggleFavorite(scope, {
+      id: "crm.contacts.list",
+      label: "Contacts",
+      href: "/admin/crm/contacts",
+      kind: "page"
+    });
+
+    const reloadedStore = createFileAdminPreferenceStore({ stateDir });
+    const persisted = reloadedStore.load(scope);
+
+    expect(persisted.favorites.map((favorite) => favorite.href)).toContain("/admin/crm/contacts");
+    expect(readFileSync(join(stateDir, "admin-workbench-preferences.json"), "utf8")).toContain("/admin/crm/contacts");
+
+    rmSync(stateDir, { recursive: true, force: true });
   });
 });

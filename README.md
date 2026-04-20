@@ -466,8 +466,8 @@ Current note:
 
 - the repo-local developer entrypoint is `bun run gutu -- ...`
 - once `@platform/cli` is published/installed as a package, the direct `platform ...` binary is the intended experience
-- `platform mcp serve` currently emits governed MCP server descriptors in a stdio-shaped format.
-- A full long-running transport server is a follow-on milestone.
+- `gutu mcp serve` now runs a long-lived newline-delimited stdio MCP server for the governed AI tool/resource/prompt surface
+- governed external MCP connector fleets remain a follow-on milestone
 
 ## Agent Understanding Layer
 
@@ -1161,6 +1161,7 @@ TEST_POSTGRES_URL=postgresql:///framework_platform_test bun test framework/core/
 | `bun run gutu -- prompt diff ...` | diff prompt versions |
 | `bun run gutu -- memory ingest ...` | ingest knowledge into an AI collection |
 | `bun run gutu -- eval run ...` | execute an eval dataset candidate run |
+| `bun run gutu -- mcp serve` | run the governed stdio MCP server |
 | `bun run gutu -- mcp inspect ...` | inspect derived MCP-safe descriptors |
 | `bun run gutu -- make ai-pack --id <slug>` | scaffold a new AI pack |
 

@@ -3,14 +3,19 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { BUN_BIN, ensureDir, rootDir } from "./workspace-utils.mjs";
+import {
+  releaseArchiveRelativePath,
+  releaseBuildType,
+  releaseSbomRelativePath
+} from "./release-config.mjs";
 
 const requiredArtifacts = [
   {
-    path: path.join(rootDir, "artifacts", "release", "platform-core-framework.tgz"),
+    path: path.join(rootDir, releaseArchiveRelativePath),
     script: "package:release"
   },
   {
-    path: path.join(rootDir, "artifacts", "sbom", "platform-sbom.cdx.json"),
+    path: path.join(rootDir, releaseSbomRelativePath),
     script: "sbom:generate"
   }
 ];
@@ -33,9 +38,9 @@ for (const artifact of requiredArtifacts) {
 const provenanceDir = ensureDir(path.join(rootDir, "artifacts", "provenance"));
 const outputPath = path.join(provenanceDir, "build-provenance.json");
 const trackedPaths = [
-  "artifacts/release/platform-core-framework.tgz",
+  releaseArchiveRelativePath,
   "artifacts/release/manifest.json",
-  "artifacts/sbom/platform-sbom.cdx.json",
+  releaseSbomRelativePath,
   "ops/postgres/platform-bootstrap.sql",
   "ops/postgres/transaction-context.sql",
   "package.json",
@@ -67,10 +72,10 @@ const bunVersion = spawnSync(BUN_BIN, ["--version"], {
 const provenance = {
   schemaVersion: "1.0.0",
   generatedAt: new Date().toISOString(),
-  buildType: "bun-workspace-platform-core-framework",
+  buildType: releaseBuildType,
   source: {
     repositoryPresent: existsSync(path.join(rootDir, ".git")),
-    workspaceRoot: rootDir
+    workspaceRoot: "."
   },
   invocation: {
     commands: [

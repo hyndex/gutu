@@ -1,3 +1,5 @@
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import React from "react";
 
 import {
@@ -910,6 +912,67 @@ export function createMemoryAdminPreferenceStore(
     },
     save(scope, next) {
       entries.set(scopeKey(scope), structuredClone(next));
+      return structuredClone(next);
+    },
+    remember(scope, item) {
+      const record = this.load(scope);
+      return this.save(scope, {
+        ...record,
+        recentItems: [item, ...record.recentItems.filter((entry) => entry.href !== item.href)].slice(0, 8)
+      });
+    },
+    toggleFavorite(scope, favorite) {
+      const record = this.load(scope);
+      const exists = record.favorites.some((entry) => entry.href === favorite.href);
+      return this.save(scope, {
+        ...record,
+        favorites: exists
+          ? record.favorites.filter((entry) => entry.href !== favorite.href)
+          : [...record.favorites, favorite].sort((left, right) => left.label.localeCompare(right.label))
+      });
+    },
+    invalidateMissing(scope, registry) {
+      const record = this.load(scope);
+      const validHrefs = new Set<string>([
+        ...registry.pages.map((entry) => entry.route),
+        ...registry.reports.map((entry) => entry.route),
+        ...registry.builders.map((entry) => entry.route),
+        ...registry.zoneLaunchers.map((entry) => entry.route),
+        ...registry.workspaces.map((entry) => entry.homePath).filter((entry): entry is string => Boolean(entry))
+      ]);
+
+      return this.save(scope, {
+        ...record,
+        favorites: record.favorites.filter((entry) => validHrefs.has(entry.href)),
+        recentItems: record.recentItems.filter((entry) => validHrefs.has(entry.href))
+      });
+    }
+  };
+}
+
+export function createFileAdminPreferenceStore(input: {
+  initial?: Record<string, AdminPreferenceRecord> | undefined;
+  stateDir?: string | undefined;
+  fileName?: string | undefined;
+} = {}): AdminPreferenceStore {
+  const filePath = resolveAdminPreferenceStorePath(input.stateDir, input.fileName);
+
+  const loadEntries = () => readPreferenceEntries(filePath, input.initial ?? {});
+  const saveEntries = (entries: Record<string, AdminPreferenceRecord>) => writePreferenceEntries(filePath, entries);
+
+  return {
+    load(scope) {
+      const entries = loadEntries();
+      return structuredClone(entries[scopeKey(scope)] ?? createEmptyPreferenceRecord());
+    },
+    save(scope, next) {
+      const entries = loadEntries();
+      const key = scopeKey(scope);
+      const updated = {
+        ...entries,
+        [key]: structuredClone(next)
+      };
+      saveEntries(updated);
       return structuredClone(next);
     },
     remember(scope, item) {
@@ -2519,6 +2582,33 @@ function createEmptyPreferenceRecord(): AdminPreferenceRecord {
     savedViews: [],
     dashboards: []
   };
+}
+
+function resolveAdminPreferenceStorePath(stateDir?: string, fileName?: string): string {
+  const baseDir = path.resolve(stateDir ?? process.env.GUTU_STATE_DIR ?? path.join(process.cwd(), ".gutu", "state"));
+  return path.join(baseDir, fileName ?? "admin-workbench-preferences.json");
+}
+
+function readPreferenceEntries(
+  filePath: string,
+  initial: Record<string, AdminPreferenceRecord>
+): Record<string, AdminPreferenceRecord> {
+  if (!existsSync(filePath)) {
+    const seeded = Object.fromEntries(
+      Object.entries(initial).map(([key, value]) => [key, structuredClone(value)])
+    ) as Record<string, AdminPreferenceRecord>;
+    writePreferenceEntries(filePath, seeded);
+    return seeded;
+  }
+
+  return JSON.parse(readFileSync(filePath, "utf8")) as Record<string, AdminPreferenceRecord>;
+}
+
+function writePreferenceEntries(filePath: string, entries: Record<string, AdminPreferenceRecord>): void {
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+  writeFileSync(tempPath, `${JSON.stringify(entries, null, 2)}\n`, "utf8");
+  renameSync(tempPath, filePath);
 }
 
 function scopeKey(scope: AdminPreferenceScope): string {

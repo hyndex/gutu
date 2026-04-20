@@ -3,9 +3,10 @@ import React from "react";
 import { ChartSurface, createLineChartOption } from "@platform/chart";
 import { formatPlatformDateTime, formatPlatformRelativeTime } from "@platform/ui";
 
-import { listAgentRunSummaries, runFixtures } from "../../services/main.service";
+import { listAgentRuns, listAgentRunSummaries } from "../../services/main.service";
 
 export function AiCoreAdminPage() {
+  const runs = listAgentRuns();
   const runSummaries = listAgentRunSummaries();
   const completedRuns = runSummaries.filter((run) => run.status === "completed").length;
   const waitingApprovals = runSummaries.filter((run) => run.status === "waiting-approval").length;
@@ -27,7 +28,7 @@ export function AiCoreAdminPage() {
         </div>
         <div className="awb-mini-stat">
           <span className="awb-mini-stat-label">Replay snapshots</span>
-          <strong className="awb-mini-stat-value">{runFixtures.length}</strong>
+          <strong className="awb-mini-stat-value">{runs.length}</strong>
         </div>
       </div>
       <ChartSurface
@@ -38,7 +39,7 @@ export function AiCoreAdminPage() {
           series: [
             {
               name: "Runtime ms",
-              data: runFixtures.map((run) => run.usage.runtimeMs)
+              data: runs.map((run) => run.usage.runtimeMs)
             }
           ]
         })}
@@ -48,7 +49,7 @@ export function AiCoreAdminPage() {
         }}
       />
       <div className="awb-inline-grid awb-inline-grid-2">
-        {runFixtures.map((run) => (
+        {runs.map((run) => (
           <div key={run.id} className="awb-form-card">
             <h3 className="awb-panel-title">{run.agentId}</h3>
             <dl className="awb-detail-grid">

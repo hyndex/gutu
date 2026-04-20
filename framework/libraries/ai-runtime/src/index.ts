@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import type { ToolContract } from "@platform/ai";
+export { loadJsonState, resolveStateDirectory, resolveStateFile, saveJsonState, updateJsonState } from "./state";
 
 export const packageId = "ai-runtime" as const;
 export const packageDisplayName = "AI Runtime" as const;

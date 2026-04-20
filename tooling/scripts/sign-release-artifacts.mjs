@@ -31,6 +31,11 @@ if (process.env.PLATFORM_REQUIRE_ENV_SIGNING === "true" && signingMaterial.sourc
   process.exit(1);
 }
 
+if (isProtectedReleaseContext() && signingMaterial.source !== "env") {
+  console.error("Protected refs and tags may not use the checked-in dev signing key.");
+  process.exit(1);
+}
+
 const algorithm =
   signingMaterial.privateKey.asymmetricKeyType === "ed25519" || signingMaterial.privateKey.asymmetricKeyType === "ed448"
     ? null
@@ -50,6 +55,8 @@ writeFileSync(
       generatedAt: new Date().toISOString(),
       status: "signed",
       source: signingMaterial.source,
+      releaseEligible: signingMaterial.source === "env",
+      signingProfile: signingMaterial.source === "env" ? "release" : "dev-test",
       signedPath: path.relative(rootDir, provenancePath),
       payloadSha256,
       keyType: signingMaterial.privateKey.asymmetricKeyType,
@@ -106,4 +113,8 @@ function loadSigningMaterial() {
   }
 
   return null;
+}
+
+function isProtectedReleaseContext() {
+  return process.env.GITHUB_REF_PROTECTED === "true" || (process.env.GITHUB_REF ?? "").startsWith("refs/tags/");
 }

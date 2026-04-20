@@ -1,5 +1,5 @@
 import { cpSync, existsSync, lstatSync, mkdirSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 
 import { createUnderstandingDocPack } from "@platform/agent-understanding";
 
@@ -18,6 +18,7 @@ export type InitWorkspaceResult = {
   starterPluginId: string;
   starterAppId: string;
   nextSteps: string[];
+  warnings?: string[] | undefined;
 };
 
 const frameworkDistributionEntries = [
@@ -38,30 +39,30 @@ const frameworkDistributionEntries = [
 export function initGutuWorkspace(cwd: string, options: InitWorkspaceOptions): InitWorkspaceResult {
   const projectRoot = resolve(cwd, options.target);
   const frameworkSource = resolve(options.frameworkSource ?? detectFrameworkSourceRoot());
-  const frameworkMode = options.frameworkMode ?? "symlink";
+  const requestedFrameworkMode = options.frameworkMode ?? resolveDefaultFrameworkMode();
 
   prepareTargetDirectory(projectRoot, options.force ?? false);
   ensureFrameworkSource(frameworkSource);
 
-  const projectName = slugifyName(projectRoot.split("/").filter(Boolean).at(-1) ?? "gutu-project");
+  const projectName = slugifyName(basename(projectRoot) || "gutu-project");
   const starterPluginId = `${projectName}-core`;
   const starterAppId = `${projectName}-studio`;
 
   mkdirSync(projectRoot, { recursive: true });
+  const vendoring = vendorFrameworkDistribution(projectRoot, frameworkSource, requestedFrameworkMode);
   writeProjectFiles(projectRoot, {
     projectName,
-    frameworkMode,
+    frameworkMode: vendoring.frameworkMode,
     frameworkSource,
     starterPluginId,
     starterAppId
   });
 
-  vendorFrameworkDistribution(projectRoot, frameworkSource, frameworkMode);
   writeStarterPlugin(projectRoot, starterPluginId);
   writeStarterApp(projectRoot, starterAppId, starterPluginId);
   writeProjectMetadata(projectRoot, {
     projectName,
-    frameworkMode,
+    frameworkMode: vendoring.frameworkMode,
     starterPluginId,
     starterAppId
   });
@@ -70,7 +71,7 @@ export function initGutuWorkspace(cwd: string, options: InitWorkspaceOptions): I
     ok: true,
     projectRoot,
     frameworkSource,
-    frameworkMode,
+    frameworkMode: vendoring.frameworkMode,
     starterPluginId,
     starterAppId,
     nextSteps: [
@@ -78,8 +79,13 @@ export function initGutuWorkspace(cwd: string, options: InitWorkspaceOptions): I
       "bun install",
       "bun run docs:scaffold",
       "bun run ci:check"
-    ]
+    ],
+    ...(vendoring.warnings.length > 0 ? { warnings: vendoring.warnings } : {})
   };
+}
+
+export function resolveDefaultFrameworkMode(platform = process.platform): "symlink" | "copy" {
+  return platform === "win32" ? "copy" : "symlink";
 }
 
 function detectFrameworkSourceRoot(): string {
@@ -155,15 +161,25 @@ function writeProjectFiles(
   }
 }
 
-function vendorFrameworkDistribution(projectRoot: string, frameworkSource: string, mode: "symlink" | "copy") {
+function vendorFrameworkDistribution(projectRoot: string, frameworkSource: string, mode: "symlink" | "copy"): {
+  frameworkMode: "symlink" | "copy";
+  warnings: string[];
+} {
   const vendorRoot = join(projectRoot, "vendor", "framework", "gutu");
   mkdirSync(vendorRoot, { recursive: true });
+  const warnings: string[] = [];
+  let effectiveMode = mode;
+
+  if (mode === "symlink" && !canCreateSymlink(vendorRoot)) {
+    effectiveMode = "copy";
+    warnings.push("Symlink vendoring is unavailable on this platform or filesystem; falling back to copy mode.");
+  }
 
   for (const entry of frameworkDistributionEntries) {
     const sourcePath = join(frameworkSource, entry);
     const targetPath = join(vendorRoot, entry);
 
-    if (mode === "symlink") {
+    if (effectiveMode === "symlink") {
       const relativeTarget = relative(dirname(targetPath), sourcePath) || ".";
       symlinkSync(relativeTarget, targetPath, lstatSync(sourcePath).isDirectory() ? "dir" : "file");
       continue;
@@ -191,6 +207,11 @@ function vendorFrameworkDistribution(projectRoot: string, frameworkSource: strin
       cpSync(sourcePath, targetPath);
     }
   }
+
+  return {
+    frameworkMode: effectiveMode,
+    warnings
+  };
 }
 
 function writeStarterPlugin(projectRoot: string, pluginId: string) {
@@ -401,6 +422,22 @@ function write(root: string, relativePath: string, contents: string) {
   const absolutePath = join(root, relativePath);
   mkdirSync(dirname(absolutePath), { recursive: true });
   writeFileSync(absolutePath, contents, "utf8");
+}
+
+function canCreateSymlink(vendorRoot: string): boolean {
+  const probeTarget = join(vendorRoot, ".symlink-probe-target");
+  const probeLink = join(vendorRoot, ".symlink-probe-link");
+
+  try {
+    writeFileSync(probeTarget, "probe", "utf8");
+    symlinkSync(relative(dirname(probeLink), probeTarget) || ".", probeLink, "file");
+    return true;
+  } catch {
+    return false;
+  } finally {
+    rmSync(probeLink, { force: true });
+    rmSync(probeTarget, { force: true });
+  }
 }
 
 function slugifyName(input: string): string {

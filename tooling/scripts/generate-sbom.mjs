@@ -3,9 +3,10 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { BUN_BIN, ensureDir, getWorkspacePackageDirs, readJson, rootDir, stripAnsi } from "./workspace-utils.mjs";
+import { releaseSbomName } from "./release-config.mjs";
 
 const sbomDir = ensureDir(path.join(rootDir, "artifacts", "sbom"));
-const outputPath = path.join(sbomDir, "platform-sbom.cdx.json");
+const outputPath = path.join(sbomDir, releaseSbomName);
 const rootPackage = readJson(path.join(rootDir, "package.json"));
 const lockfilePath = path.join(rootDir, "bun.lock");
 const workspacePackages = getWorkspacePackageDirs().map((packageDir) => {
@@ -126,7 +127,7 @@ const bom = {
     tools: [
       {
         vendor: "OpenAI Codex",
-        name: "platform-sbom-generator",
+        name: "gutu-sbom-generator",
         version: "1.0.0"
       }
     ],

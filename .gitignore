@@ -12,6 +12,7 @@ test-results
 *.tsbuildinfo
 bun.lock
 .bun-install-cache
+.gutu
 tmp
 .tmp-import-check
 .tmp-ts-trace-admin-shell

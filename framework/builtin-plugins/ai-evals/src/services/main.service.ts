@@ -1,13 +1,17 @@
 import {
+  type EvalBaseline,
   type EvalCase,
   type EvalCaseExecutionResult,
+  type EvalDataset,
   type EvalJudge,
+  type EvalRun,
   checkRegressionGate,
   compareEvalRuns,
   createEvalBaseline,
   defineEvalDataset,
   runEvalDataset
 } from "@platform/ai-evals";
+import { loadJsonState, updateJsonState } from "@platform/ai-runtime";
 import { normalizeActionInput } from "@platform/schema";
 
 export const datasetFixture = defineEvalDataset({
@@ -155,18 +159,110 @@ export const regressionGateResultFixture = checkRegressionGate(
   candidateEvalRunFixture
 );
 
+const aiEvalStateFile = "ai-evals.json";
+
+type AiEvalState = {
+  datasets: EvalDataset[];
+  baselines: EvalBaseline[];
+  runs: EvalRun[];
+};
+
+function seedAiEvalState(): AiEvalState {
+  return {
+    datasets: [datasetFixture],
+    baselines: [baselineFixture],
+    runs: [candidateEvalRunFixture]
+  };
+}
+
+function loadAiEvalState(): AiEvalState {
+  return loadJsonState(aiEvalStateFile, seedAiEvalState);
+}
+
+function persistAiEvalState(updater: (state: AiEvalState) => AiEvalState): AiEvalState {
+  return updateJsonState(aiEvalStateFile, seedAiEvalState, updater);
+}
+
+export function listEvalDatasets(): EvalDataset[] {
+  return loadAiEvalState().datasets.sort((left, right) => left.label.localeCompare(right.label));
+}
+
+export function listEvalBaselines(): EvalBaseline[] {
+  return loadAiEvalState().baselines.sort((left, right) => right.capturedAt.localeCompare(left.capturedAt));
+}
+
+export function listEvalRuns(): EvalRun[] {
+  return loadAiEvalState().runs.sort(
+    (left, right) => (right.completedAt ?? right.startedAt).localeCompare(left.completedAt ?? left.startedAt)
+  );
+}
+
+export function getCurrentEvalSummary(datasetId = datasetFixture.id): {
+  dataset: EvalDataset;
+  baseline: EvalBaseline;
+  candidate: EvalRun;
+  comparison: ReturnType<typeof compareEvalRuns>;
+  gate: ReturnType<typeof checkRegressionGate>;
+} {
+  const state = loadAiEvalState();
+  const dataset = state.datasets.find((entry) => entry.id === datasetId);
+  if (!dataset) {
+    throw new Error(`Unknown eval dataset '${datasetId}'.`);
+  }
+
+  const baseline = state.baselines
+    .filter((entry) => entry.datasetId === datasetId)
+    .sort((left, right) => right.capturedAt.localeCompare(left.capturedAt))[0];
+  const candidate = state.runs
+    .filter((entry) => entry.datasetId === datasetId)
+    .sort((left, right) => (right.completedAt ?? right.startedAt).localeCompare(left.completedAt ?? left.startedAt))[0];
+
+  if (!baseline || !candidate) {
+    throw new Error(`Missing baseline or candidate run for dataset '${datasetId}'.`);
+  }
+
+  return {
+    dataset,
+    baseline,
+    candidate,
+    comparison: compareEvalRuns(baseline, candidate),
+    gate: checkRegressionGate(createRegressionGate(dataset.id), baseline, candidate)
+  };
+}
+
 export function runEvalDatasetScenario(input: {
   tenantId: string;
   datasetId: string;
   candidateLabel: string;
 }) {
   normalizeActionInput(input);
+  const state = loadAiEvalState();
+  const dataset = state.datasets.find((entry) => entry.id === input.datasetId);
+  if (!dataset) {
+    throw new Error(`Unknown eval dataset '${input.datasetId}'.`);
+  }
+
+  const startedAt = new Date().toISOString();
+  const runId = buildEvalRunId(input.datasetId, input.candidateLabel, startedAt);
+  const candidateRun = {
+    ...candidateEvalRunFixture,
+    id: runId,
+    datasetId: dataset.id,
+    startedAt,
+    completedAt: startedAt
+  } satisfies EvalRun;
+
+  persistAiEvalState((current) => ({
+    ...current,
+    runs: [candidateRun, ...current.runs.filter((entry) => entry.id !== runId)]
+  }));
+
   return {
     ok: true as const,
-    runId: candidateEvalRunFixture.id,
-    passRate: candidateEvalRunFixture.passRate,
-    averageScore: candidateEvalRunFixture.averageScore,
-    citationRate: candidateEvalRunFixture.citationRate
+    runId: candidateRun.id,
+    passRate: candidateRun.passRate,
+    averageScore: candidateRun.averageScore,
+    citationRate: candidateRun.citationRate
   };
 }
 
@@ -176,9 +272,38 @@ export function compareEvalRunScenario(input: {
   candidateRunId: string;
 }) {
   normalizeActionInput(input);
+  const state = loadAiEvalState();
+  const baseline = state.baselines.find((entry) => entry.id === input.baselineId);
+  const candidate = state.runs.find((entry) => entry.id === input.candidateRunId);
+  if (!baseline) {
+    throw new Error(`Unknown eval baseline '${input.baselineId}'.`);
+  }
+  if (!candidate) {
+    throw new Error(`Unknown eval run '${input.candidateRunId}'.`);
+  }
+
+  const gateResult = checkRegressionGate(createRegressionGate(baseline.datasetId), baseline, candidate);
   return {
     ok: true as const,
-    passed: regressionGateResultFixture.passed,
-    reasons: regressionGateResultFixture.reasons
+    passed: gateResult.passed,
+    reasons: gateResult.reasons
   };
+}
+
+function createRegressionGate(datasetId: string) {
+  return {
+    ...regressionGateFixture,
+    datasetId
+  };
+}
+
+function buildEvalRunId(datasetId: string, candidateLabel: string, startedAt: string): string {
+  const datasetSlug = datasetId.replace(/^eval-dataset:/, "");
+  const labelSlug = candidateLabel
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "candidate";
+
+  return `eval-run:${datasetSlug}:${labelSlug}:${startedAt}`;
 }
