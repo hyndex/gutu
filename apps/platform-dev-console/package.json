@@ -30,6 +30,7 @@
     "@plugins/ai-evals": "workspace:*",
     "@plugins/ai-rag": "workspace:*",
     "@plugins/dashboard-core": "workspace:*",
+    "@plugins/notifications-core": "workspace:*",
     "@plugins/page-builder-core": "workspace:*",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

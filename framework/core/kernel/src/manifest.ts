@@ -69,6 +69,32 @@ const signingSchema = z
   })
   .optional();
 
+const sourceSchema = z
+  .object({
+    repo: z
+      .object({
+        owner: z.string().min(1),
+        name: z.string().min(1),
+        url: z.string().url().optional()
+      })
+      .optional(),
+    docsUrl: z.string().url().optional()
+  })
+  .optional();
+
+const distributionSchema = z
+  .object({
+    channels: stringArray,
+    vendorPath: z.string().min(1).optional(),
+    artifact: z
+      .object({
+        type: z.enum(["source-snapshot", "archive"]),
+        path: z.string().min(1)
+      })
+      .optional()
+  })
+  .optional();
+
 const baseManifestSchema = z.object({
   id: z.string().min(1),
   kind: packageKindSchema,
@@ -98,7 +124,9 @@ const baseManifestSchema = z.object({
   targetDomains: stringArray,
   phases: z.array(migrationPhaseSchema).default([]),
   ui: uiSchema,
-  signing: signingSchema
+  signing: signingSchema,
+  source: sourceSchema,
+  distribution: distributionSchema
 });
 
 export const packageManifestSchema = baseManifestSchema.superRefine((manifest, ctx) => {
@@ -204,6 +232,8 @@ export function withManifestDefaults(input: DefinePackageInput): PackageManifest
     optionalIncludes: [],
     targetDomains: [],
     phases: [],
+    source: undefined,
+    distribution: undefined,
     ...input
   };
 }
@@ -328,7 +358,16 @@ function normalizeManifest(manifest: PackageManifest): PackageManifest {
     includes: sortUnique(manifest.includes),
     optionalIncludes: sortUnique(manifest.optionalIncludes),
     targetDomains: sortUnique(manifest.targetDomains),
-    phases: [...new Set(manifest.phases)]
+    phases: [...new Set(manifest.phases)],
+    ...(manifest.distribution
+      ? {
+          distribution: {
+            ...manifest.distribution,
+            channels: sortUnique(manifest.distribution.channels ?? [])
+          }
+        }
+      : {}),
+    ...(manifest.source ? { source: manifest.source } : {})
   };
 }
 

@@ -93,6 +93,21 @@ async function main() {
       });
       assert.equal(await page.locator("[data-plugin-page='ai-evals']").count(), 1);
 
+      await page.goto(`${harness.url}/admin/communications/messages?profile=admin`, {
+        waitUntil: "networkidle"
+      });
+      assert.equal(await page.locator("[data-plugin-page='communications-messages']").count(), 1);
+
+      await page.goto(`${harness.url}/admin/communications/endpoints?profile=admin`, {
+        waitUntil: "networkidle"
+      });
+      assert.equal(await page.locator("[data-plugin-page='communications-endpoints']").count(), 1);
+
+      await page.goto(`${harness.url}/admin/notifications-core?profile=admin`, {
+        waitUntil: "networkidle"
+      });
+      assert.equal(await page.locator("[data-plugin-page='notifications-core']").count(), 1);
+
       await page.goto(`${harness.url}/admin/reports/ai-regressions?profile=admin`, {
         waitUntil: "networkidle"
       });
@@ -154,6 +169,7 @@ async function main() {
       });
       assert.equal(await page.getByRole("link", { name: "Agent Runs" }).count(), 0);
       assert.equal(await page.getByRole("link", { name: "Admin Settings" }).count(), 0);
+      assert.equal(await page.getByRole("link", { name: "Notifications Core" }).count(), 0);
       assert.equal(await page.getByRole("link", { name: "Page Builder" }).count(), 0);
       assert.equal(await page.getByRole("link", { name: "Report Builder" }).count(), 0);
       assert.equal(await page.getByRole("link", { name: "Job Monitor" }).count(), 0);

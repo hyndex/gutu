@@ -439,6 +439,23 @@ flowchart TD
   Audit --> Workbench
 ```
 
+### Communication baseline
+
+The shipped framework now includes a first-class outbound communication substrate.
+
+| Shipped surface | Responsibility |
+| --- | --- |
+| `@platform/communication` | channel compilers, route contracts, deterministic local providers, retry policy helpers, callback normalization, and idempotency helpers for `email`, `sms`, `push`, and `in-app` delivery |
+| `notifications-core` | canonical message, attempt, endpoint, and preference resources plus queue/retry/cancel/test-send actions and the `/admin/communications/*` operator workspace |
+| `@platform/email-templates` | React Email authoring and rendering for the email channel |
+
+Important scope boundary:
+
+- the framework baseline ships deterministic local/test providers for all first-class channels,
+- email compilation delegates to `@platform/email-templates`,
+- real third-party connector packages remain connector-owned follow-on work and are intentionally not bundled into this repo,
+- inbound email/SMS handling, campaign automation, contacts/segments, and marketing workflow builders are still out of scope for the baseline.
+
 ### Important AI rules
 
 - AI is **opt-in by default**.
@@ -666,6 +683,7 @@ sequenceDiagram
 │   │   └── ...
 │   └── builtin-plugins/
 │       ├── auth-core/
+│       ├── booking-core/
 │       ├── dashboard-core/
 │       ├── admin-shell-workbench/
 │       ├── portal-core/
@@ -687,7 +705,7 @@ sequenceDiagram
 | `apps/` | runnable harnesses, docs apps, examples, verification consoles |
 | `framework/core/` | kernel, runtime, DB, auth, API, permissions, and execution infrastructure |
 | `framework/libraries/` | shared libraries, admin desk packages, UI wrappers, and compatibility layers |
-| `framework/builtin-plugins/` | default shipped plugins such as auth, dashboard, portal, AI, and other batteries-included platform modules |
+| `framework/builtin-plugins/` | default shipped plugins such as auth, booking, dashboard, portal, AI, and other batteries-included platform modules |
 | `plugins/` | reserved landing area for future vendored or store-installed plugins; not part of the shipped framework source tree |
 | `tooling/` | scaffolders, task runners, artifact generation |
 | `docs/` | spec mirrors and supporting docs |
@@ -1023,7 +1041,7 @@ That means your actual developer project stays tidy:
 - `plugins/*` for your business modules,
 - `libraries/*` for local shared code if you need it,
 - `vendor/framework/gutu` for the vendored framework distribution,
-- `vendor/plugins/*` and `vendor/libraries/*` for future external installs.
+- `vendor/plugins/*` and `vendor/libraries/*` for compatibility-resolved ecosystem installs.
 
 Recommended flow right now:
 
@@ -1060,12 +1078,20 @@ gutu make plugin crm
 gutu plugin install billing-suite
 ```
 
-That ecosystem and registry model is planned, and the design is already documented in [docs/ecosystem-cli-and-registries.md](./docs/ecosystem-cli-and-registries.md). For now, the main working path is the repo-local CLI. A direct npm install experience is prepared but still waiting on the correct npm publish permission for the unscoped package name.
+That ecosystem architecture is now implemented inside `gutu-core` as:
+
+- generated first-party catalogs and compatibility channels
+- `gutu.lock.json` and `gutu.overrides.json`
+- `gutu add`, `gutu update`, `gutu vendor sync`, and `gutu ecosystem doctor`
+- generated `gutu-libraries` / `gutu-plugins` showcase exports
+- standalone repo scaffolding for future `gutula/gutu-lib-*` and `gutula/gutu-plugin-*` extraction waves
+
+Git submodules are not the default install path. Consumer workspaces use CLI-managed vendoring and lockfiles instead. The remaining follow-on work is public repo provisioning, remote signed artifact fetch, and full registry publish/promote flows. The current main working install path is still the repo-local CLI shown above.
 
 ### Practical rule of thumb
 
 - If you want to **start a real Gutu product today**, clone the repo and generate a clean workspace with `bun run gutu -- init`.
-- If you want to **consume individual framework packages later**, that becomes realistic once the package and registry publishing flow is formalized.
+- If you want to **compose first-party packages cleanly**, use `gutu add`, `gutu update`, `gutu vendor sync`, and `gutu.overrides.json` rather than submodules.
 
 ### Prerequisites
 
@@ -1124,6 +1150,7 @@ Or use a local server:
 dropdb --if-exists framework_platform_test
 createdb framework_platform_test
 TEST_POSTGRES_URL=postgresql:///framework_platform_test bun test framework/core/db-drizzle/tests/integration/postgres.test.ts
+TEST_POSTGRES_URL=postgresql:///framework_platform_test bun run test:migrations
 ```
 
 ---

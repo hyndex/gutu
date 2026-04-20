@@ -36,6 +36,7 @@ const foundationPlugins = [
   plugin("search-core", "foundations", "app", "Search Core", "Typed search indexing and query abstractions.", "search.documents", "SearchDocument", "index"),
   plugin("dashboard-core", "foundations", "app", "Dashboard Core", "Dashboard, widget, and saved view backbone.", "dashboard.views", "DashboardView", "publish"),
   plugin("portal-core", "foundations", "app", "Portal Core", "Portal shell and self-service entrypoint backbone.", "portal.accounts", "PortalAccount", "enable"),
+  plugin("booking-core", "foundations", "app", "Booking Core", "Reservations, booking holds, and conflict-safe resource allocation flows.", "booking.reservations", "BookingReservation", "stage", ["auth-core", "org-tenant-core", "role-policy-core", "audit-core", "portal-core"]),
   plugin("content-core", "foundations", "app", "Content Core", "Pages, posts, and content type backbone.", "content.entries", "ContentEntry", "publish"),
   plugin("page-builder-core", "foundations", "app", "Page Builder Core", "Layout, block, and builder canvas backbone.", "page-builder.layouts", "Layout", "compose"),
   plugin("knowledge-core", "foundations", "app", "Knowledge Core", "Knowledge base, docs, and article tree backbone.", "knowledge.articles", "KnowledgeArticle", "publish"),

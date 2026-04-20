@@ -40,6 +40,7 @@
     "!framework/**/artifacts/**",
     "!framework/**/node_modules",
     "!framework/**/node_modules/**",
+    "ecosystem/**/*",
     "tooling/scripts/**/*",
     "tooling/test/**/*",
     "docs/**/*",
@@ -76,6 +77,8 @@
     "test:contracts": "bun run tooling/scripts/workspace-task.mjs test:contracts",
     "test:migrations": "bun run tooling/scripts/workspace-task.mjs test:migrations",
     "db:render:postgres": "bun run tooling/scripts/render-postgres-assets.mjs",
+    "ecosystem:generate": "bun run tooling/scripts/generate-ecosystem-metadata.mjs",
+    "ecosystem:check": "bun run tooling/scripts/check-ecosystem-metadata.mjs",
     "coverage:report": "bun run tooling/scripts/workspace-coverage.mjs",
     "package:release": "bun run tooling/scripts/package-release-bundle.mjs",
     "verify:release-bundle": "bun run tooling/scripts/verify-release-bundle.mjs",
@@ -89,7 +92,7 @@
     "docs:index": "bun run gutu -- docs index --all --out docs/agent-understanding.index.json",
     "docs:truth": "bun run tooling/scripts/check-docs-truth.mjs",
     "docs:validate": "bun run gutu -- docs validate --all && bun run docs:truth",
-    "ci:check": "bun run build && bun run typecheck && bun run lint && bun run manifests:check && bun run docs:validate && bun run test && bun run test:integration && bun run test:contracts && bun run test:migrations && bun run test:e2e && bun run eval:gate",
+    "ci:check": "bun run build && bun run typecheck && bun run lint && bun run manifests:check && bun run ecosystem:check && bun run docs:validate && bun run test && bun run test:integration && bun run test:contracts && bun run test:migrations && bun run test:e2e && bun run eval:gate",
     "prepublishOnly": "bun run build:npm:cli"
   },
   "devDependencies": {

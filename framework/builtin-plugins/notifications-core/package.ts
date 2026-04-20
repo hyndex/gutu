@@ -5,14 +5,30 @@ export default definePackage({
   kind: "app",
   version: "0.1.0",
   displayName: "Notifications Core",
-  description: "Outbound and in-app notifications.",
+  description: "Canonical outbound communication control plane with delivery endpoints, preferences, attempts, and local provider routes.",
   extends: [],
   dependsOn: ["auth-core","org-tenant-core","role-policy-core","audit-core"],
   optionalWith: [],
   conflictsWith: [],
-  providesCapabilities: ["notifications.messages"],
-  requestedCapabilities: ["ui.register.admin", "api.rest.mount", "data.write.notifications"],
-  ownsData: ["notifications.messages"],
+  providesCapabilities: [
+    "notifications.messages",
+    "notifications.message-attempts",
+    "notifications.delivery-endpoints",
+    "notifications.delivery-preferences"
+  ],
+  requestedCapabilities: [
+    "ui.register.admin",
+    "api.rest.mount",
+    "data.write.notifications",
+    "jobs.dispatch.notifications",
+    "events.publish.notifications"
+  ],
+  ownsData: [
+    "notifications.messages",
+    "notifications.message-attempts",
+    "notifications.delivery-endpoints",
+    "notifications.delivery-preferences"
+  ],
   extendsData: [],
   slotClaims: [],
   trustTier: "first-party",

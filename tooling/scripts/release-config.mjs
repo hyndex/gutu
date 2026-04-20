@@ -26,6 +26,7 @@ export const releaseBundleIncludedPaths = [
   "bun.lock",
   "bunfig.toml",
   "docs",
+  "ecosystem",
   "eslint.config.mjs",
   "framework",
   "ops",
@@ -38,6 +39,8 @@ export const releaseBundleIncludedPaths = [
 ];
 
 export const requiredReleasePathPrefixes = [
+  "ecosystem/catalog",
+  "ecosystem/channels",
   "framework/core/cli",
   "framework/core/kernel",
   "framework/libraries",

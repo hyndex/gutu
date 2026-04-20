@@ -16,7 +16,8 @@
     "typecheck": "bunx tsc -p tsconfig.json --noEmit",
     "lint": "bunx eslint .",
     "test": "bun test",
-    "test:unit": "bun test tests/unit"
+    "test:unit": "bun test tests/unit",
+    "test:migrations": "bun test tests/migrations"
   },
   "dependencies": {
     "@platform/kernel": "workspace:*"

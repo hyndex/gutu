@@ -2,6 +2,57 @@
 
 Historical entries may reference optional plugin packages that were part of earlier implementation waves before the repository was narrowed to the framework-only Git baseline.
 
+## 2026-04-21 00:45:00 IST - Split-repo ecosystem architecture baseline
+
+- Implemented the split-repo ecosystem baseline inside `gutu-core` instead of leaving it as a roadmap-only design.
+- Added the new core package:
+  - `framework/core/ecosystem`
+- Added ecosystem contracts and generated truth surfaces:
+  - first-party package catalog schema
+  - compatibility-channel schema
+  - `gutu.lock.json`
+  - `gutu.overrides.json`
+  - generated metadata under `ecosystem/catalog/*` and `ecosystem/channels/*`
+- Extended workspace/bootstrap behavior:
+  - `gutu init` now seeds `gutu.project.json`, `gutu.lock.json`, and `gutu.overrides.json`
+  - vendored consumer workspaces now sync first-party packages into `vendor/plugins/*` and `vendor/libraries/*`
+  - `vendor/framework/gutu` now acts as the core distribution plus the current source cache for compatibility-aware vendoring
+- Added new CLI ecosystem flows:
+  - `gutu add plugin <id>`
+  - `gutu add library <id>`
+  - `gutu update`
+  - `gutu vendor sync`
+  - `gutu override add/remove`
+  - `gutu ecosystem doctor`
+  - `gutu ecosystem export-catalogs`
+  - `gutu ecosystem scaffold-repo`
+- Added generated catalog/showcase export and standalone repo scaffolding aligned to:
+  - `gutula/gutu-core`
+  - `gutula/gutu-lib-<slug>`
+  - `gutula/gutu-plugin-<slug>`
+  - `gutula/gutu-libraries`
+  - `gutula/gutu-plugins`
+- Added ecosystem metadata verification in the root gate:
+  - `bun run ecosystem:generate`
+  - `bun run ecosystem:check`
+- Fixed two real regressions uncovered while hardening the flow:
+  - relative catalog source paths were resolving to the workspace root instead of the package path because of a shadowed `resolve()` helper
+  - symlink-mode vendoring broke under macOS `/private/tmp` path canonicalization until framework distribution links switched to absolute targets
+- Updated the architecture/truth surfaces:
+  - `README.md`
+  - `STATUS.md`
+  - `TASKS.md`
+  - `RISK_REGISTER.md`
+  - `TEST_MATRIX.md`
+  - `docs/ecosystem-cli-and-registries.md`
+  - `docs/ecosystem/2026-04-20-gutu-ecosystem-repo-architecture-todo.md`
+- Verification run for this wave:
+  - `bun test framework/core/ecosystem/tests/unit/package.test.ts`
+  - `bun test framework/core/kernel/tests/unit/manifest.test.ts`
+  - `bun test framework/core/cli/tests/unit/package.test.ts`
+  - `bun run ecosystem:generate`
+  - `bun run ecosystem:check`
+
 ## 2026-04-20 23:40:00 IST - Production-readiness audit hardening
 
 - Reconciled the external production-readiness audit against the live repository and implemented the repo-shipped hardening items end to end.
@@ -1046,3 +1097,8 @@ Historical entries may reference optional plugin packages that were part of earl
   - local tarball install + `./node_modules/.bin/gutu init ./sample --framework-mode copy`
   - attempted `npm publish --access public` for `gutu` and received `403 Forbidden`
   - `npm view @dikibhuyan/moki deprecated`
+
+2026-04-21 00:35:00 IST - Booking core substrate + live Postgres migration/invariant hardening
+- added @plugins/booking-core with canonical reservation actions/resources/policy/admin surface
+- added canonical Postgres reservation DDL helpers with exclusion-constraint enforcement
+- added live Postgres migration apply/rollback tests in @platform/migrate and live booking invariant tests

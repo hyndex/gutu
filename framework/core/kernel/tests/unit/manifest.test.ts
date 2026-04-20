@@ -113,4 +113,39 @@ describe("kernel manifest DSL", () => {
     expect(migration.kind).toBe("migration-pack");
     expect(migration.sourceSystem).toBe("shopify");
   });
+
+  it("accepts optional ecosystem source and distribution metadata", () => {
+    const manifest = definePackage({
+      id: "notifications-core",
+      kind: "app",
+      version: "0.1.0",
+      displayName: "Notifications Core",
+      description: "Outbound communication control plane.",
+      compatibility: {
+        framework: "^0.1.0",
+        runtime: "bun>=1.3.12",
+        db: ["postgres", "sqlite"]
+      },
+      source: {
+        repo: {
+          owner: "gutula",
+          name: "gutu-plugin-notifications-core",
+          url: "https://github.com/gutula/gutu-plugin-notifications-core"
+        },
+        docsUrl: "https://github.com/gutula/gutu-plugin-notifications-core#readme"
+      },
+      distribution: {
+        channels: ["stable", "next"],
+        vendorPath: "vendor/plugins/notifications-core",
+        artifact: {
+          type: "source-snapshot",
+          path: "framework/builtin-plugins/notifications-core"
+        }
+      }
+    });
+
+    expect(manifest.source?.repo?.name).toBe("gutu-plugin-notifications-core");
+    expect(manifest.distribution?.channels).toEqual(["next", "stable"]);
+    expect(manifest.distribution?.artifact?.type).toBe("source-snapshot");
+  });
 });

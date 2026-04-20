@@ -31,6 +31,10 @@ import { adminContributions as aiCoreAdminContributions } from "@plugins/ai-core
 import { adminContributions as aiEvalsAdminContributions } from "@plugins/ai-evals";
 import { adminContributions as aiRagAdminContributions } from "@plugins/ai-rag";
 import { adminContributions as dashboardAdminContributions } from "@plugins/dashboard-core";
+import {
+  adminContributions as notificationsAdminContributions,
+  uiSurface as notificationsCoreUiSurface
+} from "@plugins/notifications-core";
 import { adminContributions as pageBuilderAdminContributions, pageBuilderZone } from "@plugins/page-builder-core";
 
 type ProfileName = "admin" | "viewer" | "support";
@@ -148,6 +152,9 @@ const profilePermissions = {
     "ai.evals.read",
     "ai.evals.run",
     "ai.reports.read",
+    "notifications.messages.read",
+    "notifications.delivery-endpoints.read",
+    "notifications.delivery-preferences.read",
     "ui.shell.admin",
     "portal.profile.read",
     "site.help.read"
@@ -176,6 +183,9 @@ const profilePermissions = {
     "ai.memory.read",
     "ai.evals.read",
     "ai.reports.read",
+    "notifications.messages.read",
+    "notifications.delivery-endpoints.read",
+    "notifications.delivery-preferences.read",
     "ui.shell.admin",
     "portal.profile.read",
     "site.help.read"
@@ -216,6 +226,7 @@ export function createShellHarnessRegistry(): UiRegistry {
       widgets: []
     })
   );
+  registry = registerUiSurface(registry, notificationsCoreUiSurface);
 
   return registerZone(registry, pageBuilderZone);
 }
@@ -226,6 +237,7 @@ function createAdminRegistry(legacyRegistry: UiRegistry) {
       workspaces: [
         ...dashboardAdminContributions.workspaces,
         ...aiCoreAdminContributions.workspaces,
+        ...notificationsAdminContributions.workspaces,
         ...pageBuilderAdminContributions.workspaces
       ],
       nav: [
@@ -233,6 +245,7 @@ function createAdminRegistry(legacyRegistry: UiRegistry) {
         ...aiCoreAdminContributions.nav,
         ...aiRagAdminContributions.nav,
         ...aiEvalsAdminContributions.nav,
+        ...notificationsAdminContributions.nav,
         ...pageBuilderAdminContributions.nav
       ],
       pages: [
@@ -240,6 +253,7 @@ function createAdminRegistry(legacyRegistry: UiRegistry) {
         ...aiCoreAdminContributions.pages,
         ...aiRagAdminContributions.pages,
         ...aiEvalsAdminContributions.pages,
+        ...notificationsAdminContributions.pages,
         ...pageBuilderAdminContributions.pages
       ],
       widgets: [
@@ -259,13 +273,15 @@ function createAdminRegistry(legacyRegistry: UiRegistry) {
         ...aiCoreAdminContributions.commands,
         ...aiRagAdminContributions.commands,
         ...aiEvalsAdminContributions.commands,
+        ...notificationsAdminContributions.commands,
         ...pageBuilderAdminContributions.commands
       ],
       searchProviders: [
         ...dashboardAdminContributions.searchProviders,
         ...aiCoreAdminContributions.searchProviders,
         ...aiRagAdminContributions.searchProviders,
-        ...aiEvalsAdminContributions.searchProviders
+        ...aiEvalsAdminContributions.searchProviders,
+        ...notificationsAdminContributions.searchProviders
       ],
       builders: [
         ...dashboardAdminContributions.builders,
@@ -370,12 +386,16 @@ function featureLinksForProfile(providers: ShellProviderContract): Array<{ href:
     { href: "/admin/workspace/ai", label: "AI Workspace", permission: "ai.runs.read" },
     { href: "/admin/ai/runs", label: "Agent Runs", permission: "ai.runs.read" },
     { href: "/admin/reports/ai-run-usage", label: "AI Usage Report", permission: "ai.reports.read" },
+    { href: "/admin/communications/messages", label: "Communication Messages", permission: "notifications.messages.read" },
+    { href: "/admin/communications/endpoints", label: "Communication Endpoints", permission: "notifications.delivery-endpoints.read" },
+    { href: "/admin/communications/health", label: "Communication Health", permission: "notifications.messages.read" },
     { href: "/admin/tools/report-builder", label: "Report Builder", permission: "dashboard.builders.use" },
     { href: "/admin/tools/chart-studio", label: "Chart Studio", permission: "dashboard.builders.use" },
     { href: "/admin/tools/job-monitor", label: "Job Monitor", permission: "jobs.monitor.read" },
     { href: "/admin/tools/plugin-health", label: "Plugin Health", permission: "plugins.health.read" },
     { href: "/admin/tools/page-builder", label: "Page Builder", permission: "page-builder.use" },
     { href: "/apps/page-builder", label: "Page Builder Zone", permission: "page-builder.use" },
+    { href: "/admin/notifications-core", label: "Notifications Core", permission: "notifications.messages.read" },
     { href: "/admin/plugins/restricted-preview", label: "Restricted Preview", permission: "plugins.review.read" },
     { href: "/admin/settings", label: "Admin Settings", permission: "admin.settings.read" },
     { href: "/portal/profile", label: "Portal Profile", permission: "portal.profile.read" },

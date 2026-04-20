@@ -15,6 +15,25 @@
 - [x] Record initial repository state and environment limitations.
 - [ ] Reconcile the implementation continuously against the docs before each major phase.
 
+## Phase 22 - Communication baseline hardening
+
+- [x] Add the built-in `@platform/communication` library.
+  - [x] model normalized drafts, routes, compiled payloads, retry decisions, callback events, and idempotency helpers
+  - [x] compile `email` via `@platform/email-templates`
+  - [x] compile `sms`, `push`, and `in-app` through the shared communication registry
+  - [x] ship deterministic local/test providers for success, callback, timeout, transient-failure, and permanent-failure paths
+- [x] Harden `notifications-core` into the canonical communication substrate.
+  - [x] add delivery endpoint, delivery preference, message, and message-attempt models/resources
+  - [x] add `queue`, `retry`, `cancel`, `test-send`, endpoint registration, and preference upsert actions
+  - [x] preserve `/admin/notifications-core` while adding `/admin/communications/messages|attempts|endpoints|preferences|health`
+  - [x] preserve immutable destination snapshots on message records
+  - [x] enforce digest eligibility for `email` and `in-app` only
+- [x] Add persistence and operational hardening for the communication baseline.
+  - [x] add Postgres DDL helpers and rollback helpers for communication tables/indexes
+  - [x] add communication workspace coverage to `@apps/platform-dev-console`
+  - [x] add lifecycle integration coverage for queue, dispatch, suppression, retry, callback reconciliation, and cancel flows
+- [ ] Follow on with real third-party communication connectors and inbound delivery handling outside the framework baseline.
+
 ## Phase 1 - Workspace / monorepo foundation
 
 - [x] Create Bun-based monorepo structure:
@@ -338,24 +357,26 @@
 
 ## Ecosystem Program - CLI, registries, and package distribution
 
-- [ ] Stage E0 - Lock the ecosystem architecture and clean package-install model.
+- [x] Stage E0 - Lock the ecosystem architecture and clean package-install model.
   - [x] confirm the repository taxonomy is already split into framework core, framework libraries, built-in plugins, and optional plugins
   - [x] document the clean structure, CLI model, registry tiers, vendoring/cache model, and lockfile direction in `docs/ecosystem-cli-and-registries.md`
-  - [ ] ratify the exact project metadata files:
-    - [ ] `platform.project.json`
-    - [ ] `platform.lock`
-    - [ ] `.platform/state/*`
-  - [ ] ratify the exact install destinations:
-    - [ ] `vendor/plugins/*`
-    - [ ] `vendor/libraries/*`
-    - [ ] `.platform/cache/*`
+  - [x] ratify the exact project metadata files:
+    - [x] `gutu.project.json`
+    - [x] `gutu.lock.json`
+    - [x] `gutu.overrides.json`
+    - [x] `.gutu/state/*`
+  - [x] ratify the exact install destinations:
+    - [x] `vendor/framework/gutu`
+    - [x] `vendor/plugins/*`
+    - [x] `vendor/libraries/*`
+    - [x] `.gutu/cache/*`
 - [ ] Stage E1 - Create the root CLI package.
   - [x] create `@platform/cli`
   - [x] expose the `platform` terminal binary
   - [ ] move existing build/test/doctor/graph/status entrypoints behind the CLI
 - [ ] Stage E2 - Implement project/bootstrap/scaffolding commands.
   - [ ] `platform new`
-  - [ ] `gutu init`
+  - [x] `gutu init`
   - [ ] `platform make plugin`
   - [ ] `platform make library`
   - [ ] `platform make app`
@@ -363,16 +384,18 @@
   - [ ] `platform make migration-pack`
   - [ ] `platform make bundle`
   - [x] `gutu make ai-pack`
-- [ ] Stage E3 - Implement local registry and lockfile workflows.
-  - [ ] local file-backed registry index
-  - [ ] `platform plugin install ./path`
-  - [ ] `platform library add ./path`
-  - [ ] deterministic lockfile writes and integrity snapshots
-- [ ] Stage E4 - Implement vendoring and cache resolution.
-  - [ ] vendored plugin installs
-  - [ ] vendored library installs
-  - [ ] cached installs under `.platform/cache/*`
-  - [ ] deterministic unpacking and digest verification
+- [x] Stage E3 - Implement local lockfile and override workflows.
+  - [x] generated first-party ecosystem catalog + compatibility channels
+  - [x] `gutu.lock.json` writes with deterministic resolved package state
+  - [x] `gutu.overrides.json` writes for maintainer-local repo overrides
+  - [x] ecosystem doctor checks for integrity, compatibility drift, and missing sources
+- [ ] Stage E4 - Implement vendoring and source-cache resolution.
+  - [x] vendored plugin installs
+  - [x] vendored library installs
+  - [x] deterministic vendored digests and compatibility-channel resolution
+  - [x] generated catalog export for `gutu-libraries` and `gutu-plugins`
+  - [x] standalone repo scaffolding for pilot extraction waves
+  - [ ] remote artifact fetch replacing the local framework source cache
 - [ ] Stage E5 - Implement private/org registry workflows.
   - [ ] `platform registry login`
   - [ ] `platform registry publish`
@@ -608,7 +631,7 @@ This phase originally included a much larger optional plugin catalog. The shippe
 - [ ] Expand integration coverage across DB/auth/API/plugin activation.
 - [ ] Expand contract coverage across manifests/OpenAPI/AI tools/bundles.
 - [x] Expand security coverage across permissions/egress/secrets/DB denial.
-- [ ] Add migration regression suites.
+- [x] Add migration regression suites.
 - [ ] Add concurrency/edge suites:
   - [x] booking double allocation
   - [x] duplicate activation

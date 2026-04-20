@@ -26,6 +26,7 @@
     "@platform/agent-understanding": "workspace:*",
     "@platform/ai-guardrails": "workspace:*",
     "@platform/ai-mcp": "workspace:*",
+    "@platform/ecosystem": "workspace:*",
     "@plugins/ai-core": "workspace:*",
     "@plugins/ai-evals": "workspace:*",
     "@plugins/ai-rag": "workspace:*"

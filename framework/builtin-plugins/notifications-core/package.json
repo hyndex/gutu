@@ -20,9 +20,12 @@
     "test:contracts": "bun test tests/contracts"
   },
   "dependencies": {
+    "@platform/admin-contracts": "workspace:*",
+    "@platform/communication": "workspace:*",
+    "@platform/email-templates": "workspace:*",
     "@platform/kernel": "workspace:*",
-    "@platform/schema": "workspace:*",
     "@platform/permissions": "workspace:*",
+    "@platform/schema": "workspace:*",
     "@platform/ui-shell": "workspace:*",
     "@plugins/auth-core": "workspace:*",
     "@plugins/org-tenant-core": "workspace:*",

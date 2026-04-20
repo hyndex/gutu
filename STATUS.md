@@ -9,6 +9,9 @@
 
 ## Current Phase
 
+- `Phase 23 - split-repo ecosystem architecture baseline complete inside gutu-core`
+- `Phase 22 - communication baseline library and notifications-core hardening complete`
+- `Phase 21 - booking-core and Postgres migration/invariant hardening complete`
 - `Phase 20 - production-readiness audit hardening complete for repo-shipped surfaces`
 - `Phase 19 - Gutu rename and public package transition complete`
 - `Phase 18 - first public npm distribution live`
@@ -16,7 +19,7 @@
 - `Phase 16 - framework-only distribution cleanup and documentation reconciliation in progress`
 - `Admin Desk Program - Stage A6 complete`
 - `Admin UI Stack Alignment - Stage S5 complete`
-- `Ecosystem Program - Stage E1 partially complete`
+- `Ecosystem Program - Stage E4 partial`
 - `Native AI-Agent Platform Program - Stage AI3 complete, Stage AI4 partial`
 - `Agent Understanding Program - Stage U3 complete, Stage U4 partial`
 
@@ -38,6 +41,52 @@
 
 ## Completed Milestones
 
+- Closed the split-repo ecosystem architecture baseline inside `gutu-core`:
+  - added the new `@platform/ecosystem` package with catalog, compatibility-channel, lockfile, override, vendoring, and repo-scaffolding contracts
+  - generated and now ship canonical ecosystem metadata under:
+    - `ecosystem/catalog/first-party-packages.json`
+    - `ecosystem/channels/stable.json`
+    - `ecosystem/channels/next.json`
+  - extended `gutu init` to seed `gutu.lock.json`, `gutu.overrides.json`, and a compatibility-aware vendoring model for `vendor/plugins/*` and `vendor/libraries/*`
+  - added CLI ecosystem flows for `gutu add`, `gutu update`, `gutu vendor sync`, `gutu override add/remove`, `gutu ecosystem doctor`, `gutu ecosystem export-catalogs`, and `gutu ecosystem scaffold-repo`
+  - locked the repo-naming strategy around:
+    - `gutula/gutu-core`
+    - `gutula/gutu-lib-<slug>`
+    - `gutula/gutu-plugin-<slug>`
+    - `gutula/gutu-libraries`
+    - `gutula/gutu-plugins`
+  - formalized that git submodules are not the default consumer model; lockfiles plus CLI-managed vendoring are
+  - verification passed for:
+    - `bun test framework/core/ecosystem/tests/unit/package.test.ts`
+    - `bun test framework/core/kernel/tests/unit/manifest.test.ts`
+    - `bun test framework/core/cli/tests/unit/package.test.ts`
+    - `bun run ecosystem:generate`
+    - `bun run ecosystem:check`
+- Closed the communication baseline hardening wave for repo-shipped surfaces:
+  - added the built-in `@platform/communication` library with email/sms/push/in-app draft compilation, route contracts, deterministic local providers, retry helpers, callback normalization, and idempotency helpers
+  - expanded `@plugins/notifications-core` into the canonical outbound communication control plane with messages, attempts, endpoints, preferences, queue/retry/cancel/test-send actions, Postgres DDL helpers, and `/admin/communications/*` admin workspace contributions
+  - wired the compatibility route `/admin/notifications-core` and added communications coverage to the platform dev-console harness
+  - preserved the framework scope boundary so the baseline ships local/test providers only while real third-party provider connectors remain follow-on connector work
+  - verification passed for:
+    - `bun test framework/libraries/communication/tests/unit/package.test.ts`
+    - `bun test framework/builtin-plugins/notifications-core/tests/unit/package.test.ts`
+    - `bun test framework/builtin-plugins/notifications-core/tests/contracts/ui-surface.test.ts`
+    - `bun test framework/builtin-plugins/notifications-core/tests/integration/delivery-lifecycle.test.ts`
+    - `bun run apps/platform-dev-console/tests/e2e/run-shell-harness.ts`
+    - `bunx tsc -p framework/libraries/communication/tsconfig.json --noEmit`
+    - `bunx tsc -p framework/builtin-plugins/notifications-core/tsconfig.json --noEmit`
+    - `bunx tsc -p apps/platform-dev-console/tsconfig.json --noEmit`
+- Closed the remaining Stage 8 persistence and migration gaps for the framework-shipped scope:
+  - added the built-in `@plugins/booking-core` package with manifest, resource, actions, policy, admin surface, and canonical Postgres reservation DDL helpers
+  - added live Postgres migration apply/rollback coverage in `@platform/migrate`
+  - added live Postgres booking overlap/invariant coverage proving held/confirmed collisions fail while adjacent or cancelled windows remain reusable
+  - updated the workspace scaffolder and repo docs so `booking-core` is now reflected as a shipped foundation instead of only an aspirational name in planning docs
+  - verification passed for:
+    - `bun test framework/builtin-plugins/booking-core/tests/unit/package.test.ts`
+    - `bun test framework/builtin-plugins/booking-core/tests/contracts/ui-surface.test.ts`
+    - `TEST_POSTGRES_URL=postgresql://postgres@127.0.0.1:<port>/postgres bun test framework/core/migrate/tests/migrations/postgres.test.ts`
+    - `TEST_POSTGRES_URL=postgresql://postgres@127.0.0.1:<port>/postgres bun test framework/builtin-plugins/booking-core/tests/migrations/postgres.test.ts`
+    - `TEST_POSTGRES_URL=postgresql://postgres@127.0.0.1:<port>/postgres bun run test:migrations`
 - Closed the 2026-04-20 production-readiness audit wave for repo-shipped surfaces:
   - release bundle verification now checks the real `framework/` tree and shared artifact naming
   - manifest boundary checks and docs truth audits are wired into root verification
@@ -399,6 +448,7 @@
 - AI note: the built-in AI packs now persist local operator/control-plane state under `.gutu/state`, but deeper DB/workflow-backed multi-node durability is still a follow-on task.
 - AI note: `gutu mcp serve` now runs a governed stdio MCP server, but external connector lifecycle management remains a follow-on task.
 - Understanding note: docs validation is green for required doc-pack coverage, but the repo still emits warning-level findings for legacy packages whose inline resource/action/field semantics have not yet been deeply backfilled.
+- Booking note: DB-backed reservation overlap protection and Postgres migration rollback coverage are now implemented; the remaining booking follow-on is browser-level booking/product flow E2E rather than data-integrity substrate work.
 
 ## Next Actions
 
@@ -406,7 +456,7 @@
 2. Expand `@platform/cli` beyond AI-native flows into the full workspace/runtime orchestration surface.
 3. Move the locally persisted AI/admin control-plane state from file-backed durability into DB/workflow-backed runtime state where multi-node correctness matters.
 4. Add governed external MCP connector lifecycle management and provider-backed AI connector coverage.
-5. Add deeper Postgres migration orchestration and DB-backed booking-concurrency verification when those concrete repository surfaces land.
+5. Add browser-level booking/operator E2E once a fuller booking UX flow lands on top of `booking-core`.
 6. Then resume the deferred plugin/business wave on top of the governed AI and ecosystem tooling.
 
 ## Latest Test Summary

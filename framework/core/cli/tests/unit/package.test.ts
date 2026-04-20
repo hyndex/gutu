@@ -1,4 +1,4 @@
-import { lstatSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { PassThrough } from "node:stream";
@@ -157,6 +157,8 @@ describe("platform cli", () => {
     expect(exitCode).toBe(0);
     expect(readFileSync(join(target, "package.json"), "utf8")).toContain('"name": "@workspace/sample-product"');
     expect(readFileSync(join(target, "package.json"), "utf8")).toContain('"gutu": "bun run vendor/framework/gutu/framework/core/cli/src/bin.ts"');
+    expect(readFileSync(join(target, "package.json"), "utf8")).not.toContain('vendor/framework/gutu/framework/libraries/*');
+    expect(readFileSync(join(target, "package.json"), "utf8")).not.toContain('vendor/framework/gutu/framework/builtin-plugins/*');
     expect(readFileSync(join(target, "plugins", "sample-product-core", "package.ts"), "utf8")).toContain('id: "sample-product-core"');
     expect(readFileSync(join(target, "plugins", "sample-product-core", "docs", "AGENT_CONTEXT.md"), "utf8")).toContain(
       "Sample Product Core"
@@ -166,8 +168,76 @@ describe("platform cli", () => {
       "Sample Product Studio"
     );
     expect(readFileSync(join(target, "gutu.project.json"), "utf8")).toContain('"name": "sample-product"');
-    expect(lstatSync(join(target, "vendor", "framework", "gutu", "framework")).isSymbolicLink()).toBe(true);
+    expect(readFileSync(join(target, "gutu.lock.json"), "utf8")).toContain('"compatibilityChannel": "stable"');
+    expect(readFileSync(join(target, "gutu.overrides.json"), "utf8")).toContain('"formatVersion": 1');
+    expect(lstatSync(join(target, "vendor", "framework", "gutu", "framework", "core")).isSymbolicLink()).toBe(true);
+    expect(readFileSync(join(target, "vendor", "plugins", "auth-core", "package.json"), "utf8")).toContain('"name": "@plugins/auth-core"');
+    expect(readFileSync(join(target, "vendor", "libraries", "admin-contracts", "package.json"), "utf8")).toContain('"name": "@platform/admin-contracts"');
     expect(io.readStdout()).toContain('"starterPluginId": "sample-product-core"');
+  });
+
+  it("adds vendored ecosystem packages, supports local overrides, and validates workspace health", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "gutu-ecosystem-workspace-"));
+    const target = join(cwd, "sample-product");
+    const initIo = createMemoryIo(repoRoot);
+
+    expect(await runCli(["init", target, "--framework-mode", "copy"], initIo)).toBe(0);
+
+    const addIo = createMemoryIo(target);
+    expect(await runCli(["add", "library", "communication"], addIo)).toBe(0);
+    expect(readFileSync(join(target, "vendor", "libraries", "communication", "package.json"), "utf8")).toContain(
+      '"name": "@platform/communication"'
+    );
+    expect(readFileSync(join(target, "gutu.lock.json"), "utf8")).toContain('"communication"');
+
+    const overrideSource = join(cwd, "gutu-lib-communication");
+    mkdirSync(join(overrideSource, "src"), { recursive: true });
+    writeFileSync(
+      join(overrideSource, "package.json"),
+      JSON.stringify({ name: "@platform/communication", version: "9.9.9", type: "module" }, null, 2)
+    );
+    writeFileSync(join(overrideSource, "src", "index.ts"), 'export const override = "communication";\n');
+
+    const overrideIo = createMemoryIo(target);
+    expect(
+      await runCli(["override", "add", "--package", "communication", "--path", overrideSource], overrideIo)
+    ).toBe(0);
+    expect(readFileSync(join(target, "gutu.overrides.json"), "utf8")).toContain(overrideSource);
+
+    const syncIo = createMemoryIo(target);
+    expect(await runCli(["vendor", "sync"], syncIo)).toBe(0);
+    expect(readFileSync(join(target, "vendor", "libraries", "communication", "src", "index.ts"), "utf8")).toContain(
+      'override = "communication"'
+    );
+
+    const doctorIo = createMemoryIo(target);
+    expect(await runCli(["ecosystem", "doctor"], doctorIo)).toBe(0);
+    expect(doctorIo.readStdout()).toContain('"ok": true');
+
+    const removeOverrideIo = createMemoryIo(target);
+    expect(await runCli(["override", "remove", "--package", "communication"], removeOverrideIo)).toBe(0);
+    expect(readFileSync(join(target, "gutu.overrides.json"), "utf8")).not.toContain(overrideSource);
+  });
+
+  it("exports ecosystem catalogs and scaffolds standalone repo snapshots", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "gutu-ecosystem-export-"));
+    const catalogsDir = join(cwd, "catalogs");
+    const repoDir = join(cwd, "repo");
+
+    const catalogIo = createMemoryIo(repoRoot);
+    expect(await runCli(["ecosystem", "export-catalogs", "--out", catalogsDir], catalogIo)).toBe(0);
+    expect(readFileSync(join(catalogsDir, "gutu-libraries", "README.md"), "utf8")).toContain("Gutu Libraries");
+    expect(readFileSync(join(catalogsDir, "gutu-plugins", "catalog.json"), "utf8")).toContain("notifications-core");
+
+    const repoIo = createMemoryIo(repoRoot);
+    expect(
+      await runCli(["ecosystem", "scaffold-repo", "--package", "notifications-core", "--out", repoDir], repoIo)
+    ).toBe(0);
+    expect(readFileSync(join(repoDir, "package.json"), "utf8")).toContain('"name": "@plugins/notifications-core"');
+    expect(readFileSync(join(repoDir, ".github", "workflows", "ci.yml"), "utf8")).toContain("bun run test");
+    expect(readFileSync(join(repoDir, ".github", "workflows", "release.yml"), "utf8")).toContain("workflow_dispatch");
+    expect(readFileSync(join(repoDir, ".github", "dependabot.yml"), "utf8")).toContain("package-ecosystem: npm");
+    expect(readFileSync(join(repoDir, "README.md"), "utf8")).toContain("Notifications Core");
   });
 
   it("indexes and validates understanding docs for a known target", async () => {

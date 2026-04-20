@@ -35,6 +35,15 @@ import {
   scaffoldUnderstandingDocs,
   validateUnderstandingDocs
 } from "./understanding";
+import {
+  addWorkspaceEcosystemPackage,
+  addWorkspaceOverride,
+  doctorWorkspaceEcosystem,
+  exportEcosystemCatalogs,
+  removeWorkspaceOverride,
+  scaffoldEcosystemPackageRepository,
+  updateWorkspaceEcosystem
+} from "./ecosystem";
 import { initGutuWorkspace } from "./project";
 
 export const packageId = "cli" as const;
@@ -71,6 +80,73 @@ export async function runCli(argv: string[], io: CliIo): Promise<number> {
           force: readFlag(initArgs, "--force", "false") === "true"
         })
       );
+    }
+
+    if (command === "add" && (subcommand === "plugin" || subcommand === "library")) {
+      const packageId = readPositionalArg(rest);
+      if (!packageId) {
+        return commandFailure(io, `Missing package id for 'gutu add ${subcommand}'.`);
+      }
+
+      return commandSuccess(io, addWorkspaceEcosystemPackage(io.cwd, subcommand, packageId));
+    }
+
+    if (command === "update") {
+      const updateArgs = [subcommand, ...rest].filter((entry): entry is string => Boolean(entry));
+      return commandSuccess(
+        io,
+        updateWorkspaceEcosystem(io.cwd, {
+          packageId: optionalFlag(updateArgs, "--package"),
+          channelId: optionalFlag(updateArgs, "--channel")
+        })
+      );
+    }
+
+    if (command === "vendor" && subcommand === "sync") {
+      return commandSuccess(io, updateWorkspaceEcosystem(io.cwd));
+    }
+
+    if (command === "override" && subcommand === "add") {
+      const packageId = readFlag(rest, "--package", "");
+      const overridePath = readFlag(rest, "--path", "");
+      if (!packageId || !overridePath) {
+        return commandFailure(io, "Missing required flags --package and --path for `gutu override add`.");
+      }
+
+      return commandSuccess(io, addWorkspaceOverride(io.cwd, packageId, overridePath));
+    }
+
+    if (command === "override" && subcommand === "remove") {
+      const packageId = readFlag(rest, "--package", "");
+      if (!packageId) {
+        return commandFailure(io, "Missing required flag --package for `gutu override remove`.");
+      }
+
+      return commandSuccess(io, removeWorkspaceOverride(io.cwd, packageId));
+    }
+
+    if (command === "ecosystem" && subcommand === "doctor") {
+      const result = doctorWorkspaceEcosystem(io.cwd);
+      return result.ok ? commandSuccess(io, result) : commandFailure(io, JSON.stringify(result, null, 2));
+    }
+
+    if (command === "ecosystem" && subcommand === "export-catalogs") {
+      const outDir = optionalFlag(rest, "--out");
+      if (!outDir) {
+        return commandFailure(io, "Missing required flag --out for `gutu ecosystem export-catalogs`.");
+      }
+
+      return commandSuccess(io, exportEcosystemCatalogs(io.cwd, resolve(io.cwd, outDir)));
+    }
+
+    if (command === "ecosystem" && subcommand === "scaffold-repo") {
+      const packageId = readFlag(rest, "--package", "");
+      const outDir = readFlag(rest, "--out", "");
+      if (!packageId || !outDir) {
+        return commandFailure(io, "Missing required flags --package and --out for `gutu ecosystem scaffold-repo`.");
+      }
+
+      return commandSuccess(io, scaffoldEcosystemPackageRepository(io.cwd, packageId, resolve(io.cwd, outDir)));
     }
 
     if (command === "docs" && subcommand === "scaffold") {
@@ -370,6 +446,24 @@ function readInitTarget(args: string[]): string | undefined {
   return undefined;
 }
 
+function readPositionalArg(args: string[]): string | undefined {
+  for (let index = 0; index < args.length; index += 1) {
+    const entry = args[index];
+    if (!entry) {
+      continue;
+    }
+
+    if (entry.startsWith("--")) {
+      index += 1;
+      continue;
+    }
+
+    return entry;
+  }
+
+  return undefined;
+}
+
 function optionalFlag(args: string[], flag: string): string | undefined {
   const index = args.indexOf(flag);
   return index === -1 ? undefined : args[index + 1];
@@ -403,6 +497,15 @@ function write(stream: CliIo["stdout"] | CliIo["stderr"], text: string) {
 function helpText(): string {
   return [
     "gutu init [target] [--framework-source <path>] [--framework-mode symlink|copy] [--force true|false]",
+    "gutu add plugin <id>",
+    "gutu add library <id>",
+    "gutu update [--package <id>] [--channel <id>]",
+    "gutu vendor sync",
+    "gutu override add --package <id> --path <path>",
+    "gutu override remove --package <id>",
+    "gutu ecosystem doctor",
+    "gutu ecosystem export-catalogs --out <path>",
+    "gutu ecosystem scaffold-repo --package <id> --out <path>",
     "gutu docs scaffold [--all | --target <path-or-id>] [--overwrite true|false]",
     "gutu docs index [--all | --target <path-or-id>] [--out <path>]",
     "gutu docs validate [--all | --target <path-or-id>] [--strict true|false]",

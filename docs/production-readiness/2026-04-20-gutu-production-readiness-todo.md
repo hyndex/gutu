@@ -58,12 +58,12 @@ Status: substantially complete with explicit residual follow-ons
 
 ## Stage 8. Persistence, Migrations, And Invariants
 
-- [ ] Add deeper Postgres migration apply/rollback orchestration coverage.
-- [ ] Add DB-backed reservation integrity protection for booking concurrency.
-- [ ] Add integration coverage proving the booking concurrency invariant at the database layer.
+- [x] Add deeper Postgres migration apply/rollback orchestration coverage.
+- [x] Add DB-backed reservation integrity protection for booking concurrency.
+- [x] Add integration coverage proving the booking concurrency invariant at the database layer.
 
-Residual note:
-This repository does not currently contain a concrete DB-backed booking writer or reservation-ledger implementation to harden in this wave, so those items remain explicitly open instead of being hand-waved as complete.
+Completion note:
+This wave now ships a concrete `booking-core` package, canonical Postgres reservation DDL helpers, live migration apply/rollback coverage in `@platform/migrate`, and live Postgres invariant tests that prove overlapping active reservations are rejected while adjacent or cancelled windows remain reusable.
 
 ## Stage 9. Governance And Enterprise Readiness Docs
 
@@ -79,3 +79,14 @@ This repository does not currently contain a concrete DB-backed booking writer o
 - [x] Run the end-to-end root verification and release-gate commands.
 - [x] Update this tracker with final completion state and any residual risk that is still honestly open.
 - [x] Update the repo status/risk ledgers to match the new implementation reality.
+
+## Stage 11. Ecosystem Repo Architecture Baseline
+
+- [x] Add the split-repo ecosystem contract package, lockfile model, and compatibility metadata generation.
+- [x] Extend `gutu init` and workspace vendoring so consumer workspaces use `gutu.lock.json`, `gutu.overrides.json`, `vendor/plugins/*`, and `vendor/libraries/*`.
+- [x] Add CLI ecosystem flows for add/update/vendor sync/override/doctor/catalog export/repo scaffolding.
+- [x] Generate and verify canonical ecosystem metadata under `ecosystem/catalog/*` and `ecosystem/channels/*`.
+- [x] Update repo truth surfaces to formalize the no-submodule default and the `gutula/*` repo naming model.
+
+Completion note:
+This wave makes the split-repo ecosystem architecture real inside `gutu-core`: consumer workspaces are now lockfile-driven, vendored, compatibility-aware, and able to export catalog/showcase repos plus standalone package repo snapshots without relying on git submodules as the default install model.

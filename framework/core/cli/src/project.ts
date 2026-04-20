@@ -3,6 +3,8 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 
 import { createUnderstandingDocPack } from "@platform/agent-understanding";
 
+import { bootstrapWorkspaceEcosystem } from "./ecosystem";
+
 export type InitWorkspaceOptions = {
   target: string;
   frameworkSource?: string | undefined;
@@ -21,8 +23,11 @@ export type InitWorkspaceResult = {
   warnings?: string[] | undefined;
 };
 
-const frameworkDistributionEntries = [
-  "framework",
+export const frameworkDistributionEntries = [
+  "ecosystem",
+  "framework/core",
+  "framework/libraries",
+  "framework/builtin-plugins",
   "tooling",
   "docs",
   "README.md",
@@ -66,6 +71,7 @@ export function initGutuWorkspace(cwd: string, options: InitWorkspaceOptions): I
     starterPluginId,
     starterAppId
   });
+  bootstrapWorkspaceEcosystem(projectRoot);
 
   return {
     ok: true,
@@ -88,7 +94,7 @@ export function resolveDefaultFrameworkMode(platform = process.platform): "symli
   return platform === "win32" ? "copy" : "symlink";
 }
 
-function detectFrameworkSourceRoot(): string {
+export function detectFrameworkSourceRoot(): string {
   let cursor = resolve(import.meta.dir);
 
   for (let depth = 0; depth < 8; depth += 1) {
@@ -180,8 +186,8 @@ function vendorFrameworkDistribution(projectRoot: string, frameworkSource: strin
     const targetPath = join(vendorRoot, entry);
 
     if (effectiveMode === "symlink") {
-      const relativeTarget = relative(dirname(targetPath), sourcePath) || ".";
-      symlinkSync(relativeTarget, targetPath, lstatSync(sourcePath).isDirectory() ? "dir" : "file");
+      mkdirSync(dirname(targetPath), { recursive: true });
+      symlinkSync(sourcePath, targetPath, lstatSync(sourcePath).isDirectory() ? "dir" : "file");
       continue;
     }
 
@@ -365,7 +371,7 @@ function writeProjectMetadata(
 }
 
 function createProjectPackageJson(projectName: string): string {
-  return `{\n  "name": "@workspace/${projectName}",\n  "private": true,\n  "type": "module",\n  "packageManager": "bun@1.3.12",\n  "workspaces": [\n    "apps/*",\n    "libraries/*",\n    "plugins/*",\n    "vendor/plugins/*",\n    "vendor/libraries/*",\n    "vendor/framework/gutu/framework/core/*",\n    "vendor/framework/gutu/framework/libraries/*",\n    "vendor/framework/gutu/framework/builtin-plugins/*"\n  ],\n  "scripts": {\n    "gutu": "bun run vendor/framework/gutu/framework/core/cli/src/bin.ts",\n    "platform": "bun run vendor/framework/gutu/framework/core/cli/src/bin.ts",\n    "build": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs build",\n    "typecheck": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs typecheck",\n    "lint": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs lint",\n    "test": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test",\n    "test:unit": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test:unit",\n    "test:integration": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test:integration",\n    "test:e2e": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test:e2e",\n    "test:contracts": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test:contracts",\n    "test:migrations": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test:migrations",\n    "coverage:report": "bun run vendor/framework/gutu/tooling/scripts/workspace-coverage.mjs",\n    "docs:scaffold": "bun run gutu -- docs scaffold --all",\n    "docs:index": "bun run gutu -- docs index --all --out docs/agent-understanding.index.json",\n    "docs:validate": "bun run gutu -- docs validate --all",\n    "ci:check": "bun run build && bun run typecheck && bun run lint && bun run docs:validate && bun run test && bun run test:integration && bun run test:contracts && bun run test:migrations && bun run test:e2e"\n  }\n}\n`;
+  return `{\n  "name": "@workspace/${projectName}",\n  "private": true,\n  "type": "module",\n  "packageManager": "bun@1.3.12",\n  "workspaces": [\n    "apps/*",\n    "libraries/*",\n    "plugins/*",\n    "vendor/plugins/*",\n    "vendor/libraries/*",\n    "vendor/framework/gutu/framework/core/*"\n  ],\n  "scripts": {\n    "gutu": "bun run vendor/framework/gutu/framework/core/cli/src/bin.ts",\n    "platform": "bun run vendor/framework/gutu/framework/core/cli/src/bin.ts",\n    "build": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs build",\n    "typecheck": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs typecheck",\n    "lint": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs lint",\n    "test": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test",\n    "test:unit": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test:unit",\n    "test:integration": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test:integration",\n    "test:e2e": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test:e2e",\n    "test:contracts": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test:contracts",\n    "test:migrations": "bun run vendor/framework/gutu/tooling/scripts/workspace-task.mjs test:migrations",\n    "coverage:report": "bun run vendor/framework/gutu/tooling/scripts/workspace-coverage.mjs",\n    "docs:scaffold": "bun run gutu -- docs scaffold --all",\n    "docs:index": "bun run gutu -- docs index --all --out docs/agent-understanding.index.json",\n    "docs:validate": "bun run gutu -- docs validate --all",\n    "vendor:sync": "bun run gutu -- vendor sync",\n    "ecosystem:doctor": "bun run gutu -- ecosystem doctor",\n    "ci:check": "bun run build && bun run typecheck && bun run lint && bun run docs:validate && bun run test && bun run test:integration && bun run test:contracts && bun run test:migrations && bun run test:e2e"\n  }\n}\n`;
 }
 
 function createProjectBunfig(): string {
@@ -377,7 +383,7 @@ function createProjectTsconfig(): string {
 }
 
 function createProjectTsconfigBase(): string {
-  return `{\n  "compilerOptions": {\n    "target": "ES2022",\n    "module": "ESNext",\n    "moduleResolution": "Bundler",\n    "moduleDetection": "force",\n    "lib": ["ES2023", "DOM", "DOM.Iterable"],\n    "jsx": "react-jsx",\n    "strict": true,\n    "noImplicitAny": true,\n    "noUncheckedIndexedAccess": true,\n    "noImplicitOverride": true,\n    "useUnknownInCatchVariables": true,\n    "exactOptionalPropertyTypes": true,\n    "forceConsistentCasingInFileNames": true,\n    "skipLibCheck": true,\n    "verbatimModuleSyntax": true,\n    "resolveJsonModule": true,\n    "allowSyntheticDefaultImports": true,\n    "esModuleInterop": true,\n    "declaration": true,\n    "declarationMap": true,\n    "sourceMap": true,\n    "incremental": true,\n    "types": ["bun-types", "node", "react", "react-dom"],\n    "baseUrl": ".",\n    "paths": {\n      "@platform/*": [\n        "vendor/framework/gutu/framework/core/*/src/index.ts",\n        "vendor/framework/gutu/framework/core/*/src/index.tsx",\n        "vendor/framework/gutu/framework/libraries/*/src/index.ts",\n        "vendor/framework/gutu/framework/libraries/*/src/index.tsx"\n      ],\n      "@plugins/*": [\n        "plugins/*/src/index.ts",\n        "plugins/*/src/index.tsx",\n        "vendor/plugins/*/src/index.ts",\n        "vendor/plugins/*/src/index.tsx",\n        "vendor/framework/gutu/framework/builtin-plugins/*/src/index.ts",\n        "vendor/framework/gutu/framework/builtin-plugins/*/src/index.tsx"\n      ],\n      "@apps/*": [\n        "apps/*/src/index.ts",\n        "apps/*/src/index.tsx"\n      ]\n    }\n  },\n  "exclude": [\n    "node_modules",\n    "dist",\n    "coverage",\n    "artifacts",\n    ".gutu"\n  ]\n}\n`;
+  return `{\n  "compilerOptions": {\n    "target": "ES2022",\n    "module": "ESNext",\n    "moduleResolution": "Bundler",\n    "moduleDetection": "force",\n    "lib": ["ES2023", "DOM", "DOM.Iterable"],\n    "jsx": "react-jsx",\n    "strict": true,\n    "noImplicitAny": true,\n    "noUncheckedIndexedAccess": true,\n    "noImplicitOverride": true,\n    "useUnknownInCatchVariables": true,\n    "exactOptionalPropertyTypes": true,\n    "forceConsistentCasingInFileNames": true,\n    "skipLibCheck": true,\n    "verbatimModuleSyntax": true,\n    "resolveJsonModule": true,\n    "allowSyntheticDefaultImports": true,\n    "esModuleInterop": true,\n    "declaration": true,\n    "declarationMap": true,\n    "sourceMap": true,\n    "incremental": true,\n    "types": ["bun-types", "node", "react", "react-dom"],\n    "baseUrl": ".",\n    "paths": {\n      "@platform/*": [\n        "vendor/framework/gutu/framework/core/*/src/index.ts",\n        "vendor/framework/gutu/framework/core/*/src/index.tsx",\n        "vendor/libraries/*/src/index.ts",\n        "vendor/libraries/*/src/index.tsx"\n      ],\n      "@plugins/*": [\n        "plugins/*/src/index.ts",\n        "plugins/*/src/index.tsx",\n        "vendor/plugins/*/src/index.ts",\n        "vendor/plugins/*/src/index.tsx"\n      ],\n      "@apps/*": [\n        "apps/*/src/index.ts",\n        "apps/*/src/index.tsx"\n      ]\n    }\n  },\n  "exclude": [\n    "node_modules",\n    "dist",\n    "coverage",\n    "artifacts",\n    ".gutu"\n  ]\n}\n`;
 }
 
 function createProjectManifestJson(projectName: string, frameworkMode: "symlink" | "copy"): string {
@@ -388,6 +394,11 @@ function createProjectManifestJson(projectName: string, frameworkMode: "symlink"
         name: "gutu",
         vendorPath: "vendor/framework/gutu",
         mode: frameworkMode
+      },
+      ecosystem: {
+        compatibilityChannel: "stable",
+        lockfile: "gutu.lock.json",
+        overrides: "gutu.overrides.json"
       },
       workspace: {
         appsDir: "apps",
@@ -411,7 +422,7 @@ function createGitignore(): string {
 
 function createProjectReadme(projectName: string, starterPluginId: string, starterAppId: string): string {
   const displayName = toDisplayName(projectName);
-  return `# ${displayName}\n\nThis is a clean Gutu project workspace.\n\n## Layout\n\n- \`apps/*\` for runnable hosts and verification apps\n- \`plugins/*\` for project-specific business modules\n- \`libraries/*\` for local shared code if you need it later\n- \`vendor/framework/gutu\` for the vendored framework distribution\n- \`vendor/plugins/*\` and \`vendor/libraries/*\` for future store-installed extensions\n- \`docs/*\` for project context and agent understanding material\n\n## Starter content\n\n- app host: \`${starterAppId}\`\n- business plugin: \`${starterPluginId}\`\n\n## First steps\n\n\`\`\`bash\nbun install\nbun run docs:scaffold\nbun run docs:index\nbun run ci:check\n\`\`\`\n\n## Useful commands\n\n- \`bun run gutu -- --help\`\n- \`bun run gutu -- docs validate --all\`\n- \`bun run gutu -- init ../another-project\`\n- \`bun run build\`\n- \`bun run ci:check\`\n`;
+  return `# ${displayName}\n\nThis is a clean Gutu project workspace.\n\n## Layout\n\n- \`apps/*\` for runnable hosts and verification apps\n- \`plugins/*\` for project-specific business modules\n- \`libraries/*\` for local shared code if you need it later\n- \`vendor/framework/gutu\` for the vendored core framework distribution and first-party source cache used during ecosystem resolution\n- \`vendor/plugins/*\` and \`vendor/libraries/*\` for the compatibility-resolved packages your workspace actually runs\n- \`gutu.lock.json\` for pinned ecosystem state\n- \`gutu.overrides.json\` for maintainer-local repo overrides\n- \`docs/*\` for project context and agent understanding material\n\n## Starter content\n\n- app host: \`${starterAppId}\`\n- business plugin: \`${starterPluginId}\`\n\n## First steps\n\n\`\`\`bash\nbun install\nbun run vendor:sync\nbun run docs:scaffold\nbun run docs:index\nbun run ci:check\n\`\`\`\n\n## Useful commands\n\n- \`bun run gutu -- --help\`\n- \`bun run gutu -- add library communication\`\n- \`bun run gutu -- update --channel stable\`\n- \`bun run gutu -- vendor sync\`\n- \`bun run gutu -- ecosystem doctor\`\n- \`bun run ci:check\`\n`;
 }
 
 function createProjectDocsReadme(projectName: string): string {

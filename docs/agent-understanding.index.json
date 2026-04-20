@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-19T21:30:03.550Z",
+  "generatedAt": "2026-04-20T12:46:41.479Z",
   "root": ".",
   "targets": [
     {
@@ -650,6 +650,176 @@
       "workflows": []
     },
     {
+      "id": "booking-core",
+      "displayName": "Booking Core",
+      "description": "Reservations, booking holds, and conflict-safe resource allocation flows.",
+      "location": "framework/builtin-plugins/booking-core",
+      "targetType": "package",
+      "packageKind": "app",
+      "dependsOn": [
+        "audit-core",
+        "auth-core",
+        "org-tenant-core",
+        "portal-core",
+        "role-policy-core"
+      ],
+      "providesCapabilities": [
+        "booking.reservations"
+      ],
+      "requestedCapabilities": [
+        "api.rest.mount",
+        "data.write.booking",
+        "ui.register.admin"
+      ],
+      "resources": [
+        {
+          "id": "booking.reservations",
+          "description": "Canonical reservation records for rooms, desks, appointments, and other allocatable resources.",
+          "businessPurpose": "Provide the single source of truth for booking windows, hold state, confirmation state, and operator context.",
+          "invariants": [
+            "Only one active reservation may own a tenant/resource/time window at a time.",
+            "Held reservations must either confirm, cancel, or expire into a released state."
+          ],
+          "lifecycleNotes": [
+            "Reservations begin as draft, held, or confirmed based on the booking path.",
+            "Cancelled and released records are retained for auditability and analytics."
+          ],
+          "actors": [
+            "operator",
+            "portal-member",
+            "scheduler"
+          ],
+          "fields": [
+            {
+              "name": "actorId",
+              "label": "Actor",
+              "description": "Operator or workflow actor that last changed the reservation."
+            },
+            {
+              "name": "confirmationStatus",
+              "label": "Status",
+              "description": "Allocation state used by availability checks and portal views."
+            },
+            {
+              "name": "createdAt",
+              "label": "Created",
+              "description": "Creation timestamp for audit review and operational tracing."
+            },
+            {
+              "name": "holdExpiresAt",
+              "label": "Hold Expires",
+              "description": "Expiry time for held reservations awaiting confirmation."
+            },
+            {
+              "name": "id",
+              "label": "Reservation",
+              "description": "Stable identifier for the reservation record across admin, portal, and audit flows."
+            },
+            {
+              "name": "idempotencyKey",
+              "label": "Idempotency Key",
+              "description": "Client-supplied replay key used to keep booking submissions safe across retries."
+            },
+            {
+              "name": "reason",
+              "label": "Reason",
+              "description": "Optional operator or workflow note explaining why the reservation exists or changed."
+            },
+            {
+              "name": "resourceClass",
+              "label": "Resource Class",
+              "description": "Type of resource being reserved, such as room, desk, or appointment."
+            },
+            {
+              "name": "resourceId",
+              "label": "Resource",
+              "description": "Canonical identifier of the specific allocatable resource."
+            },
+            {
+              "name": "slotEnd",
+              "label": "End",
+              "description": "Exclusive end timestamp for the reservation window."
+            },
+            {
+              "name": "slotStart",
+              "label": "Start",
+              "description": "Inclusive start timestamp for the reservation window."
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant",
+              "description": "Tenant boundary that owns the reservation and governs overlap checks."
+            },
+            {
+              "name": "updatedAt",
+              "label": "Updated",
+              "description": "Most recent timestamp when the reservation state or ownership metadata changed."
+            }
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "id": "booking.reservations.cancel",
+          "permission": "booking.reservations.cancel",
+          "description": "Cancel a staged or confirmed reservation and release the resource window.",
+          "businessPurpose": "Free a previously allocated slot while leaving an auditable trail for operators and customers.",
+          "mandatorySteps": [
+            "Only draft, held, or confirmed reservations may be cancelled.",
+            "Cancellation must record the operator and reason."
+          ],
+          "postconditions": [
+            "The reservation is returned in cancelled status.",
+            "The slot can be safely reused by a later reservation."
+          ]
+        },
+        {
+          "id": "booking.reservations.confirm",
+          "permission": "booking.reservations.confirm",
+          "description": "Confirm a held or draft reservation after review has completed.",
+          "businessPurpose": "Finalize a reservation without leaving transient hold metadata behind.",
+          "mandatorySteps": [
+            "Only draft or held reservations may be confirmed.",
+            "Confirmation must record the operator and reason."
+          ],
+          "postconditions": [
+            "The reservation is returned in confirmed status.",
+            "Any transient hold expiry is removed."
+          ]
+        },
+        {
+          "id": "booking.reservations.stage",
+          "permission": "booking.reservations.stage",
+          "description": "Stage a booking reservation as a held or confirmed allocation window.",
+          "businessPurpose": "Create the canonical reservation record before downstream notifications, approvals, or portal views.",
+          "preconditions": [
+            "A tenant, actor, resource, and slot window must be supplied.",
+            "The booking writer must provide a stable idempotency key for retries."
+          ],
+          "mandatorySteps": [
+            "Validate the slot window before creating a held or confirmed reservation.",
+            "Pin the reservation record to a single canonical resource writer."
+          ],
+          "sideEffects": [
+            "Produces a canonical reservation record for database persistence."
+          ],
+          "postconditions": [
+            "The reservation is returned in held or confirmed status.",
+            "Held reservations carry a deterministic hold expiry."
+          ],
+          "failureModes": [
+            "Rejects invalid or stale slot windows.",
+            "Rejects malformed identifiers or idempotency keys."
+          ],
+          "forbiddenShortcuts": [
+            "Do not auto-confirm approval-required reservations.",
+            "Do not create reservations without a canonical idempotency key."
+          ]
+        }
+      ],
+      "workflows": []
+    },
+    {
       "id": "community-core",
       "displayName": "Community Core",
       "description": "Community, groups, and membership backbone.",
@@ -1156,7 +1326,7 @@
     {
       "id": "notifications-core",
       "displayName": "Notifications Core",
-      "description": "Outbound and in-app notifications.",
+      "description": "Canonical outbound communication control plane with delivery endpoints, preferences, attempts, and local provider routes.",
       "location": "framework/builtin-plugins/notifications-core",
       "targetType": "package",
       "packageKind": "app",
@@ -1167,17 +1337,197 @@
         "role-policy-core"
       ],
       "providesCapabilities": [
+        "notifications.delivery-endpoints",
+        "notifications.delivery-preferences",
+        "notifications.message-attempts",
         "notifications.messages"
       ],
       "requestedCapabilities": [
         "api.rest.mount",
         "data.write.notifications",
+        "events.publish.notifications",
+        "jobs.dispatch.notifications",
         "ui.register.admin"
       ],
       "resources": [
         {
-          "id": "notifications.messages",
+          "id": "notifications.delivery-endpoints",
+          "description": "Canonical delivery endpoints for email addresses, phone numbers, push tokens, and other direct destinations.",
+          "businessPurpose": "Keep operator-reviewed delivery addresses separate from message records while preserving immutable snapshots on sends.",
           "fields": [
+            {
+              "name": "actorId",
+              "label": "Actor Id"
+            },
+            {
+              "name": "address",
+              "label": "Address"
+            },
+            {
+              "name": "channel",
+              "label": "Channel"
+            },
+            {
+              "name": "createdAt",
+              "label": "Created At"
+            },
+            {
+              "name": "destinationKind",
+              "label": "Destination"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "label",
+              "label": "Label"
+            },
+            {
+              "name": "providerRoute",
+              "label": "Route"
+            },
+            {
+              "name": "reason",
+              "label": "Reason"
+            },
+            {
+              "name": "recipientRef",
+              "label": "Recipient"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            },
+            {
+              "name": "updatedAt",
+              "label": "Updated"
+            }
+          ]
+        },
+        {
+          "id": "notifications.delivery-preferences",
+          "description": "Per-subject suppression and digest preferences for communication delivery channels.",
+          "businessPurpose": "Allow operators and products to honor opt-outs before any provider dispatch is attempted.",
+          "fields": [
+            {
+              "name": "actorId",
+              "label": "Actor Id"
+            },
+            {
+              "name": "channel",
+              "label": "Channel"
+            },
+            {
+              "name": "createdAt",
+              "label": "Created At"
+            },
+            {
+              "name": "digestEnabled",
+              "label": "Digest"
+            },
+            {
+              "name": "enabled",
+              "label": "Enabled"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "reason",
+              "label": "Reason"
+            },
+            {
+              "name": "subjectRef",
+              "label": "Subject"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            },
+            {
+              "name": "updatedAt",
+              "label": "Updated"
+            }
+          ]
+        },
+        {
+          "id": "notifications.message-attempts",
+          "description": "Auditable attempt history for each provider dispatch, callback reconciliation, retry, or suppression decision.",
+          "businessPurpose": "Expose delivery reliability and recovery paths without hiding transient provider failures or operator actions.",
+          "fields": [
+            {
+              "name": "attemptNumber",
+              "label": "Attempt"
+            },
+            {
+              "name": "callbackToken",
+              "label": "Callback Token"
+            },
+            {
+              "name": "errorCode",
+              "label": "Error Code"
+            },
+            {
+              "name": "errorMessage",
+              "label": "Error Message"
+            },
+            {
+              "name": "id",
+              "label": "Id"
+            },
+            {
+              "name": "messageId",
+              "label": "Message"
+            },
+            {
+              "name": "occurredAt",
+              "label": "Occurred"
+            },
+            {
+              "name": "outcomeCategory",
+              "label": "Outcome"
+            },
+            {
+              "name": "providerMessageId",
+              "label": "Provider Message Id"
+            },
+            {
+              "name": "providerRoute",
+              "label": "Route"
+            },
+            {
+              "name": "status",
+              "label": "Status"
+            },
+            {
+              "name": "tenantId",
+              "label": "Tenant Id"
+            },
+            {
+              "name": "updatedAt",
+              "label": "Updated At"
+            }
+          ]
+        },
+        {
+          "id": "notifications.messages",
+          "description": "Queued, scheduled, delivered, failed, and cancelled communication records across all outbound channels.",
+          "businessPurpose": "Provide the single source of truth for communication lifecycle state, destination snapshots, and provider correlation.",
+          "fields": [
+            {
+              "name": "actorId",
+              "label": "Actor Id"
+            },
+            {
+              "name": "bodyText",
+              "label": "Body Text"
+            },
             {
               "name": "channel",
               "label": "Channel"
@@ -1187,24 +1537,60 @@
               "label": "Created"
             },
             {
+              "name": "data",
+              "label": "Data"
+            },
+            {
               "name": "deliveryMode",
               "label": "Delivery"
+            },
+            {
+              "name": "destinationSnapshot",
+              "label": "Destination Snapshot"
+            },
+            {
+              "name": "directAddress",
+              "label": "Direct Address"
+            },
+            {
+              "name": "endpointId",
+              "label": "Endpoint Id"
+            },
+            {
+              "name": "failureCode",
+              "label": "Failure Code"
+            },
+            {
+              "name": "failureMessage",
+              "label": "Failure Message"
             },
             {
               "name": "id",
               "label": "Id"
             },
             {
+              "name": "idempotencyKey",
+              "label": "Idempotency Key"
+            },
+            {
               "name": "priority",
               "label": "Priority"
             },
             {
+              "name": "providerMessageId",
+              "label": "Provider Message Id"
+            },
+            {
               "name": "providerRoute",
-              "label": "Provider"
+              "label": "Route"
+            },
+            {
+              "name": "reason",
+              "label": "Reason"
             },
             {
               "name": "recipientRef",
-              "label": "Recipient Ref"
+              "label": "Recipient"
             },
             {
               "name": "sendAt",
@@ -1215,20 +1601,64 @@
               "label": "Status"
             },
             {
-              "name": "templateKey",
+              "name": "templateId",
               "label": "Template"
+            },
+            {
+              "name": "templateProps",
+              "label": "Template Props"
             },
             {
               "name": "tenantId",
               "label": "Tenant Id"
+            },
+            {
+              "name": "title",
+              "label": "Title"
+            },
+            {
+              "name": "updatedAt",
+              "label": "Updated At"
             }
           ]
         }
       ],
       "actions": [
         {
+          "id": "notifications.delivery-endpoints.register",
+          "permission": "notifications.delivery-endpoints.register",
+          "description": "Register a governed delivery endpoint that can be reused across outbound messages.",
+          "businessPurpose": "Persist reviewed delivery destinations separately from message records while preserving immutable message snapshots."
+        },
+        {
+          "id": "notifications.delivery-preferences.upsert",
+          "permission": "notifications.delivery-preferences.upsert",
+          "description": "Store channel-level enablement and digest preferences for a subject.",
+          "businessPurpose": "Allow operators and products to suppress or aggregate communications before any provider dispatch happens."
+        },
+        {
+          "id": "notifications.messages.cancel",
+          "permission": "notifications.messages.cancel",
+          "description": "Cancel a queued or scheduled message before it is delivered.",
+          "businessPurpose": "Stop outbound delivery while preserving an auditable message record and operator context."
+        },
+        {
           "id": "notifications.messages.queue",
-          "permission": "notifications.messages.queue"
+          "permission": "notifications.messages.queue",
+          "description": "Queue, schedule, or suppress a notification message before provider dispatch.",
+          "businessPurpose": "Create the canonical communication record with lifecycle state, jobs, and audit events."
+        },
+        {
+          "id": "notifications.messages.retry",
+          "permission": "notifications.messages.retry",
+          "description": "Retry a previously failed notification message when the failure mode is recoverable.",
+          "businessPurpose": "Allow operator or workflow retries without hiding transient provider failures or violating max-attempt policy."
+        },
+        {
+          "id": "notifications.messages.test-send",
+          "permission": "notifications.messages.test-send",
+          "description": "Send a one-off test message through the deterministic local provider path.",
+          "businessPurpose": "Exercise communication compilation and provider dispatch without needing live third-party credentials."
         }
       ],
       "workflows": []
@@ -2128,6 +2558,20 @@
       "workflows": []
     },
     {
+      "id": "ecosystem",
+      "displayName": "Ecosystem",
+      "description": "Split-repo ecosystem contracts, compatibility channels, vendoring plans, and catalog generation for Gutu.",
+      "location": "framework/core/ecosystem",
+      "targetType": "package",
+      "packageKind": "framework-core",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
       "id": "events",
       "displayName": "Events",
       "description": "Typed domain events and outbox contracts.",
@@ -2510,6 +2954,20 @@
       "displayName": "Command Palette",
       "description": "cmdk-backed command palette primitives for governed admin actions.",
       "location": "framework/libraries/command-palette",
+      "targetType": "package",
+      "packageKind": "framework-library",
+      "dependsOn": [],
+      "providesCapabilities": [],
+      "requestedCapabilities": [],
+      "resources": [],
+      "actions": [],
+      "workflows": []
+    },
+    {
+      "id": "communication",
+      "displayName": "Communication",
+      "description": "Channel compilers, deterministic providers, and delivery orchestration helpers for outbound communications.",
+      "location": "framework/libraries/communication",
       "targetType": "package",
       "packageKind": "framework-library",
       "dependsOn": [],
