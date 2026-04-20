@@ -1,27 +1,13 @@
 # Jobs Core Glossary
 
-## Terms
-
-### jobs.executions
-
-_Define this entity in plain business language._
-
-- `concurrency`: Add the field meaning and how operators use it.
-- `createdAt`: Add the field meaning and how operators use it.
-- `id`: Add the field meaning and how operators use it.
-- `jobKey`: Add the field meaning and how operators use it.
-- `lastError`: Add the field meaning and how operators use it.
-- `queue`: Add the field meaning and how operators use it.
-- `retries`: Add the field meaning and how operators use it.
-- `schedule`: Add the field meaning and how operators use it.
-- `status`: Add the field meaning and how operators use it.
-- `tenantId`: Add the field meaning and how operators use it.
-- `timeoutMs`: Add the field meaning and how operators use it.
-- `visibleAt`: Add the field meaning and how operators use it.
-
-
-## Domain shortcuts to avoid
-
-- Expand internal jargon that would confuse a new engineer or an AI agent.
-- Document terms that are similar but not interchangeable.
-- Call out any overloaded words such as account, order, customer, approval, or publish.
+| Term | Meaning |
+| --- | --- |
+| Jobs Core | Background jobs, schedules, and execution metadata. |
+| jobs.executions | Capability published by this plugin manifest. |
+| jobs.executions.schedule |  |
+| crm.sync-segments | Job definition queued on `crm-sync`. |
+| files.scan-uploads | Job definition queued on `files-security`. |
+| notifications.dispatch | Job definition queued on `notifications`. |
+| Job definitions | Primary focus area for Jobs Core. |
+| Retry policy | Primary focus area for Jobs Core. |
+| Execution metadata | Primary focus area for Jobs Core. |

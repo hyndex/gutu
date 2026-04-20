@@ -1,6 +1,13 @@
 {
-  "generatedAt": "2026-04-20T18:00:09.798Z",
+  "generatedAt": "2026-04-20T19:57:12.480Z",
   "exampleRoot": "/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer",
+  "certificationInstall": {
+    "ok": true,
+    "command": "bun install",
+    "code": 0,
+    "stdout": "bun install v1.3.12 (700fc117)\n\nChecked 391 installs across 336 packages (no changes) [35.00ms]\n",
+    "stderr": ""
+  },
   "init": {
     "ok": true,
     "command": "bun run framework/core/cli/src/bin.ts init /Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer",
@@ -12,7 +19,7 @@
     "ok": true,
     "command": "bun run framework/core/cli/src/bin.ts vendor sync /Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer",
     "code": 0,
-    "stdout": "{\n  \"ok\": true,\n  \"installed\": [\n    {\n      \"id\": \"@platform/communication\",\n      \"targetPath\": \"/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer/vendor/libraries/communication\",\n      \"source\": \"artifact\",\n      \"sha256\": \"5b644938818b465c2b172bd3b2b125b0a61d14c06541550379f000a7c638ad02\"\n    },\n    {\n      \"id\": \"@plugins/notifications-core\",\n      \"targetPath\": \"/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer/vendor/plugins/notifications-core\",\n      \"source\": \"artifact\",\n      \"sha256\": \"0e02ea1ae4dd1049fa2b9b0a747b0104df9ae068245450eb89f6090b7ecb8fed\"\n    }\n  ]\n}\n",
+    "stdout": "{\n  \"ok\": true,\n  \"installed\": [\n    {\n      \"id\": \"@platform/communication\",\n      \"targetPath\": \"/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer/vendor/libraries/communication\",\n      \"source\": \"artifact\",\n      \"sha256\": \"5b644938818b465c2b172bd3b2b125b0a61d14c06541550379f000a7c638ad02\"\n    },\n    {\n      \"id\": \"@plugins/notifications-core\",\n      \"targetPath\": \"/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer/vendor/plugins/notifications-core\",\n      \"source\": \"artifact\",\n      \"sha256\": \"ebcf5b88eebd43cfa41d1f20a734c86b2bfb3fcab6c0f3b1003f18a88c9e9f2c\"\n    }\n  ]\n}\n",
     "stderr": ""
   },
   "verifiedPaths": [

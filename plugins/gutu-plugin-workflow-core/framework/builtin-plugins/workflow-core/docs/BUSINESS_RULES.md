@@ -2,22 +2,24 @@
 
 ## Invariants
 
-- Each workflow instance belongs to one tenant and one workflow definition.
-- State transitions must remain auditable and replayable.
+- The plugin remains authoritative only for the data declared in `workflow-core` and its owned resource set.
+- Integrators must respect the declared permission and idempotency semantics of each exported action.
+- Cross-plugin automation must use explicit commands, resources, jobs, or workflows instead of hidden coupling.
 
 ## Lifecycle notes
 
-- Instances move between explicit states only through declared transitions.
-- Approval status and due dates drive operator queues and reminders.
+- This plugin currently exports 1 action(s), 1 resource(s), 0 job definition(s), and 3 workflow definition(s).
+- Durable data behavior is bounded by the declared schema and compatibility contract: postgres, sqlite.
+- Maturity is currently assessed as `Hardened`, which means the documentation and operational promises must stay within that boundary.
 
 ## Actor expectations
 
-- requester
-- approver
-- admin
+- Host applications own installation, manifest solving, and runtime registration.
+- Operators and automation should invoke exported actions or follow the job/workflow catalog instead of mutating state ad hoc.
+- Contributors should keep README, DEVELOPER, TODO, and nested docs synchronized whenever the public contract changes.
 
 ## Decision boundaries
 
-- Document which decisions are automated, which are recommendation-only, and which always require a human or approval checkpoint.
-- Document which policies or compliance rules override convenience.
-- Document what counts as a safe retry versus a risky duplicate.
+- Safe retries are only those already supported by the action/job semantics documented in this repo.
+- Human or operator review is still expected whenever the exported surface does not provide an explicit automation contract.
+- Future roadmap ideas belong in the recommended-next section, not in current-capability claims.

@@ -22,7 +22,19 @@
 - [x] Add release promotion tooling for channel/catalog metadata.
 - [x] Add GitHub provisioning automation gated on `GITHUB_TOKEN`.
 
-## Stage 3 - Follow-On
+## Stage 3 - Orchestration Runtime
+
+- [x] Add `@platform/kernel`.
+- [x] Add `@platform/permissions`.
+- [x] Add `@platform/schema`.
+- [x] Add `@platform/commands`.
+- [x] Add `@platform/events`.
+- [x] Add `@platform/jobs`.
+- [x] Add `@platform/plugin-solver`.
+- [x] Add end-to-end command -> event -> subscriber -> job orchestration coverage.
+- [x] Reduce the integration harness to a single remaining compat shim.
+
+## Stage 4 - Follow-On
 
 - [ ] Provision separate live plugin and library repositories.
 - [ ] Wire the live package channels to published signed artifacts.

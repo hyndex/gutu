@@ -1,121 +1,35 @@
 # AI RAG Agent Context
 
-Package/app id: `ai-rag`
-Target type: `package`  | Package kind: `ai-pack`
-Location: `framework/builtin-plugins/ai-rag`
+## Mission
 
-## Purpose
+Provides tenant-safe retrieval, memory collection management, and the evidence path for grounded AI responses.
 
-Tenant-safe memory collections, retrieval diagnostics, and grounded knowledge pipelines.
+## Code map
 
-## System role
+- Package root: `framework/builtin-plugins/ai-rag`
+- Service layer: `framework/builtin-plugins/ai-rag/src/services/main.service.ts`
+- Action layer: `framework/builtin-plugins/ai-rag/src/actions/default.action.ts`
+- Resource layer: `framework/builtin-plugins/ai-rag/src/resources/main.resource.ts`
+- UI layer: `framework/builtin-plugins/ai-rag/src/ui`
 
-Describe how this target fits into the larger product, which teams depend on it, and which business outcomes it is responsible for.
+## Safe assumptions
 
-## Declared dependencies
+- Use `ai-rag` as the stable plugin identifier and `@plugins/ai-rag` as the package import name.
+- Treat declared actions and resources as the public integration surface before reaching into services.
+- Prefer explicit command, event, job, and workflow orchestration over undocumented side effects.
 
-- ai-core
-- jobs-core
-- knowledge-core
+## Forbidden claims
 
-## Provided capabilities
+- Do not document generic WordPress-style hooks unless they are explicitly exported.
+- Do not promise live external connectors, distributed worker infrastructure, or portal/admin surfaces that are not present in the code.
+- Do not claim a higher maturity tier than `Baseline` without adding the missing verification and operational depth first.
 
-- ai.memory
-- ai.retrieval
+## Verification
 
-## Requested capabilities
-
-- ai.tool.execute
-- api.rest.mount
-- data.write.ai
-- jobs.execute.ai
-- ui.register.admin
-
-## Core resources
-
-### `ai.memory-collections`
-
-_Add a concise description for why this resource exists._
-
-Business purpose: _Document the operational purpose of this resource._
-
-Key fields:
-- `classification` (Classification) | Add a field description so agents understand what this value means.
-- `documentCount` (Documents) | Add a field description so agents understand what this value means.
-- `id` (Id) | Add a field description so agents understand what this value means.
-- `label` (Label) | Add a field description so agents understand what this value means.
-- `sourcePlugin` (Source) | Add a field description so agents understand what this value means.
-- `tenantId` (Tenant Id) | Add a field description so agents understand what this value means.
-- `updatedAt` (Updated) | Add a field description so agents understand what this value means.
-
-### `ai.memory-documents`
-
-_Add a concise description for why this resource exists._
-
-Business purpose: _Document the operational purpose of this resource._
-
-Key fields:
-- `classification` (Classification) | Add a field description so agents understand what this value means.
-- `collectionId` (Collection Id) | Add a field description so agents understand what this value means.
-- `id` (Id) | Add a field description so agents understand what this value means.
-- `sourceKind` (Source kind) | Add a field description so agents understand what this value means.
-- `tenantId` (Tenant Id) | Add a field description so agents understand what this value means.
-- `title` (Title) | Add a field description so agents understand what this value means.
-- `updatedAt` (Updated) | Add a field description so agents understand what this value means.
-
-## Core actions
-
-### `ai.memory.ingest`
-
-_Document what this action does in business terms._
-
-Permission: `ai.memory.ingest`
-
-Business purpose: _Explain why operators or automation invoke this action._
-
-Preconditions:
-- _Document the checks that must pass before this action runs._
-
-Side effects:
-- _Document emitted events, writes, notifications, and follow-up jobs._
-
-Forbidden shortcuts:
-- _Document any paths agents must never bypass._
-
-### `ai.memory.reindex`
-
-_Document what this action does in business terms._
-
-Permission: `ai.memory.reindex`
-
-Business purpose: _Explain why operators or automation invoke this action._
-
-Preconditions:
-- _Document the checks that must pass before this action runs._
-
-Side effects:
-- _Document emitted events, writes, notifications, and follow-up jobs._
-
-Forbidden shortcuts:
-- _Document any paths agents must never bypass._
-
-### `ai.memory.retrieve`
-
-_Document what this action does in business terms._
-
-Permission: `ai.memory.read`
-
-Business purpose: _Explain why operators or automation invoke this action._
-
-Preconditions:
-- _Document the checks that must pass before this action runs._
-
-Side effects:
-- _Document emitted events, writes, notifications, and follow-up jobs._
-
-Forbidden shortcuts:
-- _Document any paths agents must never bypass._
-
-## Core workflows
-
-_No workflows were discovered for this target._
+- `bun run build`
+- `bun run typecheck`
+- `bun run lint`
+- `bun run test`
+- `bun run test:contracts`
+- `bun run test:unit`
+- `bun run docs:check`

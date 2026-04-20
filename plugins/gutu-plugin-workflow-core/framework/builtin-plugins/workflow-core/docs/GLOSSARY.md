@@ -1,26 +1,13 @@
 # Workflow Core Glossary
 
-## Terms
-
-### workflow.instances
-
-Durable workflow instance record used to track approval and publication processes across the platform.
-
-- `approvalStatus`: Current approval posture for the workflow instance.
-- `assignedRole`: Add the field meaning and how operators use it.
-- `createdAt`: Creation timestamp for the workflow instance.
-- `currentState`: Current workflow state for the instance.
-- `definitionKey`: Workflow template that governs the instance.
-- `dueAt`: Optional due date for the current review or approval step.
-- `id`: Add the field meaning and how operators use it.
-- `lastTransitionAt`: Add the field meaning and how operators use it.
-- `subjectId`: Add the field meaning and how operators use it.
-- `subjectType`: Domain object type that the workflow instance governs.
-- `tenantId`: Add the field meaning and how operators use it.
-
-
-## Domain shortcuts to avoid
-
-- Expand internal jargon that would confuse a new engineer or an AI agent.
-- Document terms that are similar but not interchangeable.
-- Call out any overloaded words such as account, order, customer, approval, or publish.
+| Term | Meaning |
+| --- | --- |
+| Workflow Core | Explicit workflows and approval state machines. |
+| workflow.instances | Capability published by this plugin manifest. |
+| workflow.instances.transition | Apply a governed transition to a workflow instance. |
+| access-review | Review and grant sensitive access only after security review. |
+| content-publication | Editorial review and publication workflow for governed content. |
+| invoice-approval | Finance approval flow for invoices before they are finalized. |
+| Workflow definitions | Primary focus area for Workflow Core. |
+| Approval states | Primary focus area for Workflow Core. |
+| Transition rules | Primary focus area for Workflow Core. |

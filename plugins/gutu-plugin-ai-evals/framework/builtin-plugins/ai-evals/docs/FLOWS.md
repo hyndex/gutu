@@ -2,46 +2,62 @@
 
 ## Happy paths
 
-_No workflows were discovered for this target._
+- `ai.evals.run`: Governed action exported by this plugin.
+- `ai.evals.compare`: Governed action exported by this plugin.
 
 ## Action-level flows
 
-### `ai.evals.compare`
-
-_Document what this action does in business terms._
-
-Permission: `ai.evals.read`
-
-Business purpose: _Explain why operators or automation invoke this action._
-
-Preconditions:
-- _Document the checks that must pass before this action runs._
-
-Side effects:
-- _Document emitted events, writes, notifications, and follow-up jobs._
-
-Forbidden shortcuts:
-- _Document any paths agents must never bypass._
-
 ### `ai.evals.run`
 
-_Document what this action does in business terms._
+Governed action exported by this plugin.
 
 Permission: `ai.evals.run`
 
-Business purpose: _Explain why operators or automation invoke this action._
+Business purpose: Expose the plugin’s write boundary through a validated, auditable action contract.
 
 Preconditions:
-- _Document the checks that must pass before this action runs._
+
+- Caller input must satisfy the action schema exported by the plugin.
+- The caller must satisfy the declared permission and any host-level installation constraints.
+- Integration should honor the action’s non-idempotent semantics.
 
 Side effects:
-- _Document emitted events, writes, notifications, and follow-up jobs._
+
+- Mutates or validates state owned by `ai.eval-datasets`, `ai.eval-runs`.
 
 Forbidden shortcuts:
-- _Document any paths agents must never bypass._
+
+- Do not bypass the action contract with undocumented service mutations in application code.
+- Do not document extra hooks, retries, or lifecycle semantics unless they are explicitly exported here.
+
+
+### `ai.evals.compare`
+
+Governed action exported by this plugin.
+
+Permission: `ai.evals.read`
+
+Business purpose: Expose the plugin’s write boundary through a validated, auditable action contract.
+
+Preconditions:
+
+- Caller input must satisfy the action schema exported by the plugin.
+- The caller must satisfy the declared permission and any host-level installation constraints.
+- Integration should honor the action’s idempotent semantics.
+
+Side effects:
+
+- Mutates or validates state owned by `ai.eval-datasets`, `ai.eval-runs`.
+
+Forbidden shortcuts:
+
+- Do not bypass the action contract with undocumented service mutations in application code.
+- Do not document extra hooks, retries, or lifecycle semantics unless they are explicitly exported here.
+
 
 ## Cross-package interactions
 
-- Describe upstream triggers, downstream side effects, notifications, and jobs.
-- Document when this target depends on auth, approvals, billing, or data freshness from another package.
-- Document how failures recover and who owns reconciliation.
+- Direct dependencies: `ai-core`, `audit-core`, `jobs-core`
+- Requested capabilities: `ui.register.admin`, `api.rest.mount`, `data.write.ai`, `jobs.execute.ai`
+- Integration model: Actions+Resources+Jobs+UI
+- Recovery ownership should stay with the host orchestration layer when the plugin does not explicitly export jobs, workflows, or lifecycle events.

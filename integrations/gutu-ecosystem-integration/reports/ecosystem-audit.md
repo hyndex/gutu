@@ -1,22 +1,31 @@
 # Ecosystem Audit
 
-Generated: 2026-04-20T17:56:57.559Z
+Generated: 2026-04-20T19:53:58.812Z
 
 - Packages discovered: 66
-- Compatibility shims: 7
+- Core runtime packages: 11
+- Compatibility shims: 1
 - Unresolved workspace dependencies: 0
 - Manifest drift findings: 0
 - Unresolved imports: 0
 
-## Compatibility Shims
+## Core Runtime Packages
 
-- `@platform/db-drizzle`
+- `@gutu/cli`
+- `@gutu/ecosystem`
+- `@gutu/kernel`
+- `@gutu/release`
+- `@platform/commands`
 - `@platform/events`
 - `@platform/jobs`
 - `@platform/kernel`
 - `@platform/permissions`
 - `@platform/plugin-solver`
 - `@platform/schema`
+
+## Compatibility Shims
+
+- `@platform/db-drizzle`
 
 ## Unresolved Workspace Dependencies
 

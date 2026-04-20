@@ -28,3 +28,17 @@ Mitigation:
 
 - Use the implemented `gutu rollout provision-github` command once `GITHUB_TOKEN` is present.
 - Keep rollout topology in `ecosystem/rollout/organization.json` so provisioning stays deterministic.
+
+### R5. One compat shim still remains in the integration harness
+
+Mitigation:
+
+- Keep the audit report tracking the remaining shim count explicitly.
+- Replace the final shim in a follow-on wave so the integration repo depends only on real core or external first-party packages.
+
+### R6. Cross-plugin orchestration currently ships as an in-memory reference runtime
+
+Mitigation:
+
+- Keep the command/event/job contracts stable so persistent adapters can be added without breaking plugin code.
+- Treat this runtime as the canonical orchestration semantic layer and add durable storage adapters during external rollout.

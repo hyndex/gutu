@@ -4,5 +4,16 @@
   "type": "module",
   "workspaces": [
     "framework/builtin-plugins/*"
-  ]
+  ],
+  "scripts": {
+    "build": "bun --cwd framework/builtin-plugins/booking-core run build",
+    "typecheck": "bun --cwd framework/builtin-plugins/booking-core run typecheck",
+    "lint": "bun --cwd framework/builtin-plugins/booking-core run lint",
+    "test": "bun --cwd framework/builtin-plugins/booking-core run test",
+    "test:contracts": "bun --cwd framework/builtin-plugins/booking-core run test:contracts",
+    "test:migrations": "bun --cwd framework/builtin-plugins/booking-core run test:migrations",
+    "test:unit": "bun --cwd framework/builtin-plugins/booking-core run test:unit",
+    "docs:summary": "node scripts/docs-summary.mjs",
+    "docs:check": "node scripts/docs-check.mjs"
+  }
 }

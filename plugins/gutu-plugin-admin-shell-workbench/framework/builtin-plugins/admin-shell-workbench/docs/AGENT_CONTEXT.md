@@ -1,45 +1,35 @@
 # Admin Shell Workbench Agent Context
 
-Package/app id: `admin-shell-workbench`
-Target type: `package`  | Package kind: `ui-surface`
-Location: `framework/builtin-plugins/admin-shell-workbench`
+## Mission
 
-## Purpose
+Hosts the universal admin desk and turns resource, route, widget, and workspace contributions into one navigable operator surface.
 
-Default universal admin desk plugin.
+## Code map
 
-## System role
+- Package root: `framework/builtin-plugins/admin-shell-workbench`
+- Service layer: `framework/builtin-plugins/admin-shell-workbench/src/services/main.service.ts`
+- Action layer: `framework/builtin-plugins/admin-shell-workbench/src/actions/default.action.ts`
+- Resource layer: `framework/builtin-plugins/admin-shell-workbench/src/resources/main.resource.ts`
+- UI layer: `framework/builtin-plugins/admin-shell-workbench/src/ui`
 
-Describe how this target fits into the larger product, which teams depend on it, and which business outcomes it is responsible for.
+## Safe assumptions
 
-## Declared dependencies
+- Use `admin-shell-workbench` as the stable plugin identifier and `@plugins/admin-shell-workbench` as the package import name.
+- Treat declared actions and resources as the public integration surface before reaching into services.
+- Prefer explicit command, event, job, and workflow orchestration over undocumented side effects.
 
-- auth-core
-- dashboard-core
-- org-tenant-core
-- role-policy-core
+## Forbidden claims
 
-## Provided capabilities
+- Do not document generic WordPress-style hooks unless they are explicitly exported.
+- Do not promise live external connectors, distributed worker infrastructure, or portal/admin surfaces that are not present in the code.
+- Do not claim a higher maturity tier than `Baseline` without adding the missing verification and operational depth first.
 
-- ui.admin.builders
-- ui.admin.pages
-- ui.admin.reports
-- ui.admin.widgets
-- ui.shell.admin
+## Verification
 
-## Requested capabilities
-
-- data.read.settings
-- ui.mount:admin
-
-## Core resources
-
-_No resources were discovered for this target._
-
-## Core actions
-
-_No actions were discovered for this target._
-
-## Core workflows
-
-_No workflows were discovered for this target._
+- `bun run build`
+- `bun run typecheck`
+- `bun run lint`
+- `bun run test`
+- `bun run test:contracts`
+- `bun run test:unit`
+- `bun run docs:check`

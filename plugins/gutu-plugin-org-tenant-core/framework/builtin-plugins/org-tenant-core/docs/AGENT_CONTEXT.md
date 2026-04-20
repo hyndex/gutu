@@ -1,67 +1,35 @@
 # Org Tenant Core Agent Context
 
-Package/app id: `org-tenant-core`
-Target type: `package`  | Package kind: `app`
-Location: `framework/builtin-plugins/org-tenant-core`
+## Mission
 
-## Purpose
+Maintains the tenant and organization graph so the rest of the ecosystem can reason about ownership and isolation consistently.
 
-Tenant and organization graph management.
+## Code map
 
-## System role
+- Package root: `framework/builtin-plugins/org-tenant-core`
+- Service layer: `framework/builtin-plugins/org-tenant-core/src/services/main.service.ts`
+- Action layer: `framework/builtin-plugins/org-tenant-core/src/actions/default.action.ts`
+- Resource layer: `framework/builtin-plugins/org-tenant-core/src/resources/main.resource.ts`
+- UI layer: `framework/builtin-plugins/org-tenant-core/src/ui`
 
-Describe how this target fits into the larger product, which teams depend on it, and which business outcomes it is responsible for.
+## Safe assumptions
 
-## Declared dependencies
+- Use `org-tenant-core` as the stable plugin identifier and `@plugins/org-tenant-core` as the package import name.
+- Treat declared actions and resources as the public integration surface before reaching into services.
+- Prefer explicit command, event, job, and workflow orchestration over undocumented side effects.
 
-- auth-core
+## Forbidden claims
 
-## Provided capabilities
+- Do not document generic WordPress-style hooks unless they are explicitly exported.
+- Do not promise live external connectors, distributed worker infrastructure, or portal/admin surfaces that are not present in the code.
+- Do not claim a higher maturity tier than `Baseline` without adding the missing verification and operational depth first.
 
-- org.tenants
+## Verification
 
-## Requested capabilities
-
-- api.rest.mount
-- data.write.org
-- ui.register.admin
-
-## Core resources
-
-### `org.tenants`
-
-_Add a concise description for why this resource exists._
-
-Business purpose: _Document the operational purpose of this resource._
-
-Key fields:
-- `billingPlan` (Billing Plan) | Add a field description so agents understand what this value means.
-- `createdAt` (Created) | Add a field description so agents understand what this value means.
-- `displayName` (Display Name) | Add a field description so agents understand what this value means.
-- `id` (Id) | Add a field description so agents understand what this value means.
-- `slug` (Slug) | Add a field description so agents understand what this value means.
-- `status` (Status) | Add a field description so agents understand what this value means.
-- `tenantId` (Tenant Id) | Add a field description so agents understand what this value means.
-
-## Core actions
-
-### `org.tenants.activate`
-
-_Document what this action does in business terms._
-
-Permission: `org.tenants.activate`
-
-Business purpose: _Explain why operators or automation invoke this action._
-
-Preconditions:
-- _Document the checks that must pass before this action runs._
-
-Side effects:
-- _Document emitted events, writes, notifications, and follow-up jobs._
-
-Forbidden shortcuts:
-- _Document any paths agents must never bypass._
-
-## Core workflows
-
-_No workflows were discovered for this target._
+- `bun run build`
+- `bun run typecheck`
+- `bun run lint`
+- `bun run test`
+- `bun run test:contracts`
+- `bun run test:unit`
+- `bun run docs:check`

@@ -1,20 +1,10 @@
 # Search Core Glossary
 
-## Terms
-
-### search.documents
-
-_Define this entity in plain business language._
-
-- `createdAt`: Add the field meaning and how operators use it.
-- `id`: Add the field meaning and how operators use it.
-- `label`: Add the field meaning and how operators use it.
-- `status`: Add the field meaning and how operators use it.
-- `tenantId`: Add the field meaning and how operators use it.
-
-
-## Domain shortcuts to avoid
-
-- Expand internal jargon that would confuse a new engineer or an AI agent.
-- Document terms that are similar but not interchangeable.
-- Call out any overloaded words such as account, order, customer, approval, or publish.
+| Term | Meaning |
+| --- | --- |
+| Search Core | Typed search indexing and query abstractions. |
+| search.documents | Capability published by this plugin manifest. |
+| search.documents.index |  |
+| Search indexes | Primary focus area for Search Core. |
+| Query contracts | Primary focus area for Search Core. |
+| Typed retrieval | Primary focus area for Search Core. |

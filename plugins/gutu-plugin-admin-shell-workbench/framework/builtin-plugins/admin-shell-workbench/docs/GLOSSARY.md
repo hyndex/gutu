@@ -1,11 +1,13 @@
 # Admin Shell Workbench Glossary
 
-## Terms
-
-- _No domain glossary entries were discovered yet. Add the key nouns used by operators, workflows, and policies._
-
-## Domain shortcuts to avoid
-
-- Expand internal jargon that would confuse a new engineer or an AI agent.
-- Document terms that are similar but not interchangeable.
-- Call out any overloaded words such as account, order, customer, approval, or publish.
+| Term | Meaning |
+| --- | --- |
+| Admin Shell Workbench | Default universal admin desk plugin. |
+| ui.shell.admin | Capability published by this plugin manifest. |
+| ui.admin.widgets | Capability published by this plugin manifest. |
+| ui.admin.pages | Capability published by this plugin manifest. |
+| ui.admin.reports | Capability published by this plugin manifest. |
+| ui.admin.builders | Capability published by this plugin manifest. |
+| Admin workspaces | Primary focus area for Admin Shell Workbench. |
+| Route resolution | Primary focus area for Admin Shell Workbench. |
+| Operator preferences | Primary focus area for Admin Shell Workbench. |

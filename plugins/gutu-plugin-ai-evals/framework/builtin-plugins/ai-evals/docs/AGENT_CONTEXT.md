@@ -1,101 +1,35 @@
 # AI Evals Agent Context
 
-Package/app id: `ai-evals`
-Target type: `package`  | Package kind: `ai-pack`
-Location: `framework/builtin-plugins/ai-evals`
+## Mission
 
-## Purpose
+Owns evaluation datasets, judges, regression baselines, and the release-review evidence used to keep AI changes honest.
 
-Eval datasets, judges, regression baselines, and release-grade AI review.
+## Code map
 
-## System role
+- Package root: `framework/builtin-plugins/ai-evals`
+- Service layer: `framework/builtin-plugins/ai-evals/src/services/main.service.ts`
+- Action layer: `framework/builtin-plugins/ai-evals/src/actions/default.action.ts`
+- Resource layer: `framework/builtin-plugins/ai-evals/src/resources/main.resource.ts`
+- UI layer: `framework/builtin-plugins/ai-evals/src/ui`
 
-Describe how this target fits into the larger product, which teams depend on it, and which business outcomes it is responsible for.
+## Safe assumptions
 
-## Declared dependencies
+- Use `ai-evals` as the stable plugin identifier and `@plugins/ai-evals` as the package import name.
+- Treat declared actions and resources as the public integration surface before reaching into services.
+- Prefer explicit command, event, job, and workflow orchestration over undocumented side effects.
 
-- ai-core
-- audit-core
-- jobs-core
+## Forbidden claims
 
-## Provided capabilities
+- Do not document generic WordPress-style hooks unless they are explicitly exported.
+- Do not promise live external connectors, distributed worker infrastructure, or portal/admin surfaces that are not present in the code.
+- Do not claim a higher maturity tier than `Baseline` without adding the missing verification and operational depth first.
 
-- ai.evals
-- ai.release-gates
+## Verification
 
-## Requested capabilities
-
-- api.rest.mount
-- data.write.ai
-- jobs.execute.ai
-- ui.register.admin
-
-## Core resources
-
-### `ai.eval-datasets`
-
-_Add a concise description for why this resource exists._
-
-Business purpose: _Document the operational purpose of this resource._
-
-Key fields:
-- `caseCount` (Cases) | Add a field description so agents understand what this value means.
-- `id` (Id) | Add a field description so agents understand what this value means.
-- `label` (Dataset) | Add a field description so agents understand what this value means.
-- `tenantId` (Tenant Id) | Add a field description so agents understand what this value means.
-- `updatedAt` (Updated) | Add a field description so agents understand what this value means.
-
-### `ai.eval-runs`
-
-_Add a concise description for why this resource exists._
-
-Business purpose: _Document the operational purpose of this resource._
-
-Key fields:
-- `averageScore` (Average score) | Add a field description so agents understand what this value means.
-- `completedAt` (Completed) | Add a field description so agents understand what this value means.
-- `datasetId` (Dataset) | Add a field description so agents understand what this value means.
-- `id` (Id) | Add a field description so agents understand what this value means.
-- `passRate` (Pass rate) | Add a field description so agents understand what this value means.
-- `status` (Status) | Add a field description so agents understand what this value means.
-- `tenantId` (Tenant Id) | Add a field description so agents understand what this value means.
-
-## Core actions
-
-### `ai.evals.compare`
-
-_Document what this action does in business terms._
-
-Permission: `ai.evals.read`
-
-Business purpose: _Explain why operators or automation invoke this action._
-
-Preconditions:
-- _Document the checks that must pass before this action runs._
-
-Side effects:
-- _Document emitted events, writes, notifications, and follow-up jobs._
-
-Forbidden shortcuts:
-- _Document any paths agents must never bypass._
-
-### `ai.evals.run`
-
-_Document what this action does in business terms._
-
-Permission: `ai.evals.run`
-
-Business purpose: _Explain why operators or automation invoke this action._
-
-Preconditions:
-- _Document the checks that must pass before this action runs._
-
-Side effects:
-- _Document emitted events, writes, notifications, and follow-up jobs._
-
-Forbidden shortcuts:
-- _Document any paths agents must never bypass._
-
-## Core workflows
-
-_No workflows were discovered for this target._
+- `bun run build`
+- `bun run typecheck`
+- `bun run lint`
+- `bun run test`
+- `bun run test:contracts`
+- `bun run test:unit`
+- `bun run docs:check`

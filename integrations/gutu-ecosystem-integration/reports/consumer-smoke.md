@@ -1,8 +1,9 @@
 # Consumer Smoke
 
-Generated: 2026-04-20T18:00:09.798Z
+Generated: 2026-04-20T19:57:12.480Z
 
 - Example root: `/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer`
+- Certification workspace install: pass
 - Init: pass
 - Vendor sync: pass
 

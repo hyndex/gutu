@@ -4,5 +4,15 @@
   "type": "module",
   "workspaces": [
     "framework/builtin-plugins/*"
-  ]
+  ],
+  "scripts": {
+    "build": "bun --cwd framework/builtin-plugins/admin-shell-workbench run build",
+    "typecheck": "bun --cwd framework/builtin-plugins/admin-shell-workbench run typecheck",
+    "lint": "bun --cwd framework/builtin-plugins/admin-shell-workbench run lint",
+    "test": "bun --cwd framework/builtin-plugins/admin-shell-workbench run test",
+    "test:contracts": "bun --cwd framework/builtin-plugins/admin-shell-workbench run test:contracts",
+    "test:unit": "bun --cwd framework/builtin-plugins/admin-shell-workbench run test:unit",
+    "docs:summary": "node scripts/docs-summary.mjs",
+    "docs:check": "node scripts/docs-check.mjs"
+  }
 }

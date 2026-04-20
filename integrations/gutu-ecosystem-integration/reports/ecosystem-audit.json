@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-20T17:56:57.559Z",
+  "generatedAt": "2026-04-20T19:53:58.812Z",
   "workspaceRoot": "/Users/chinmoybhuyan/Desktop/Personal/Framework",
   "integrationRoot": "/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration",
   "packages": [
@@ -1432,14 +1432,21 @@
       ]
     }
   ],
-  "compatPackageIds": [
-    "@platform/db-drizzle",
+  "corePackageIds": [
+    "@gutu/cli",
+    "@gutu/ecosystem",
+    "@gutu/kernel",
+    "@gutu/release",
+    "@platform/commands",
     "@platform/events",
     "@platform/jobs",
     "@platform/kernel",
     "@platform/permissions",
     "@platform/plugin-solver",
     "@platform/schema"
+  ],
+  "compatPackageIds": [
+    "@platform/db-drizzle"
   ],
   "unresolvedWorkspaceDependencies": [],
   "manifestDrift": [],

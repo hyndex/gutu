@@ -37,6 +37,7 @@ type AuditReport = {
   workspaceRoot: string;
   integrationRoot: string;
   packages: PackageRecord[];
+  corePackageIds: string[];
   compatPackageIds: string[];
   unresolvedWorkspaceDependencies: Array<{
     packageId: string;
@@ -65,6 +66,7 @@ type CertificationReport = {
 type ConsumerSmokeReport = {
   generatedAt: string;
   exampleRoot: string;
+  certificationInstall: CommandResult;
   init: CommandResult;
   vendorSync: CommandResult;
   verifiedPaths: string[];
@@ -118,9 +120,11 @@ async function main() {
 
 function createAuditReport(): AuditReport {
   const packages = discoverPackages();
-  const compatPackageIds = discoverCompatPackageIds();
+  const corePackageIds = discoverCorePackageIds();
+  const compatPackageIds = discoverCompatPackageIds(new Set(corePackageIds));
   const availablePackageIds = new Set<string>([
     ...packages.map((entry) => entry.id),
+    ...corePackageIds,
     ...compatPackageIds
   ]);
 
@@ -139,6 +143,7 @@ function createAuditReport(): AuditReport {
     workspaceRoot,
     integrationRoot,
     packages,
+    corePackageIds,
     compatPackageIds,
     unresolvedWorkspaceDependencies,
     manifestDrift,
@@ -152,9 +157,8 @@ function runCertification(): CertificationReport {
 
   ensureCleanDirectory(certificationWorkspaceRoot);
   copyRepoRoots(certificationWorkspaceRoot, audit.packages);
-  cpSync(compatRoot, join(certificationWorkspaceRoot, "compat"), {
-    recursive: true
-  });
+  copyCoreRoot(certificationWorkspaceRoot);
+  copyCompatRoots(certificationWorkspaceRoot, new Set(audit.corePackageIds));
   writeCertificationWorkspacePackageJson(certificationWorkspaceRoot);
   normalizeCertificationWorkspace(certificationWorkspaceRoot);
 
@@ -247,6 +251,8 @@ function runConsumerSmoke(): ConsumerSmokeReport {
     assertCertificationHealthy(certification);
   }
 
+  const certificationInstall = runCommand(certificationWorkspaceRoot, ["bun", "install"]);
+
   ensureCleanDirectory(consumerSmokeRoot);
   const exampleRoot = join(consumerSmokeRoot, "demo-consumer");
   const init = runCommand(coreRoot, ["bun", "run", "framework/core/cli/src/bin.ts", "init", exampleRoot]);
@@ -307,6 +313,7 @@ function runConsumerSmoke(): ConsumerSmokeReport {
   return {
     generatedAt: new Date().toISOString(),
     exampleRoot,
+    certificationInstall,
     init,
     vendorSync,
     verifiedPaths,
@@ -374,7 +381,21 @@ function scanPackageRoots(baseRoot: string, kind: PackageKind, nestedSegments: s
   return records.sort((left, right) => left.id.localeCompare(right.id));
 }
 
-function discoverCompatPackageIds(): string[] {
+function discoverCorePackageIds(): string[] {
+  const coreFrameworkRoot = join(coreRoot, "framework", "core");
+  if (!existsSync(coreFrameworkRoot)) {
+    return [];
+  }
+
+  return readdirSync(coreFrameworkRoot)
+    .map((entry) => join(coreFrameworkRoot, entry, "package.json"))
+    .filter((entry) => existsSync(entry))
+    .map((entry) => JSON.parse(readFileSync(entry, "utf8")) as { name: string })
+    .map((entry) => entry.name)
+    .sort();
+}
+
+function discoverCompatPackageIds(excludedIds: Set<string> = new Set<string>()): string[] {
   if (!existsSync(compatRoot)) {
     return [];
   }
@@ -384,6 +405,7 @@ function discoverCompatPackageIds(): string[] {
     .filter((entry) => existsSync(entry))
     .map((entry) => JSON.parse(readFileSync(entry, "utf8")) as { name: string })
     .map((entry) => entry.name)
+    .filter((entry) => !excludedIds.has(entry))
     .sort();
 }
 
@@ -492,6 +514,37 @@ function copyRepoRoots(targetRoot: string, packages: PackageRecord[]) {
   }
 }
 
+function copyCoreRoot(targetRoot: string) {
+  const destination = join(targetRoot, "gutu-core");
+  cpSync(coreRoot, destination, {
+    recursive: true,
+    filter(entry) {
+      return !entry.endsWith("/node_modules") && !entry.endsWith("/dist") && !entry.endsWith("/coverage") && !entry.endsWith("/artifacts");
+    }
+  });
+}
+
+function copyCompatRoots(targetRoot: string, excludedPackageIds: Set<string>) {
+  const destinationRoot = join(targetRoot, "compat");
+  mkdirSync(destinationRoot, { recursive: true });
+
+  for (const entry of readdirSync(compatRoot)) {
+    const packageJsonPath = join(compatRoot, entry, "package.json");
+    if (!existsSync(packageJsonPath)) {
+      continue;
+    }
+
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8")) as { name: string };
+    if (excludedPackageIds.has(packageJson.name)) {
+      continue;
+    }
+
+    cpSync(join(compatRoot, entry), join(destinationRoot, entry), {
+      recursive: true
+    });
+  }
+}
+
 function writeCertificationWorkspacePackageJson(targetRoot: string) {
   writeFileSync(
     join(targetRoot, "package.json"),
@@ -501,6 +554,7 @@ function writeCertificationWorkspacePackageJson(targetRoot: string) {
         private: true,
         type: "module",
         workspaces: [
+          "gutu-core/framework/core/*",
           "apps/*/apps/*",
           "libraries/*/framework/libraries/*",
           "plugins/*/framework/builtin-plugins/*",
@@ -705,10 +759,15 @@ function writeAuditReport(report: AuditReport) {
       `Generated: ${report.generatedAt}`,
       "",
       `- Packages discovered: ${report.packages.length}`,
+      `- Core runtime packages: ${report.corePackageIds.length}`,
       `- Compatibility shims: ${report.compatPackageIds.length}`,
       `- Unresolved workspace dependencies: ${report.unresolvedWorkspaceDependencies.length}`,
       `- Manifest drift findings: ${report.manifestDrift.length}`,
       `- Unresolved imports: ${report.unresolvedImports.length}`,
+      "",
+      "## Core Runtime Packages",
+      "",
+      ...report.corePackageIds.map((entry) => `- \`${entry}\``),
       "",
       "## Compatibility Shims",
       "",
@@ -784,6 +843,7 @@ function writeConsumerSmokeReport(report: ConsumerSmokeReport) {
       `Generated: ${report.generatedAt}`,
       "",
       `- Example root: \`${report.exampleRoot}\``,
+      `- Certification workspace install: ${report.certificationInstall.ok ? "pass" : "fail"}`,
       `- Init: ${report.init.ok ? "pass" : "fail"}`,
       `- Vendor sync: ${report.vendorSync.ok ? "pass" : "fail"}`,
       "",
@@ -812,7 +872,7 @@ function assertCertificationHealthy(report: CertificationReport) {
 }
 
 function assertConsumerSmokeHealthy(report: ConsumerSmokeReport) {
-  if (!report.init.ok || !report.vendorSync.ok || report.verifiedPaths.length !== 2) {
+  if (!report.certificationInstall.ok || !report.init.ok || !report.vendorSync.ok || report.verifiedPaths.length !== 2) {
     throw new Error("Consumer smoke verification failed. See reports/consumer-smoke.md.");
   }
 }

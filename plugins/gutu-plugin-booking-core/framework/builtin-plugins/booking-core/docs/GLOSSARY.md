@@ -1,28 +1,12 @@
 # Booking Core Glossary
 
-## Terms
-
-### booking.reservations
-
-Canonical reservation records for rooms, desks, appointments, and other allocatable resources.
-
-- `actorId`: Operator or workflow actor that last changed the reservation.
-- `confirmationStatus`: Allocation state used by availability checks and portal views.
-- `createdAt`: Creation timestamp for audit review and operational tracing.
-- `holdExpiresAt`: Expiry time for held reservations awaiting confirmation.
-- `id`: Add the field meaning and how operators use it.
-- `idempotencyKey`: Add the field meaning and how operators use it.
-- `reason`: Add the field meaning and how operators use it.
-- `resourceClass`: Type of resource being reserved, such as room, desk, or appointment.
-- `resourceId`: Canonical identifier of the specific allocatable resource.
-- `slotEnd`: Exclusive end timestamp for the reservation window.
-- `slotStart`: Inclusive start timestamp for the reservation window.
-- `tenantId`: Add the field meaning and how operators use it.
-- `updatedAt`: Add the field meaning and how operators use it.
-
-
-## Domain shortcuts to avoid
-
-- Expand internal jargon that would confuse a new engineer or an AI agent.
-- Document terms that are similar but not interchangeable.
-- Call out any overloaded words such as account, order, customer, approval, or publish.
+| Term | Meaning |
+| --- | --- |
+| Booking Core | Reservations, booking holds, and conflict-safe resource allocation flows. |
+| booking.reservations | Capability published by this plugin manifest. |
+| booking.reservations.stage | Stage a booking reservation as a held or confirmed allocation window. |
+| booking.reservations.confirm | Confirm a held or draft reservation after review has completed. |
+| booking.reservations.cancel | Cancel a staged or confirmed reservation and release the resource window. |
+| Reservation staging | Primary focus area for Booking Core. |
+| Hold confirmation | Primary focus area for Booking Core. |
+| Slot conflict safety | Primary focus area for Booking Core. |
