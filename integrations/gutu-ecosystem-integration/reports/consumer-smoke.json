@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-04-20T19:57:12.480Z",
+  "generatedAt": "2026-04-20T20:57:51.591Z",
   "exampleRoot": "/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer",
   "certificationInstall": {
     "ok": true,
     "command": "bun install",
     "code": 0,
-    "stdout": "bun install v1.3.12 (700fc117)\n\nChecked 391 installs across 336 packages (no changes) [35.00ms]\n",
+    "stdout": "bun install v1.3.12 (700fc117)\n\nChecked 391 installs across 336 packages (no changes) [19.00ms]\n",
     "stderr": ""
   },
   "init": {

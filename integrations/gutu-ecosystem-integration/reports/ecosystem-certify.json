@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-04-20T19:57:08.839Z",
+  "generatedAt": "2026-04-20T20:57:48.647Z",
   "workspaceRoot": "/Users/chinmoybhuyan/Desktop/Personal/Framework",
   "certificationWorkspace": "/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/certify-workspace",
   "install": {
     "ok": true,
     "command": "bun install",
     "code": 0,
-    "stdout": "bun install v1.3.12 (700fc117)\n\n+ @eslint/js@9.39.4 (v10.0.1 available)\n+ @types/react@19.2.14\n+ @types/react-dom@19.2.3\n+ bun-types@1.3.13\n+ eslint@9.39.4 (v10.2.1 available)\n+ globals@16.5.0 (v17.5.0 available)\n+ playwright@1.59.1\n+ react@19.2.5\n+ react-dom@19.2.5\n+ typescript@5.8.3\n+ typescript-eslint@8.59.0\n+ zod@3.25.76 (v4.3.6 available)\n\n514 packages installed [594.00ms]\n",
-    "stderr": "Resolving dependencies\nResolved, downloaded and extracted [0]\nSaved lockfile\n"
+    "stdout": "bun install v1.3.12 (700fc117)\n\n+ @eslint/js@9.39.4 (v10.0.1 available)\n+ @types/react@19.2.14\n+ @types/react-dom@19.2.3\n+ bun-types@1.3.13\n+ eslint@9.39.4 (v10.2.1 available)\n+ globals@16.5.0 (v17.5.0 available)\n+ playwright@1.59.1\n+ react@19.2.5\n+ react-dom@19.2.5\n+ typescript@5.8.3\n+ typescript-eslint@8.59.0\n+ zod@3.25.76 (v4.3.6 available)\n\n514 packages installed [6.09s]\n",
+    "stderr": "Resolving dependencies\nResolved, downloaded and extracted [213]\nSaved lockfile\n"
   },
   "packageResults": [
     {
@@ -41,7 +41,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/app.test.ts:\n(pass) app scaffold > exposes a stable app id [0.08ms]\n\n 1 pass\n 0 fail\n 1 expect() calls\nRan 1 test across 1 file. [8.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/app.test.ts:\n(pass) app scaffold > exposes a stable app id [0.68ms]\n\n 1 pass\n 0 fail\n 1 expect() calls\nRan 1 test across 1 file. [12.00ms]\n"
         }
       ]
     },
@@ -76,7 +76,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/app.test.ts:\n(pass) app scaffold > exposes a stable app id [0.03ms]\n\n 1 pass\n 0 fail\n 1 expect() calls\nRan 1 test across 1 file. [6.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/app.test.ts:\n(pass) app scaffold > exposes a stable app id\n\n 1 pass\n 0 fail\n 1 expect() calls\nRan 1 test across 1 file. [5.00ms]\n"
         }
       ]
     },
@@ -111,7 +111,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test tests/unit\n\ntests/unit/app.test.ts:\n(pass) app scaffold > exposes a stable app id\n\n 1 pass\n 0 fail\n 1 expect() calls\nRan 1 test across 1 file. [189.00ms]\n"
+          "stderr": "$ bun test tests/unit\n\ntests/unit/app.test.ts:\n(pass) app scaffold > exposes a stable app id [0.95ms]\n\n 1 pass\n 0 fail\n 1 expect() calls\nRan 1 test across 1 file. [207.00ms]\n"
         }
       ]
     },
@@ -146,7 +146,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/app.test.ts:\n(pass) app scaffold > exposes a stable app id\n\n 1 pass\n 0 fail\n 1 expect() calls\nRan 1 test across 1 file. [5.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/app.test.ts:\n(pass) app scaffold > exposes a stable app id\n\n 1 pass\n 0 fail\n 1 expect() calls\nRan 1 test across 1 file. [6.00ms]\n"
         }
       ]
     },
@@ -181,7 +181,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.tsx:\n(pass) admin-builders > exposes a stable package id [0.99ms]\n(pass) admin-builders > defines builders and prevents stale publish revisions [0.11ms]\n(pass) admin-builders > renders multi-panel builder host panels [11.09ms]\n\n 3 pass\n 0 fail\n 7 expect() calls\nRan 3 tests across 1 file. [79.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.tsx:\n(pass) admin-builders > exposes a stable package id\n(pass) admin-builders > defines builders and prevents stale publish revisions [1.13ms]\n(pass) admin-builders > renders multi-panel builder host panels [9.32ms]\n\n 3 pass\n 0 fail\n 7 expect() calls\nRan 3 tests across 1 file. [78.00ms]\n"
         },
         {
           "ok": true,
@@ -223,7 +223,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) admin-contracts > exposes a stable package id\n(pass) admin-contracts > registers governed workspaces, nav, pages, and widgets [1.27ms]\n(pass) admin-contracts > rejects permissionless or conflicting contributions deterministically [0.46ms]\n(pass) admin-contracts > lifts legacy ui-shell surfaces into admin desk contributions [0.65ms]\n(pass) admin-contracts > evaluates permission-bound visibility helpers [0.21ms]\n\n 5 pass\n 0 fail\n 14 expect() calls\nRan 5 tests across 1 file. [12.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) admin-contracts > exposes a stable package id [0.01ms]\n(pass) admin-contracts > registers governed workspaces, nav, pages, and widgets [0.78ms]\n(pass) admin-contracts > rejects permissionless or conflicting contributions deterministically [0.64ms]\n(pass) admin-contracts > lifts legacy ui-shell surfaces into admin desk contributions [0.47ms]\n(pass) admin-contracts > evaluates permission-bound visibility helpers [0.23ms]\n\n 5 pass\n 0 fail\n 14 expect() calls\nRan 5 tests across 1 file. [12.00ms]\n"
         },
         {
           "ok": true,
@@ -265,7 +265,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) admin-formview > exposes a stable package id\n(pass) admin-formview > defines form views and reuses dirty/validation adapters [0.38ms]\n(pass) admin-formview > derives form/detail layouts from resource metadata [0.19ms]\n\n 3 pass\n 0 fail\n 7 expect() calls\nRan 3 tests across 1 file. [30.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) admin-formview > exposes a stable package id [0.03ms]\n(pass) admin-formview > defines form views and reuses dirty/validation adapters [0.29ms]\n(pass) admin-formview > derives form/detail layouts from resource metadata [0.68ms]\n\n 3 pass\n 0 fail\n 7 expect() calls\nRan 3 tests across 1 file. [26.00ms]\n"
         },
         {
           "ok": true,
@@ -307,7 +307,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) admin-listview > exposes a stable package id\n(pass) admin-listview > creates deterministic list definitions and saved views [0.16ms]\n(pass) admin-listview > derives list definitions from resource admin metadata and list state [0.26ms]\n\n 3 pass\n 0 fail\n 6 expect() calls\nRan 3 tests across 1 file. [20.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) admin-listview > exposes a stable package id [0.07ms]\n(pass) admin-listview > creates deterministic list definitions and saved views [0.05ms]\n(pass) admin-listview > derives list definitions from resource admin metadata and list state [0.37ms]\n\n 3 pass\n 0 fail\n 6 expect() calls\nRan 3 tests across 1 file. [21.00ms]\n"
         },
         {
           "ok": true,
@@ -349,7 +349,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) admin-reporting > exposes a stable package id [0.58ms]\n(pass) admin-reporting > creates semantic report definitions and execution requests [0.24ms]\n(pass) admin-reporting > validates report filter input against approved semantic types [1.45ms]\n\n 3 pass\n 0 fail\n 5 expect() calls\nRan 3 tests across 1 file. [21.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) admin-reporting > exposes a stable package id [0.73ms]\n(pass) admin-reporting > creates semantic report definitions and execution requests [0.50ms]\n(pass) admin-reporting > validates report filter input against approved semantic types [0.98ms]\n\n 3 pass\n 0 fail\n 5 expect() calls\nRan 3 tests across 1 file. [19.00ms]\n"
         },
         {
           "ok": true,
@@ -391,7 +391,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.tsx:\n(pass) admin-shell-workbench > exposes a stable package id\n(pass) admin-shell-workbench > composes legacy ui surfaces into the desk registry [0.89ms]\n(pass) admin-shell-workbench > filters visibility, resolves routes, and isolates search-provider failures [1.11ms]\n(pass) admin-shell-workbench > renders the desk with workspace nav, widgets, and permission-aware route states [12.35ms]\n(pass) admin-shell-workbench > persists admin preferences to disk for later operator sessions [1.33ms]\n\n 5 pass\n 0 fail\n 13 expect() calls\nRan 5 tests across 1 file. [119.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.tsx:\n(pass) admin-shell-workbench > exposes a stable package id [0.09ms]\n(pass) admin-shell-workbench > composes legacy ui surfaces into the desk registry [2.29ms]\n(pass) admin-shell-workbench > filters visibility, resolves routes, and isolates search-provider failures [1.22ms]\n(pass) admin-shell-workbench > renders the desk with workspace nav, widgets, and permission-aware route states [15.46ms]\n(pass) admin-shell-workbench > persists admin preferences to disk for later operator sessions [1.13ms]\n\n 5 pass\n 0 fail\n 13 expect() calls\nRan 5 tests across 1 file. [126.00ms]\n"
         },
         {
           "ok": true,
@@ -433,7 +433,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.tsx:\n(pass) admin-widgets > exposes a stable package id\n(pass) admin-widgets > defines dashboards and saved questions [0.22ms]\n(pass) admin-widgets > renders dashboard widget primitives and echarts options [7.90ms]\n\n 3 pass\n 0 fail\n 7 expect() calls\nRan 3 tests across 1 file. [79.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.tsx:\n(pass) admin-widgets > exposes a stable package id\n(pass) admin-widgets > defines dashboards and saved questions [0.05ms]\n(pass) admin-widgets > renders dashboard widget primitives and echarts options [8.88ms]\n\n 3 pass\n 0 fail\n 7 expect() calls\nRan 3 tests across 1 file. [79.00ms]\n"
         },
         {
           "ok": true,
@@ -475,7 +475,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ai > exposes a stable package id\n(pass) ai > generates tool contracts from action metadata [1.03ms]\n(pass) ai > invokes provider-neutral models with guardrails and retries [0.61ms]\n\n 3 pass\n 0 fail\n 9 expect() calls\nRan 3 tests across 1 file. [11.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ai > exposes a stable package id\n(pass) ai > generates tool contracts from action metadata [0.98ms]\n(pass) ai > invokes provider-neutral models with guardrails and retries [1.01ms]\n\n 3 pass\n 0 fail\n 9 expect() calls\nRan 3 tests across 1 file. [12.00ms]\n"
         },
         {
           "ok": true,
@@ -517,7 +517,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ai-evals > exposes a stable package id [0.02ms]\n(pass) ai-evals > runs eval datasets and detects regressions [0.07ms]\n\n 2 pass\n 0 fail\n 3 expect() calls\nRan 2 tests across 1 file. [6.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ai-evals > exposes a stable package id\n(pass) ai-evals > runs eval datasets and detects regressions [0.33ms]\n\n 2 pass\n 0 fail\n 3 expect() calls\nRan 2 tests across 1 file. [6.00ms]\n"
         },
         {
           "ok": true,
@@ -559,7 +559,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ai-guardrails > exposes a stable package id [0.05ms]\n(pass) ai-guardrails > sanitizes prompts, evaluates tool risk, and moderates output [1.13ms]\n\n 2 pass\n 0 fail\n 7 expect() calls\nRan 2 tests across 1 file. [11.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ai-guardrails > exposes a stable package id\n(pass) ai-guardrails > sanitizes prompts, evaluates tool risk, and moderates output [1.14ms]\n\n 2 pass\n 0 fail\n 7 expect() calls\nRan 2 tests across 1 file. [11.00ms]\n"
         },
         {
           "ok": true,
@@ -601,7 +601,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ai-mcp > exposes a stable package id [1.44ms]\n(pass) ai-mcp > derives MCP descriptors from framework contracts [0.75ms]\n\ntests/unit/runtime.test.ts:\n(pass) ai-mcp runtime > serves initialize, list, read, get, and call flows over JSON-RPC [1.77ms]\n\n 3 pass\n 0 fail\n 11 expect() calls\nRan 3 tests across 2 files. [16.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ai-mcp > exposes a stable package id [0.39ms]\n(pass) ai-mcp > derives MCP descriptors from framework contracts [0.22ms]\n\ntests/unit/runtime.test.ts:\n(pass) ai-mcp runtime > serves initialize, list, read, get, and call flows over JSON-RPC [1.67ms]\n\n 3 pass\n 0 fail\n 11 expect() calls\nRan 3 tests across 2 files. [17.00ms]\n"
         },
         {
           "ok": true,
@@ -643,7 +643,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ai-memory > exposes a stable package id\n(pass) ai-memory > chunks documents and retrieves tenant-safe citations [0.85ms]\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 1 file. [9.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ai-memory > exposes a stable package id\n(pass) ai-memory > chunks documents and retrieves tenant-safe citations [1.30ms]\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 1 file. [9.00ms]\n"
         },
         {
           "ok": true,
@@ -685,7 +685,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ai-runtime > exposes a stable package id [0.65ms]\n(pass) ai-runtime > creates durable run records with replay fingerprints and approval checkpoints [1.46ms]\n(pass) ai-runtime > fails closed on denied tools and exhausted budgets [0.15ms]\n\n 3 pass\n 0 fail\n 8 expect() calls\nRan 3 tests across 1 file. [19.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ai-runtime > exposes a stable package id\n(pass) ai-runtime > creates durable run records with replay fingerprints and approval checkpoints [1.15ms]\n(pass) ai-runtime > fails closed on denied tools and exhausted budgets [1.17ms]\n\n 3 pass\n 0 fail\n 8 expect() calls\nRan 3 tests across 1 file. [19.00ms]\n"
         },
         {
           "ok": true,
@@ -727,7 +727,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) analytics > exposes a stable package id\n(pass) analytics > records snapshots and aggregates metric windows [0.07ms]\n(pass) analytics > evaluates KPI segments over normalized dimensions [0.33ms]\n(pass) analytics > creates metric registries for shared KPI catalogs [0.02ms]\n\n 4 pass\n 0 fail\n 4 expect() calls\nRan 4 tests across 1 file. [8.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) analytics > exposes a stable package id\n(pass) analytics > records snapshots and aggregates metric windows [0.32ms]\n(pass) analytics > evaluates KPI segments over normalized dimensions [0.26ms]\n(pass) analytics > creates metric registries for shared KPI catalogs [0.05ms]\n\n 4 pass\n 0 fail\n 4 expect() calls\nRan 4 tests across 1 file. [6.00ms]\n"
         },
         {
           "ok": true,
@@ -769,7 +769,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.tsx:\n(pass) chart > exposes a stable package id\n(pass) chart > builds shared echarts option presets [0.22ms]\n(pass) chart > renders chart surfaces without exposing raw echarts usage to plugin code [4.04ms]\n\n 3 pass\n 0 fail\n 7 expect() calls\nRan 3 tests across 1 file. [24.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.tsx:\n(pass) chart > exposes a stable package id\n(pass) chart > builds shared echarts option presets [0.24ms]\n(pass) chart > renders chart surfaces without exposing raw echarts usage to plugin code [3.74ms]\n\n 3 pass\n 0 fail\n 7 expect() calls\nRan 3 tests across 1 file. [22.00ms]\n"
         },
         {
           "ok": true,
@@ -811,7 +811,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.tsx:\n(pass) command-palette > exposes a stable package id [1.35ms]\n(pass) command-palette > ranks, filters, and groups command items [1.07ms]\n(pass) command-palette > renders a cmdk-backed palette [8.75ms]\n\n 3 pass\n 0 fail\n 6 expect() calls\nRan 3 tests across 1 file. [101.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.tsx:\n(pass) command-palette > exposes a stable package id [0.01ms]\n(pass) command-palette > ranks, filters, and groups command items [0.56ms]\n(pass) command-palette > renders a cmdk-backed palette [8.26ms]\n\n 3 pass\n 0 fail\n 6 expect() calls\nRan 3 tests across 1 file. [94.00ms]\n"
         },
         {
           "ok": true,
@@ -853,7 +853,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) communication > exposes a stable package id\n(pass) communication > delegates email compilation to @platform/email-templates [20.06ms]\n(pass) communication > supports sms, push, and in-app compilers through the shared registry [0.19ms]\n(pass) communication > provides deterministic local providers for success, timeout, transient, permanent, and callback flows [0.16ms]\n(pass) communication > classifies retryable and terminal failures deterministically [0.04ms]\n(pass) communication > derives stable idempotency keys for normalized communication drafts [0.06ms]\n\n 6 pass\n 0 fail\n 18 expect() calls\nRan 6 tests across 1 file. [66.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) communication > exposes a stable package id [0.06ms]\n(pass) communication > delegates email compilation to @platform/email-templates [23.48ms]\n(pass) communication > supports sms, push, and in-app compilers through the shared registry [0.09ms]\n(pass) communication > provides deterministic local providers for success, timeout, transient, permanent, and callback flows [0.11ms]\n(pass) communication > classifies retryable and terminal failures deterministically [0.20ms]\n(pass) communication > derives stable idempotency keys for normalized communication drafts [0.02ms]\n\n 6 pass\n 0 fail\n 18 expect() calls\nRan 6 tests across 1 file. [69.00ms]\n"
         },
         {
           "ok": true,
@@ -895,7 +895,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) contracts > exposes a stable package id [0.74ms]\n(pass) contracts > re-exports zod for contract authors [1.42ms]\n\ntests/contracts/admin-plugin-imports.test.ts:\n(pass) admin plugin stack policy > keeps admin-registered plugins on platform wrappers instead of raw UI stack imports [0.14ms]\n\n 3 pass\n 0 fail\n 3 expect() calls\nRan 3 tests across 2 files. [29.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) contracts > exposes a stable package id [0.49ms]\n(pass) contracts > re-exports zod for contract authors [1.23ms]\n\ntests/contracts/admin-plugin-imports.test.ts:\n(pass) admin plugin stack policy > keeps admin-registered plugins on platform wrappers instead of raw UI stack imports\n\n 3 pass\n 0 fail\n 3 expect() calls\nRan 3 tests across 2 files. [29.00ms]\n"
         },
         {
           "ok": true,
@@ -937,7 +937,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) data-table > exposes a stable package id\n(pass) data-table > creates virtual row windows and applies saved views [0.36ms]\n(pass) data-table > filters actions by permission [0.06ms]\n\n 3 pass\n 0 fail\n 6 expect() calls\nRan 3 tests across 1 file. [14.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) data-table > exposes a stable package id [0.09ms]\n(pass) data-table > creates virtual row windows and applies saved views [1.20ms]\n(pass) data-table > filters actions by permission [0.08ms]\n\n 3 pass\n 0 fail\n 6 expect() calls\nRan 3 tests across 1 file. [15.00ms]\n"
         },
         {
           "ok": true,
@@ -979,7 +979,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.tsx:\n(pass) editor > exposes a stable package id\n(pass) editor > creates editable and readonly presets with extension seams [0.37ms]\n(pass) editor > renders readonly editor content [3.40ms]\n\n 3 pass\n 0 fail\n 5 expect() calls\nRan 3 tests across 1 file. [70.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.tsx:\n(pass) editor > exposes a stable package id\n(pass) editor > creates editable and readonly presets with extension seams [0.39ms]\n(pass) editor > renders readonly editor content [2.10ms]\n\n 3 pass\n 0 fail\n 5 expect() calls\nRan 3 tests across 1 file. [72.00ms]\n"
         },
         {
           "ok": true,
@@ -1021,7 +1021,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) email-templates > exposes a stable package id [0.23ms]\n(pass) email-templates > renders html and text from registered templates [20.55ms]\n(pass) email-templates > supports direct preview rendering helpers [1.67ms]\n\n 3 pass\n 0 fail\n 7 expect() calls\nRan 3 tests across 1 file. [58.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) email-templates > exposes a stable package id\n(pass) email-templates > renders html and text from registered templates [20.31ms]\n(pass) email-templates > supports direct preview rendering helpers [1.59ms]\n\n 3 pass\n 0 fail\n 7 expect() calls\nRan 3 tests across 1 file. [57.00ms]\n"
         },
         {
           "ok": true,
@@ -1063,7 +1063,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) form > exposes a stable package id [0.02ms]\n(pass) form > resolves field access and autosaves values [0.32ms]\n\n 2 pass\n 0 fail\n 3 expect() calls\nRan 2 tests across 1 file. [25.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) form > exposes a stable package id\n(pass) form > resolves field access and autosaves values [0.29ms]\n\n 2 pass\n 0 fail\n 3 expect() calls\nRan 2 tests across 1 file. [22.00ms]\n"
         },
         {
           "ok": true,
@@ -1105,7 +1105,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) geo > exposes a stable package id [0.02ms]\n(pass) geo > computes distances and bounding boxes [0.14ms]\n(pass) geo > normalizes provider-neutral result components [0.34ms]\n(pass) geo > runs geocode and reverse-geocode through provider adapters [0.16ms]\n\n 4 pass\n 0 fail\n 6 expect() calls\nRan 4 tests across 1 file. [6.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) geo > exposes a stable package id [0.23ms]\n(pass) geo > computes distances and bounding boxes [0.16ms]\n(pass) geo > normalizes provider-neutral result components [0.36ms]\n(pass) geo > runs geocode and reverse-geocode through provider adapters [0.13ms]\n\n 4 pass\n 0 fail\n 6 expect() calls\nRan 4 tests across 1 file. [7.00ms]\n"
         },
         {
           "ok": true,
@@ -1147,7 +1147,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.tsx:\n(pass) layout > exposes a stable package id\n(pass) layout > renders workspace and split-panel layouts [9.18ms]\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 1 file. [78.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.tsx:\n(pass) layout > exposes a stable package id\n(pass) layout > renders workspace and split-panel layouts [8.43ms]\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 1 file. [80.00ms]\n"
         },
         {
           "ok": true,
@@ -1189,7 +1189,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) query > exposes a stable package id [0.79ms]\n(pass) query > creates unified keys and optimistic updates [1.06ms]\n\n 2 pass\n 0 fail\n 3 expect() calls\nRan 2 tests across 1 file. [20.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) query > exposes a stable package id [0.75ms]\n(pass) query > creates unified keys and optimistic updates [1.04ms]\n\n 2 pass\n 0 fail\n 3 expect() calls\nRan 2 tests across 1 file. [19.00ms]\n"
         },
         {
           "ok": true,
@@ -1231,7 +1231,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) router > exposes a stable package id [0.04ms]\n(pass) router > creates safe admin routes and zone links [0.10ms]\n(pass) router > enforces route access [0.03ms]\n\n 3 pass\n 0 fail\n 4 expect() calls\nRan 3 tests across 1 file. [13.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) router > exposes a stable package id\n(pass) router > creates safe admin routes and zone links [0.16ms]\n(pass) router > enforces route access [0.12ms]\n\n 3 pass\n 0 fail\n 4 expect() calls\nRan 3 tests across 1 file. [12.00ms]\n"
         },
         {
           "ok": true,
@@ -1273,7 +1273,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) search > exposes a stable package id\n(pass) search > tokenizes and normalizes user queries [0.68ms]\n(pass) search > highlights matching text and scores ranked hits [0.20ms]\n(pass) search > creates paged search results with stable metadata [0.11ms]\n\n 4 pass\n 0 fail\n 6 expect() calls\nRan 4 tests across 1 file. [9.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) search > exposes a stable package id\n(pass) search > tokenizes and normalizes user queries [0.57ms]\n(pass) search > highlights matching text and scores ranked hits [0.25ms]\n(pass) search > creates paged search results with stable metadata [0.19ms]\n\n 4 pass\n 0 fail\n 6 expect() calls\nRan 4 tests across 1 file. [7.00ms]\n"
         },
         {
           "ok": true,
@@ -1315,7 +1315,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) telemetry-ui > exposes a stable package id\n(pass) telemetry-ui > tracks page, widget, and command telemetry through the shared shell providers [0.41ms]\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 1 file. [12.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) telemetry-ui > exposes a stable package id [0.05ms]\n(pass) telemetry-ui > tracks page, widget, and command telemetry through the shared shell providers [0.15ms]\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 1 file. [10.00ms]\n"
         },
         {
           "ok": true,
@@ -1357,7 +1357,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.tsx:\n(pass) ui > exposes a stable package id [2.14ms]\n(pass) ui > formats dates through shared date helpers [3.35ms]\n(pass) ui > resolves icons and toasts through shared adapters [5.54ms]\n\n 3 pass\n 0 fail\n 8 expect() calls\nRan 3 tests across 1 file. [74.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.tsx:\n(pass) ui > exposes a stable package id [0.55ms]\n(pass) ui > formats dates through shared date helpers [4.83ms]\n(pass) ui > resolves icons and toasts through shared adapters [5.21ms]\n\n 3 pass\n 0 fail\n 8 expect() calls\nRan 3 tests across 1 file. [79.00ms]\n"
         },
         {
           "ok": true,
@@ -1399,7 +1399,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-editor > exposes a stable package id [0.97ms]\n(pass) ui-editor > provides a starter extension set [0.25ms]\n(pass) ui-editor > creates editor configs with default editability [0.05ms]\n(pass) ui-editor > accepts string and json editor payloads [0.70ms]\n\n 4 pass\n 0 fail\n 5 expect() calls\nRan 4 tests across 1 file. [53.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-editor > exposes a stable package id [0.79ms]\n(pass) ui-editor > provides a starter extension set [0.36ms]\n(pass) ui-editor > creates editor configs with default editability [0.07ms]\n(pass) ui-editor > accepts string and json editor payloads [0.60ms]\n\n 4 pass\n 0 fail\n 5 expect() calls\nRan 4 tests across 1 file. [49.00ms]\n"
         },
         {
           "ok": true,
@@ -1441,7 +1441,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-form > exposes a stable package id\n(pass) ui-form > maps zod errors into field errors [2.07ms]\n(pass) ui-form > creates form defaults through the form schema [0.57ms]\n(pass) ui-form > provides registry, relation, async validation, and dirty-state helpers [0.25ms]\n\n 4 pass\n 0 fail\n 11 expect() calls\nRan 4 tests across 1 file. [25.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-form > exposes a stable package id [0.12ms]\n(pass) ui-form > maps zod errors into field errors [1.91ms]\n(pass) ui-form > creates form defaults through the form schema [0.66ms]\n(pass) ui-form > provides registry, relation, async validation, and dirty-state helpers [0.04ms]\n\n 4 pass\n 0 fail\n 11 expect() calls\nRan 4 tests across 1 file. [23.00ms]\n"
         },
         {
           "ok": true,
@@ -1483,7 +1483,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-kit > exposes a stable package id\n(pass) ui-kit > merges utility classes predictably [4.15ms]\n(pass) ui-kit > renders permission-aware boundaries [3.22ms]\n(pass) ui-kit > renders metric cards with semantic tones [0.60ms]\n(pass) ui-kit > renders admin desk primitives [1.04ms]\n\n 5 pass\n 0 fail\n 10 expect() calls\nRan 5 tests across 1 file. [32.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-kit > exposes a stable package id\n(pass) ui-kit > merges utility classes predictably [3.15ms]\n(pass) ui-kit > renders permission-aware boundaries [2.11ms]\n(pass) ui-kit > renders metric cards with semantic tones [1.75ms]\n(pass) ui-kit > renders admin desk primitives [1.11ms]\n\n 5 pass\n 0 fail\n 10 expect() calls\nRan 5 tests across 1 file. [30.00ms]\n"
         },
         {
           "ok": true,
@@ -1525,7 +1525,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-query > exposes a stable package id\n(pass) ui-query > builds stable typed query keys [0.29ms]\n(pass) ui-query > primes and invalidates platform query scopes [0.85ms]\n(pass) ui-query > creates and invalidates shell-scoped query keys [0.68ms]\n\n 4 pass\n 0 fail\n 6 expect() calls\nRan 4 tests across 1 file. [18.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-query > exposes a stable package id\n(pass) ui-query > builds stable typed query keys [0.32ms]\n(pass) ui-query > primes and invalidates platform query scopes [0.24ms]\n(pass) ui-query > creates and invalidates shell-scoped query keys [1.25ms]\n\n 4 pass\n 0 fail\n 6 expect() calls\nRan 4 tests across 1 file. [16.00ms]\n"
         },
         {
           "ok": true,
@@ -1567,7 +1567,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-router > exposes a stable package id [0.05ms]\n(pass) ui-router > builds hrefs from params and search state [0.07ms]\n(pass) ui-router > matches routes and extracts params [0.44ms]\n(pass) ui-router > creates deep-link contracts [0.05ms]\n(pass) ui-router > provides the standard admin route taxonomy [0.05ms]\n\n 5 pass\n 0 fail\n 11 expect() calls\nRan 5 tests across 1 file. [12.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-router > exposes a stable package id [0.11ms]\n(pass) ui-router > builds hrefs from params and search state [0.05ms]\n(pass) ui-router > matches routes and extracts params [0.30ms]\n(pass) ui-router > creates deep-link contracts [0.15ms]\n(pass) ui-router > provides the standard admin route taxonomy [0.04ms]\n\n 5 pass\n 0 fail\n 11 expect() calls\nRan 5 tests across 1 file. [11.00ms]\n"
         },
         {
           "ok": true,
@@ -1609,7 +1609,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-shell > exposes a stable package id [0.02ms]\n(pass) ui-shell > registers UI surfaces and zones with deep-link resolution [0.79ms]\n(pass) ui-shell > rejects duplicate widget slots and zone route ownership collisions [0.33ms]\n(pass) ui-shell > provides permission-aware navigation and event buses [0.37ms]\n(pass) ui-shell > renders admin, portal, and site shells with provider wiring intact [4.13ms]\n\ntests/unit/ui-shell.test.tsx:\n(pass) ui shell contracts > registers embedded pages and lists shell routes\n(pass) ui shell contracts > prevents conflicting zone mounts and asset prefixes [0.43ms]\n(pass) ui shell contracts > resolves deep links and filters protected routes through shared providers [0.21ms]\n(pass) ui shell contracts > records audit and telemetry activity and delivers command notifications [0.11ms]\n\n 9 pass\n 0 fail\n 24 expect() calls\nRan 9 tests across 2 files. [29.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-shell > exposes a stable package id\n(pass) ui-shell > registers UI surfaces and zones with deep-link resolution [0.86ms]\n(pass) ui-shell > rejects duplicate widget slots and zone route ownership collisions [0.30ms]\n(pass) ui-shell > provides permission-aware navigation and event buses [0.27ms]\n(pass) ui-shell > renders admin, portal, and site shells with provider wiring intact [4.11ms]\n\ntests/unit/ui-shell.test.tsx:\n(pass) ui shell contracts > registers embedded pages and lists shell routes [0.32ms]\n(pass) ui shell contracts > prevents conflicting zone mounts and asset prefixes [0.08ms]\n(pass) ui shell contracts > resolves deep links and filters protected routes through shared providers [0.44ms]\n(pass) ui shell contracts > records audit and telemetry activity and delivers command notifications [0.08ms]\n\n 9 pass\n 0 fail\n 24 expect() calls\nRan 9 tests across 2 files. [29.00ms]\n"
         },
         {
           "ok": true,
@@ -1651,7 +1651,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-table > exposes a stable package id [0.03ms]\n(pass) ui-table > builds standardized column definitions [0.03ms]\n(pass) ui-table > creates table options with the core row model [0.01ms]\n(pass) ui-table > manages controlled admin-style table state [0.04ms]\n\n 4 pass\n 0 fail\n 8 expect() calls\nRan 4 tests across 1 file. [12.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-table > exposes a stable package id\n(pass) ui-table > builds standardized column definitions [0.04ms]\n(pass) ui-table > creates table options with the core row model [0.03ms]\n(pass) ui-table > manages controlled admin-style table state [0.10ms]\n\n 4 pass\n 0 fail\n 8 expect() calls\nRan 4 tests across 1 file. [10.00ms]\n"
         },
         {
           "ok": true,
@@ -1693,7 +1693,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-zone-next > exposes a stable package id [0.40ms]\n(pass) ui-zone-next > creates a next zone with platform session defaults [0.24ms]\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 1 file. [16.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-zone-next > exposes a stable package id [0.58ms]\n(pass) ui-zone-next > creates a next zone with platform session defaults [0.15ms]\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 1 file. [14.00ms]\n"
         },
         {
           "ok": true,
@@ -1735,7 +1735,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-zone-static > exposes a stable package id [0.59ms]\n(pass) ui-zone-static > creates a static react zone with deterministic asset paths [0.12ms]\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 1 file. [14.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) ui-zone-static > exposes a stable package id [0.60ms]\n(pass) ui-zone-static > creates a static react zone with deterministic asset paths [0.05ms]\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 1 file. [15.00ms]\n"
         },
         {
           "ok": true,
@@ -1777,7 +1777,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) admin shell workbench manifest > claims the primary admin shell slots [0.10ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) admin shell workbench ui surface > registers a desk-status admin page\n\n 2 pass\n 0 fail\n 5 expect() calls\nRan 2 tests across 2 files. [16.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) admin shell workbench manifest > claims the primary admin shell slots\n\ntests/contracts/ui-surface.test.ts:\n(pass) admin shell workbench ui surface > registers a desk-status admin page [0.01ms]\n\n 2 pass\n 0 fail\n 5 expect() calls\nRan 2 tests across 2 files. [16.00ms]\n"
         },
         {
           "ok": true,
@@ -1819,7 +1819,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/services.test.ts:\n(pass) ai-core services > persists approval-driven agent runs and clears pending approvals after resolution [3.37ms]\n(pass) ai-core services > persists published prompt versions and updates the active template body [0.89ms]\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > keeps a compatibility admin page for the built-in AI desk\n(pass) ui surface registration > registers the shared AI workspace, governed pages, widgets, and reports [0.17ms]\n\n 5 pass\n 0 fail\n 22 expect() calls\nRan 5 tests across 3 files. [84.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/services.test.ts:\n(pass) ai-core services > persists approval-driven agent runs and clears pending approvals after resolution [3.37ms]\n(pass) ai-core services > persists published prompt versions and updates the active template body [1.21ms]\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > keeps a compatibility admin page for the built-in AI desk\n(pass) ui surface registration > registers the shared AI workspace, governed pages, widgets, and reports [0.29ms]\n\n 5 pass\n 0 fail\n 22 expect() calls\nRan 5 tests across 3 files. [87.00ms]\n"
         },
         {
           "ok": true,
@@ -1861,7 +1861,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/services.test.ts:\n(pass) ai-evals services > persists new candidate eval runs and makes them the latest summary [1.84ms]\n(pass) ai-evals services > compares persisted runs against stored baselines [0.98ms]\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > keeps a compatibility admin page for eval review\n(pass) ui surface registration > registers eval review surfaces in the shared AI workspace [0.17ms]\n\n 5 pass\n 0 fail\n 14 expect() calls\nRan 5 tests across 3 files. [31.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/services.test.ts:\n(pass) ai-evals services > persists new candidate eval runs and makes them the latest summary [1.51ms]\n(pass) ai-evals services > compares persisted runs against stored baselines [1.51ms]\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > keeps a compatibility admin page for eval review\n(pass) ui surface registration > registers eval review surfaces in the shared AI workspace [0.98ms]\n\n 5 pass\n 0 fail\n 14 expect() calls\nRan 5 tests across 3 files. [31.00ms]\n"
         },
         {
           "ok": true,
@@ -1903,7 +1903,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/services.test.ts:\n(pass) ai-rag services > persists ingested documents and updates collection counts [1.77ms]\n(pass) ai-rag services > retrieves citations from persisted state and tracks reindex requests [1.42ms]\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > keeps a compatibility admin page for memory operations [0.66ms]\n(pass) ui surface registration > registers retrieval and memory diagnostics into the shared AI workspace [0.08ms]\n\n 5 pass\n 0 fail\n 16 expect() calls\nRan 5 tests across 3 files. [83.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/services.test.ts:\n(pass) ai-rag services > persists ingested documents and updates collection counts [0.99ms]\n(pass) ai-rag services > retrieves citations from persisted state and tracks reindex requests [1.49ms]\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > keeps a compatibility admin page for memory operations [0.05ms]\n(pass) ui surface registration > registers retrieval and memory diagnostics into the shared AI workspace [0.03ms]\n\n 5 pass\n 0 fail\n 16 expect() calls\nRan 5 tests across 3 files. [86.00ms]\n"
         },
         {
           "ok": true,
@@ -1945,7 +1945,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.06ms]\n(pass) plugin manifest > summarizes audit events for downstream sinks [0.24ms]\n(pass) plugin manifest > keeps the audit action contract stable [1.47ms]\n(pass) plugin manifest > emits explicit outbox metadata for downstream audit sinks [0.03ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 5 pass\n 0 fail\n 21 expect() calls\nRan 5 tests across 2 files. [36.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n(pass) plugin manifest > summarizes audit events for downstream sinks [0.67ms]\n(pass) plugin manifest > keeps the audit action contract stable [1.83ms]\n(pass) plugin manifest > emits explicit outbox metadata for downstream audit sinks [0.03ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page [0.02ms]\n\n 5 pass\n 0 fail\n 21 expect() calls\nRan 5 tests across 2 files. [37.00ms]\n"
         },
         {
           "ok": true,
@@ -1987,7 +1987,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n(pass) plugin manifest > provisions identities with provider-aware defaults [0.20ms]\n(pass) plugin manifest > validates the public action contract [1.51ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 4 pass\n 0 fail\n 6 expect() calls\nRan 4 tests across 2 files. [34.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n(pass) plugin manifest > provisions identities with provider-aware defaults [0.23ms]\n(pass) plugin manifest > validates the public action contract [1.31ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 4 pass\n 0 fail\n 6 expect() calls\nRan 4 tests across 2 files. [28.00ms]\n"
         },
         {
           "ok": true,
@@ -2029,7 +2029,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/migrations/postgres.test.ts:\n(skip) booking-core postgres invariants > (unnamed)\n(skip) booking-core postgres invariants > rejects overlapping active reservations but allows slot reuse after cancellation\n(skip) booking-core postgres invariants > allows adjacent reservations while still blocking true time overlap\n(skip) booking-core postgres invariants > (unnamed)\n\ntests/unit/package.test.ts:\n(pass) booking-core > keeps a stable package id and primary capability\n(pass) booking-core > stages held reservations when approval is required [1.45ms]\n(pass) booking-core > confirms held reservations and clears transient hold expiry [0.53ms]\n(pass) booking-core > cancels active reservations with an explicit operator reason [0.16ms]\n(pass) booking-core > validates the public action contract for auto-confirmed reservations [0.30ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > keeps a compatibility admin page for booking review\n(pass) ui surface registration > registers booking reservation surfaces in the shared booking workspace [0.09ms]\n\n 7 pass\n 4 skip\n 0 fail\n 11 expect() calls\nRan 11 tests across 3 files. [48.00ms]\n"
+          "stderr": "$ bun test\n\ntests/migrations/postgres.test.ts:\n(skip) booking-core postgres invariants > (unnamed)\n(skip) booking-core postgres invariants > rejects overlapping active reservations but allows slot reuse after cancellation\n(skip) booking-core postgres invariants > allows adjacent reservations while still blocking true time overlap\n(skip) booking-core postgres invariants > (unnamed)\n\ntests/unit/package.test.ts:\n(pass) booking-core > keeps a stable package id and primary capability\n(pass) booking-core > stages held reservations when approval is required [0.98ms]\n(pass) booking-core > confirms held reservations and clears transient hold expiry [0.88ms]\n(pass) booking-core > cancels active reservations with an explicit operator reason [0.15ms]\n(pass) booking-core > validates the public action contract for auto-confirmed reservations [0.58ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > keeps a compatibility admin page for booking review\n(pass) ui surface registration > registers booking reservation surfaces in the shared booking workspace [0.25ms]\n\n 7 pass\n 4 skip\n 0 fail\n 11 expect() calls\nRan 11 tests across 3 files. [48.00ms]\n"
         },
         {
           "ok": true,
@@ -2071,7 +2071,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.05ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page [0.02ms]\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 2 files. [18.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.08ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 2 files. [15.00ms]\n"
         },
         {
           "ok": true,
@@ -2113,7 +2113,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page [0.02ms]\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 2 files. [18.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 2 files. [17.00ms]\n"
         },
         {
           "ok": true,
@@ -2155,7 +2155,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\ntests/contracts/admin-contributions.test.ts:\n(pass) dashboard core admin contributions > registers overview workspaces, operator surfaces, widgets, reports, and builders [0.64ms]\n\n 3 pass\n 0 fail\n 10 expect() calls\nRan 3 tests across 3 files. [20.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\ntests/contracts/admin-contributions.test.ts:\n(pass) dashboard core admin contributions > registers overview workspaces, operator surfaces, widgets, reports, and builders [0.14ms]\n\n 3 pass\n 0 fail\n 10 expect() calls\nRan 3 tests across 3 files. [20.00ms]\n"
         },
         {
           "ok": true,
@@ -2197,7 +2197,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.13ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 2 files. [17.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.03ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page [0.02ms]\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 2 files. [16.00ms]\n"
         },
         {
           "ok": true,
@@ -2239,7 +2239,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n(pass) plugin manifest > quarantines risky public uploads before activation [0.21ms]\n(pass) plugin manifest > validates normal private asset registration through the public contract [1.58ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 4 pass\n 0 fail\n 6 expect() calls\nRan 4 tests across 2 files. [33.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.08ms]\n(pass) plugin manifest > quarantines risky public uploads before activation [0.15ms]\n(pass) plugin manifest > validates normal private asset registration through the public contract [1.74ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 4 pass\n 0 fail\n 6 expect() calls\nRan 4 tests across 2 files. [32.00ms]\n"
         },
         {
           "ok": true,
@@ -2281,7 +2281,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.04ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 2 files. [18.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 2 files. [16.00ms]\n"
         },
         {
           "ok": true,
@@ -2323,7 +2323,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n(pass) plugin manifest > publishes explicit queue job envelopes [0.42ms]\n(pass) plugin manifest > queues immediate executions with observability metadata [0.02ms]\n(pass) plugin manifest > validates the scheduling contract for delayed work [1.80ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 5 pass\n 0 fail\n 7 expect() calls\nRan 5 tests across 2 files. [40.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.03ms]\n(pass) plugin manifest > publishes explicit queue job envelopes [0.02ms]\n(pass) plugin manifest > queues immediate executions with observability metadata [0.65ms]\n(pass) plugin manifest > validates the scheduling contract for delayed work [1.73ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 5 pass\n 0 fail\n 7 expect() calls\nRan 5 tests across 2 files. [36.00ms]\n"
         },
         {
           "ok": true,
@@ -2365,7 +2365,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 2 files. [17.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.06ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 2 files. [15.00ms]\n"
         },
         {
           "ok": true,
@@ -2407,7 +2407,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/migrations/postgres.test.ts:\n(skip) notifications-core postgres invariants > (unnamed)\n(skip) notifications-core postgres invariants > applies and rolls back the communication tables and idempotency indexes\n(skip) notifications-core postgres invariants > (unnamed)\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.11ms]\n(pass) plugin manifest > registers governed delivery endpoints with stable route metadata [0.10ms]\n(pass) plugin manifest > stores suppressions and digest preferences per channel [0.07ms]\n(pass) plugin manifest > queues outbound messages with lifecycle state, jobs, and audit events [1.41ms]\n(pass) plugin manifest > preserves contract behavior for scheduled push sends [2.94ms]\n(pass) plugin manifest > keeps resource preference registration available through the action contract [1.07ms]\n(pass) plugin manifest > renders concrete postgres DDL without unresolved template placeholders [0.10ms]\n\ntests/integration/delivery-lifecycle.test.ts:\n(pass) notifications-core delivery lifecycle > queues and dispatches immediate outbound messages across all first-class channels [28.08ms]\n(pass) notifications-core delivery lifecycle > keeps scheduled sends in scheduled state until their dispatch window opens [0.42ms]\n(pass) notifications-core delivery lifecycle > retries transient provider failures and dead-letters terminal retries [1.23ms]\n(pass) notifications-core delivery lifecycle > blocks suppressed recipients before dispatch and preserves the audit trail [0.11ms]\n(pass) notifications-core delivery lifecycle > reconciles accepted callbacks idempotently [2.28ms]\n(pass) notifications-core delivery lifecycle > rejects digest delivery for sms and push at the contract boundary [0.10ms]\n(pass) notifications-core delivery lifecycle > cancels queued messages before dispatch [0.12ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > keeps a compatibility admin page for notification operations [0.80ms]\n(pass) ui surface registration > registers communication workspaces, pages, and commands [0.19ms]\n\n 16 pass\n 3 skip\n 0 fail\n 45 expect() calls\nRan 19 tests across 4 files. [135.00ms]\n"
+          "stderr": "$ bun test\n\ntests/migrations/postgres.test.ts:\n(skip) notifications-core postgres invariants > (unnamed)\n(skip) notifications-core postgres invariants > applies and rolls back the communication tables and idempotency indexes\n(skip) notifications-core postgres invariants > (unnamed)\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.04ms]\n(pass) plugin manifest > registers governed delivery endpoints with stable route metadata [1.66ms]\n(pass) plugin manifest > stores suppressions and digest preferences per channel [0.06ms]\n(pass) plugin manifest > queues outbound messages with lifecycle state, jobs, and audit events [0.06ms]\n(pass) plugin manifest > preserves contract behavior for scheduled push sends [2.79ms]\n(pass) plugin manifest > keeps resource preference registration available through the action contract [1.23ms]\n(pass) plugin manifest > renders concrete postgres DDL without unresolved template placeholders [0.43ms]\n\ntests/integration/delivery-lifecycle.test.ts:\n(pass) notifications-core delivery lifecycle > queues and dispatches immediate outbound messages across all first-class channels [21.83ms]\n(pass) notifications-core delivery lifecycle > keeps scheduled sends in scheduled state until their dispatch window opens [0.46ms]\n(pass) notifications-core delivery lifecycle > retries transient provider failures and dead-letters terminal retries [1.57ms]\n(pass) notifications-core delivery lifecycle > blocks suppressed recipients before dispatch and preserves the audit trail [0.10ms]\n(pass) notifications-core delivery lifecycle > reconciles accepted callbacks idempotently [2.59ms]\n(pass) notifications-core delivery lifecycle > rejects digest delivery for sms and push at the contract boundary [0.48ms]\n(pass) notifications-core delivery lifecycle > cancels queued messages before dispatch [0.33ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > keeps a compatibility admin page for notification operations [0.34ms]\n(pass) ui surface registration > registers communication workspaces, pages, and commands [0.21ms]\n\n 16 pass\n 3 skip\n 0 fail\n 45 expect() calls\nRan 19 tests across 4 files. [121.00ms]\n"
         },
         {
           "ok": true,
@@ -2449,7 +2449,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.04ms]\n(pass) plugin manifest > normalizes tenant slugs during activation [0.08ms]\n(pass) plugin manifest > keeps the action contract stable [1.41ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 4 pass\n 0 fail\n 6 expect() calls\nRan 4 tests across 2 files. [31.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.05ms]\n(pass) plugin manifest > normalizes tenant slugs during activation [0.04ms]\n(pass) plugin manifest > keeps the action contract stable [1.53ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page [0.03ms]\n\n 4 pass\n 0 fail\n 6 expect() calls\nRan 4 tests across 2 files. [31.00ms]\n"
         },
         {
           "ok": true,
@@ -2491,7 +2491,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.10ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\ntests/contracts/admin-contributions.test.ts:\n(pass) page builder admin contributions > registers tool workspace, builder route, and governed zone launcher\n\n 3 pass\n 0 fail\n 8 expect() calls\nRan 3 tests across 3 files. [76.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.07ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page [1.33ms]\n\ntests/contracts/admin-contributions.test.ts:\n(pass) page builder admin contributions > registers tool workspace, builder route, and governed zone launcher\n\n 3 pass\n 0 fail\n 8 expect() calls\nRan 3 tests across 3 files. [70.00ms]\n"
         },
         {
           "ok": true,
@@ -2533,7 +2533,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n(pass) plugin manifest > derives default routes and widgets for portal actors [0.15ms]\n(pass) plugin manifest > validates the public action contract for active student portal access [1.81ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers admin and portal surfaces\n\n 4 pass\n 0 fail\n 8 expect() calls\nRan 4 tests across 2 files. [31.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n(pass) plugin manifest > derives default routes and widgets for portal actors [0.11ms]\n(pass) plugin manifest > validates the public action contract for active student portal access [1.66ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers admin and portal surfaces\n\n 4 pass\n 0 fail\n 8 expect() calls\nRan 4 tests across 2 files. [29.00ms]\n"
         },
         {
           "ok": true,
@@ -2575,7 +2575,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.24ms]\n(pass) plugin manifest > creates deterministic grant keys [0.05ms]\n(pass) plugin manifest > validates the role-policy action contract [1.39ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page [0.03ms]\n\n 4 pass\n 0 fail\n 6 expect() calls\nRan 4 tests across 2 files. [31.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.11ms]\n(pass) plugin manifest > creates deterministic grant keys [0.10ms]\n(pass) plugin manifest > validates the role-policy action contract [1.28ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 4 pass\n 0 fail\n 6 expect() calls\nRan 4 tests across 2 files. [29.00ms]\n"
         },
         {
           "ok": true,
@@ -2617,7 +2617,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 2 files. [19.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 2 files. [16.00ms]\n"
         },
         {
           "ok": true,
@@ -2659,7 +2659,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.04ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 2 files. [19.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.01ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 2 files. [17.00ms]\n"
         },
         {
           "ok": true,
@@ -2701,7 +2701,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.15ms]\n(pass) plugin manifest > normalizes directory keys to lowercase email addresses [0.06ms]\n(pass) plugin manifest > keeps the registration action contract stable [1.47ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 4 pass\n 0 fail\n 6 expect() calls\nRan 4 tests across 2 files. [42.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.03ms]\n(pass) plugin manifest > normalizes directory keys to lowercase email addresses [0.13ms]\n(pass) plugin manifest > keeps the registration action contract stable [1.37ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 4 pass\n 0 fail\n 6 expect() calls\nRan 4 tests across 2 files. [29.00ms]\n"
         },
         {
           "ok": true,
@@ -2743,7 +2743,7 @@
           "command": "bun run test",
           "code": 0,
           "stdout": "bun test v1.3.12 (700fc117)\n",
-          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability [0.08ms]\n(pass) plugin manifest > publishes explicit workflow definitions [0.02ms]\n(pass) plugin manifest > transitions approval workflows with audited side effects [0.08ms]\n(pass) plugin manifest > rejects approval-only transitions from requester actors [1.21ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page [0.05ms]\n\n 5 pass\n 0 fail\n 7 expect() calls\nRan 5 tests across 2 files. [40.00ms]\n"
+          "stderr": "$ bun test\n\ntests/unit/package.test.ts:\n(pass) plugin manifest > keeps a stable package id and primary capability\n(pass) plugin manifest > publishes explicit workflow definitions [0.28ms]\n(pass) plugin manifest > transitions approval workflows with audited side effects [0.08ms]\n(pass) plugin manifest > rejects approval-only transitions from requester actors [1.10ms]\n\ntests/contracts/ui-surface.test.ts:\n(pass) ui surface registration > registers a single admin embedded page\n\n 5 pass\n 0 fail\n 7 expect() calls\nRan 5 tests across 2 files. [36.00ms]\n"
         },
         {
           "ok": true,
