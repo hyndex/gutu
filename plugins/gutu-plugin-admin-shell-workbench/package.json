@@ -1,0 +1,8 @@
+{
+  "name": "gutu-plugin-admin-shell-workbench",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/builtin-plugins/*"
+  ]
+}

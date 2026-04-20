@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-communication",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

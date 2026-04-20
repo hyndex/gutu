@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-admin-listview",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

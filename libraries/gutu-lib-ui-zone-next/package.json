@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-ui-zone-next",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

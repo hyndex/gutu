@@ -1,0 +1,8 @@
+{
+  "name": "gutu-plugin-ai-rag",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/builtin-plugins/*"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-layout",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

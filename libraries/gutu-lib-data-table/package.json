@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-data-table",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

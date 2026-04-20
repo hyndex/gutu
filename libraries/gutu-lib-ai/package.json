@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-ai",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

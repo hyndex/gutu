@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-geo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

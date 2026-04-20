@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-command-palette",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

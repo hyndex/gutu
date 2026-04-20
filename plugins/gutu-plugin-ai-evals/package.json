@@ -1,0 +1,8 @@
+{
+  "name": "gutu-plugin-ai-evals",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/builtin-plugins/*"
+  ]
+}

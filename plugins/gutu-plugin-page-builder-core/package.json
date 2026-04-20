@@ -1,0 +1,8 @@
+{
+  "name": "gutu-plugin-page-builder-core",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/builtin-plugins/*"
+  ]
+}

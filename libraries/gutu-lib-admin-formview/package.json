@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-admin-formview",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

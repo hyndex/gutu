@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-ui-query",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

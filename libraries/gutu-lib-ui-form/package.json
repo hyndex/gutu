@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-ui-form",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

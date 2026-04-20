@@ -1,0 +1,8 @@
+{
+  "name": "gutu-plugin-role-policy-core",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/builtin-plugins/*"
+  ]
+}

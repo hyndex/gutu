@@ -1,0 +1,26 @@
+{
+  "generatedAt": "2026-04-20T18:00:09.798Z",
+  "exampleRoot": "/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer",
+  "init": {
+    "ok": true,
+    "command": "bun run framework/core/cli/src/bin.ts init /Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer",
+    "code": 0,
+    "stdout": "{\n  \"ok\": true,\n  \"projectRoot\": \"/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer\",\n  \"createdFiles\": [\n    \".gutu/cache/.gitkeep\",\n    \".gutu/state/.gitkeep\",\n    \"README.md\",\n    \"apps/.gitkeep\",\n    \"apps/demo-consumer-app/README.md\",\n    \"gutu.lock.json\",\n    \"gutu.overrides.json\",\n    \"gutu.project.json\",\n    \"package.json\",\n    \"vendor/framework/.gitkeep\",\n    \"vendor/libraries/.gitkeep\",\n    \"vendor/plugins/.gitkeep\"\n  ]\n}\n",
+    "stderr": ""
+  },
+  "vendorSync": {
+    "ok": true,
+    "command": "bun run framework/core/cli/src/bin.ts vendor sync /Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer",
+    "code": 0,
+    "stdout": "{\n  \"ok\": true,\n  \"installed\": [\n    {\n      \"id\": \"@platform/communication\",\n      \"targetPath\": \"/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer/vendor/libraries/communication\",\n      \"source\": \"artifact\",\n      \"sha256\": \"5b644938818b465c2b172bd3b2b125b0a61d14c06541550379f000a7c638ad02\"\n    },\n    {\n      \"id\": \"@plugins/notifications-core\",\n      \"targetPath\": \"/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer/vendor/plugins/notifications-core\",\n      \"source\": \"artifact\",\n      \"sha256\": \"0e02ea1ae4dd1049fa2b9b0a747b0104df9ae068245450eb89f6090b7ecb8fed\"\n    }\n  ]\n}\n",
+    "stderr": ""
+  },
+  "verifiedPaths": [
+    "/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer/vendor/libraries/communication/package.json",
+    "/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/consumer-smoke/demo-consumer/vendor/plugins/notifications-core/package.json"
+  ],
+  "packagedArtifacts": [
+    "/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/certify-workspace/libraries/gutu-lib-communication/framework/libraries/communication/platform-communication-0.1.0.tgz",
+    "/Users/chinmoybhuyan/Desktop/Personal/Framework/integrations/gutu-ecosystem-integration/.tmp/certify-workspace/plugins/gutu-plugin-notifications-core/framework/builtin-plugins/notifications-core/plugins-notifications-core-0.1.0.tgz"
+  ]
+}

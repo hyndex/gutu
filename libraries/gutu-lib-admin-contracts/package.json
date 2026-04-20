@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-admin-contracts",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

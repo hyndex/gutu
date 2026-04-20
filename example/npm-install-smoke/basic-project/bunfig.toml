@@ -1,6 +1,0 @@
-[install]
-saveTextLockfile = true
-exact = false
-
-[test]
-preload = ["./vendor/framework/gutu/tooling/test/register-env.ts"]

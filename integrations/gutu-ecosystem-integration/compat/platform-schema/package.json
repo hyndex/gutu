@@ -1,0 +1,12 @@
+{
+  "name": "@platform/schema",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0-integration",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "zod": "^3.24.3"
+  }
+}

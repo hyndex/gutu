@@ -1,0 +1,8 @@
+{
+  "name": "gutu-app-docs",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*"
+  ]
+}

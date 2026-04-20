@@ -1,0 +1,30 @@
+{
+  "name": "gutu-ecosystem-integration",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "workspaces": [
+    "compat/*"
+  ],
+  "scripts": {
+    "audit": "bun run scripts/ecosystem-ci.ts audit",
+    "certify": "bun run scripts/ecosystem-ci.ts certify",
+    "consumer:smoke": "bun run scripts/ecosystem-ci.ts consumer-smoke",
+    "test": "bun run audit",
+    "ci": "bun run audit && bun run certify && bun run consumer:smoke"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.25.1",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "bun-types": "^1.3.12",
+    "eslint": "^9.25.1",
+    "globals": "^16.0.0",
+    "playwright": "^1.55.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "typescript": "5.8.3",
+    "typescript-eslint": "^8.30.1",
+    "zod": "^3.24.3"
+  }
+}

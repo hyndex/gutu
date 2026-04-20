@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-ui-router",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

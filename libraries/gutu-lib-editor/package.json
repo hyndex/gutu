@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-editor",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

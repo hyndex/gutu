@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-admin-shell-workbench",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

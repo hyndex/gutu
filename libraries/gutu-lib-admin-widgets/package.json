@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-admin-widgets",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

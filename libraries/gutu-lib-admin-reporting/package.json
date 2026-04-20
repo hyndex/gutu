@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-admin-reporting",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}

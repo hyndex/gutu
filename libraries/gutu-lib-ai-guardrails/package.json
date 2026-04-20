@@ -1,0 +1,8 @@
+{
+  "name": "gutu-lib-ai-guardrails",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "framework/libraries/*"
+  ]
+}
