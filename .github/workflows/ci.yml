@@ -83,7 +83,7 @@ jobs:
           subject-path: ${{ github.workspace }}/artifacts/release/gutu-framework-release.tgz
 
       - name: Attest release bundle SBOM
-        uses: actions/attest-sbom@v3
+        uses: actions/attest-sbom@v4
         with:
           subject-path: ${{ github.workspace }}/artifacts/release/gutu-framework-release.tgz
           sbom-path: ${{ github.workspace }}/artifacts/sbom/gutu-framework-sbom.cdx.json
