@@ -50,6 +50,8 @@ flowchart LR
 
 The rebuilt core baseline now includes:
 
+- cross-platform `gutu init` bootstrapping with vendored framework installs under `vendor/framework`
+- automatic `copy` fallback for Windows and other symlink-restricted hosts, with explicit `copy|symlink|auto` control
 - signed release manifest generation and verification
 - provenance generation for release artifacts
 - remote `file://` and `http(s)` artifact fetching with digest enforcement
@@ -94,9 +96,18 @@ bun run test
 bun run ci
 bun run release:prepare
 bun run rollout:scaffold
-bun run gutu -- init demo-workspace
+bun run gutu -- init demo-workspace --framework-install-mode auto
 bun run gutu -- doctor
 ```
+
+## Consumer Bootstrap
+
+`gutu init` now does more than write placeholder folders. It creates the workspace, records the selected framework install mode in `gutu.project.json`, and installs a local framework root into `vendor/framework` so teams can bootstrap predictably on developer laptops and locked-down enterprise endpoints.
+
+- `auto` prefers `symlink` only when the host can safely create directory links.
+- Windows and other symlink-restricted environments fall back to `copy`.
+- `copy` is the safest mode for enterprise rollouts where link policies are unknown.
+- `gutu vendor sync` still handles plugin and library artifacts after the framework bootstrap is in place.
 
 ## More Reading
 

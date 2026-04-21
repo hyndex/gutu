@@ -8,6 +8,7 @@
 - `Phase R4 - artifact, release, and external-repo scaffolding complete`
 - `Phase R5 - rollout automation complete; live GitHub execution remains credential-gated`
 - `Phase R6 - cross-plugin orchestration runtime active and wired into the split-repo integration harness`
+- `Phase R7 - cross-platform consumer bootstrap hardened for copy/symlink framework installs`
 
 ## Truth
 
@@ -27,6 +28,8 @@
   - `@platform/plugin-solver`
 - The active orchestration model is explicit commands plus durable events and jobs/workflows, not generic bidirectional hooks.
 - The ecosystem audit now sees 11 real core runtime packages and only one remaining compat shim.
+- `gutu init` now vendors a local framework root into `vendor/framework` and records whether the bootstrap used `copy` or `symlink`.
+- Automatic bootstrap mode now prefers `copy` on Windows and other symlink-restricted hosts so consumer initialization remains enterprise-safe.
 
 ## Next Milestones
 

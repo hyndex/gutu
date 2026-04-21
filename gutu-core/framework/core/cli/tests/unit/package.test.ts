@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash, generateKeyPairSync, sign } from "node:crypto";
@@ -30,6 +30,22 @@ function createIo(cwd: string) {
   };
 }
 
+function hasDirectorySymlinkSupport(root: string): boolean {
+  const source = join(root, "symlink-source");
+  const target = join(root, "symlink-target");
+  mkdirSync(source, { recursive: true });
+
+  try {
+    symlinkSync(source, target, process.platform === "win32" ? "junction" : "dir");
+    return true;
+  } catch {
+    return false;
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(source, { recursive: true, force: true });
+  }
+}
+
 describe("@gutu/cli", () => {
   it("prints help by default", async () => {
     const root = mkdtempSync(join(tmpdir(), "gutu-cli-help-"));
@@ -50,6 +66,38 @@ describe("@gutu/cli", () => {
       const code = await runCli(["init", "demo"], harness.io);
       expect(code).toBe(0);
       expect(harness.read().stdout).toContain("\"ok\": true");
+      expect(existsSync(join(root, "demo", "vendor", "framework", "package.json"))).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("initializes a consumer workspace in copy mode", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gutu-cli-init-copy-"));
+    try {
+      const harness = createIo(root);
+      const code = await runCli(["init", "demo", "--framework-install-mode", "copy"], harness.io);
+      expect(code).toBe(0);
+      expect(harness.read().stdout).toContain("\"frameworkInstallMode\": \"copy\"");
+      expect(existsSync(join(root, "demo", "vendor", "framework", "package.json"))).toBe(true);
+      expect(lstatSync(join(root, "demo", "vendor", "framework")).isSymbolicLink()).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("initializes a consumer workspace in symlink mode when directory links are available", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gutu-cli-init-symlink-"));
+    try {
+      if (!hasDirectorySymlinkSupport(root)) {
+        return;
+      }
+
+      const harness = createIo(root);
+      const code = await runCli(["init", "demo", "--framework-install-mode", "symlink"], harness.io);
+      expect(code).toBe(0);
+      expect(harness.read().stdout).toContain("\"frameworkInstallMode\": \"symlink\"");
+      expect(lstatSync(join(root, "demo", "vendor", "framework")).isSymbolicLink()).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

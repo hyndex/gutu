@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 
 import {
   doctorCoreRepository,
+  type FrameworkInstallMode,
   promoteReleaseArtifact,
   provisionGitHubRepositories,
   scaffoldExternalRepository,
@@ -29,7 +30,26 @@ export async function runCli(argv: string[], io: CliIo): Promise<number> {
   if (command === "init") {
     const target = rest.find((entry) => !entry.startsWith("--")) ?? "gutu-workspace";
     const force = readBooleanFlag(rest, "--force");
-    const result = scaffoldWorkspace(io.cwd, { target, force });
+    const frameworkInstallMode = readFlag(rest, "--framework-install-mode");
+    if (frameworkInstallMode && !isFrameworkInstallModePreference(frameworkInstallMode)) {
+      io.stderr.write("Invalid --framework-install-mode. Use auto, copy, or symlink.\n");
+      return 1;
+    }
+    const validatedFrameworkInstallMode =
+      frameworkInstallMode && isFrameworkInstallModePreference(frameworkInstallMode) ? frameworkInstallMode : undefined;
+
+    const initOptions: {
+      target: string;
+      force: boolean;
+      frameworkInstallMode?: FrameworkInstallMode | "auto";
+    } = { target, force };
+    if (validatedFrameworkInstallMode) {
+      initOptions.frameworkInstallMode = validatedFrameworkInstallMode;
+    }
+
+    const result = scaffoldWorkspace(io.cwd, {
+      ...initOptions
+    });
     io.stdout.write(JSON.stringify(result, null, 2) + "\n");
     return 0;
   }
@@ -195,7 +215,7 @@ function helpText(): string {
     "gutu-core CLI",
     "",
     "Commands:",
-    "  gutu init <target> [--force]",
+    "  gutu init <target> [--force] [--framework-install-mode <auto|copy|symlink>]",
     "  gutu doctor [path]",
     "  gutu vendor sync [workspaceRoot]",
     "  gutu scaffold repo --kind <plugin|library|integration> --name <repo-name> [--out <dir>]",
@@ -230,4 +250,8 @@ function readFlag(args: readonly string[], flag: string): string | undefined {
 
 function isRepositoryKind(value: string): value is "plugin" | "library" | "integration" {
   return value === "plugin" || value === "library" || value === "integration";
+}
+
+function isFrameworkInstallModePreference(value: string): value is FrameworkInstallMode | "auto" {
+  return value === "auto" || value === "copy" || value === "symlink";
 }

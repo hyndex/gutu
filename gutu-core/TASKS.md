@@ -14,6 +14,7 @@
 - [x] Create `@gutu/cli`.
 - [x] Create `@gutu/release`.
 - [x] Add `gutu init` workspace scaffolding.
+- [x] Harden `gutu init` for cross-platform framework installs with `copy`/`symlink` mode coverage.
 - [x] Add `gutu doctor` repository-boundary verification.
 - [x] Add `gutu vendor sync`.
 - [x] Add release prepare/sign/verify flows.

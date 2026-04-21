@@ -1,6 +1,6 @@
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, win32 } from "node:path";
 import { generateKeyPairSync } from "node:crypto";
 
 import { describe, expect, it } from "bun:test";
@@ -11,9 +11,50 @@ import {
   loadRolloutOrganization,
   promoteReleaseArtifact,
   provisionGitHubRepositories,
+  resolveFrameworkInstallMode,
+  resolveFrameworkSourceRootFromModulePath,
   scaffoldRolloutRepositories,
   scaffoldWorkspace
 } from "../../src";
+
+function createFrameworkSourceFixture(root: string): string {
+  const sourceRoot = join(root, "framework-source");
+  mkdirSync(join(sourceRoot, "framework", "core", "cli"), { recursive: true });
+  mkdirSync(join(sourceRoot, "framework", "core", "ecosystem"), { recursive: true });
+  writeFileSync(
+    join(sourceRoot, "package.json"),
+    JSON.stringify(
+      {
+        name: "gutu-core",
+        private: true,
+        workspaces: ["framework/core/*"]
+      },
+      null,
+      2
+    ) + "\n",
+    "utf8"
+  );
+  writeFileSync(join(sourceRoot, "README.md"), "# Fixture\n", "utf8");
+  writeFileSync(join(sourceRoot, "framework", "core", "cli", "marker.txt"), "cli\n", "utf8");
+  writeFileSync(join(sourceRoot, "framework", "core", "ecosystem", "marker.txt"), "ecosystem\n", "utf8");
+  return sourceRoot;
+}
+
+function hasDirectorySymlinkSupport(root: string): boolean {
+  const source = join(root, "symlink-source");
+  const target = join(root, "symlink-target");
+  mkdirSync(source, { recursive: true });
+
+  try {
+    symlinkSync(source, target, process.platform === "win32" ? "junction" : "dir");
+    return true;
+  } catch {
+    return false;
+  } finally {
+    rmSync(target, { recursive: true, force: true });
+    rmSync(source, { recursive: true, force: true });
+  }
+}
 
 describe("@gutu/ecosystem", () => {
   it("creates an empty stable lockfile", () => {
@@ -26,13 +67,101 @@ describe("@gutu/ecosystem", () => {
   it("scaffolds a clean consumer workspace", () => {
     const root = mkdtempSync(join(tmpdir(), "gutu-ecosystem-"));
     try {
-      const result = scaffoldWorkspace(root, { target: "demo" });
+      const frameworkSourceRoot = createFrameworkSourceFixture(root);
+      const result = scaffoldWorkspace(root, {
+        target: "demo",
+        frameworkSourceRoot,
+        frameworkInstallMode: "copy"
+      });
       expect(result.ok).toBe(true);
       expect(result.createdFiles).toContain("gutu.project.json");
       expect(result.createdFiles).toContain("vendor/plugins/.gitkeep");
+      expect(result.frameworkInstallMode).toBe("copy");
+      expect(existsSync(join(root, "demo", "vendor", "framework", "package.json"))).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  it("keeps copy mode safe when the workspace lives inside the framework source tree", () => {
+    const root = mkdtempSync(join(tmpdir(), "gutu-ecosystem-copy-safe-"));
+    try {
+      const frameworkSourceRoot = createFrameworkSourceFixture(root);
+      const result = scaffoldWorkspace(frameworkSourceRoot, {
+        target: "consumer",
+        frameworkSourceRoot,
+        frameworkInstallMode: "copy"
+      });
+
+      expect(result.frameworkInstallMode).toBe("copy");
+      expect(existsSync(join(result.frameworkRoot, "package.json"))).toBe(true);
+      expect(existsSync(join(result.frameworkRoot, "consumer"))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("supports symlink mode when directory links are available", () => {
+    const root = mkdtempSync(join(tmpdir(), "gutu-ecosystem-symlink-"));
+    try {
+      if (!hasDirectorySymlinkSupport(root)) {
+        return;
+      }
+
+      const frameworkSourceRoot = createFrameworkSourceFixture(root);
+      const result = scaffoldWorkspace(root, {
+        target: "demo",
+        frameworkSourceRoot,
+        frameworkInstallMode: "symlink"
+      });
+
+      expect(result.frameworkInstallMode).toBe("symlink");
+      expect(lstatSync(result.frameworkRoot).isSymbolicLink()).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("prefers copy mode for automatic installs on Windows-oriented hosts", () => {
+    expect(resolveFrameworkInstallMode("auto", { platform: "win32", symlinkSafe: true })).toBe("copy");
+  });
+
+  it("resolves source roots from Windows-style source paths with path utilities", () => {
+    const frameworkRoot = win32.join("C:\\", "Program Files", "gutu-core");
+    const moduleFilePath = win32.join(frameworkRoot, "framework", "core", "ecosystem", "src", "index.ts");
+    const existingPaths = new Set([
+      win32.join(frameworkRoot, "package.json"),
+      win32.join(frameworkRoot, "framework", "core", "cli"),
+      win32.join(frameworkRoot, "framework", "core", "ecosystem")
+    ]);
+
+    const result = resolveFrameworkSourceRootFromModulePath(moduleFilePath, {
+      pathApi: win32,
+      exists(path) {
+        return existingPaths.has(path);
+      }
+    });
+
+    expect(result).toBe(frameworkRoot);
+  });
+
+  it("resolves bundled Windows-style dist paths without Unix path surgery", () => {
+    const frameworkRoot = win32.join("C:\\", "Program Files", "gutu-core");
+    const moduleFilePath = win32.join(frameworkRoot, "dist", "gutu.js");
+    const existingPaths = new Set([
+      win32.join(frameworkRoot, "package.json"),
+      win32.join(frameworkRoot, "framework", "core", "cli"),
+      win32.join(frameworkRoot, "framework", "core", "ecosystem")
+    ]);
+
+    const result = resolveFrameworkSourceRootFromModulePath(moduleFilePath, {
+      pathApi: win32,
+      exists(path) {
+        return existingPaths.has(path);
+      }
+    });
+
+    expect(result).toBe(frameworkRoot);
   });
 
   it("flags forbidden plugin directories in the core repository", () => {

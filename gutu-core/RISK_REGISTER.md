@@ -42,3 +42,10 @@ Mitigation:
 
 - Keep the command/event/job contracts stable so persistent adapters can be added without breaking plugin code.
 - Treat this runtime as the canonical orchestration semantic layer and add durable storage adapters during external rollout.
+
+### R7. Consumer bootstrap can drift if copied framework roots are not refreshed during upgrades
+
+Mitigation:
+
+- Keep `gutu init` recording `frameworkInstallMode` and `frameworkPath` in `gutu.project.json`.
+- Prefer `copy` for enterprise Windows or locked-down endpoints, and re-bootstrap intentionally when adopting a newer `gutu-core` baseline.

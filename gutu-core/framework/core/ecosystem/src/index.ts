@@ -1,4 +1,5 @@
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import * as nodePath from "node:path";
 import { basename, dirname, join, resolve } from "node:path";
 import { createPublicKey, verify } from "node:crypto";
 import { spawnSync } from "node:child_process";
@@ -46,7 +47,9 @@ export type CompatibilityChannel = z.infer<typeof compatibilityChannelSchema>;
 export const workspaceProjectSchema = z.object({
   name: z.string().min(1),
   channel: z.string().min(1),
-  coreRepo: z.string().min(1)
+  coreRepo: z.string().min(1),
+  frameworkPath: z.string().min(1).default("vendor/framework"),
+  frameworkInstallMode: z.enum(["copy", "symlink"]).default("copy")
 });
 export type WorkspaceProject = z.infer<typeof workspaceProjectSchema>;
 
@@ -67,16 +70,22 @@ export const workspaceOverridesSchema = z.object({
 });
 export type WorkspaceOverrides = z.infer<typeof workspaceOverridesSchema>;
 
+export type FrameworkInstallMode = "copy" | "symlink";
 export type ScaffoldWorkspaceOptions = {
   target: string;
   force?: boolean;
   channel?: string;
+  frameworkInstallMode?: FrameworkInstallMode | "auto";
+  frameworkSourceRoot?: string;
+  platform?: NodeJS.Platform;
 };
 
 export type ScaffoldWorkspaceResult = {
   ok: true;
   projectRoot: string;
   createdFiles: string[];
+  frameworkRoot: string;
+  frameworkInstallMode: FrameworkInstallMode;
 };
 
 export type CoreDoctorResult = {
@@ -180,11 +189,22 @@ export type ProvisionGitHubRepositoriesResult = {
   }>;
 };
 
-export function createWorkspaceProject(name: string, channel = "stable"): WorkspaceProject {
+type PathApi = Pick<typeof nodePath, "dirname" | "join" | "resolve" | "relative" | "isAbsolute">;
+
+const FRAMEWORK_INSTALL_PATH = "vendor/framework";
+const FRAMEWORK_COPY_IGNORED_NAMES = new Set([".git", ".tmp", "artifacts", "coverage", "dist", "node_modules"]);
+
+export function createWorkspaceProject(
+  name: string,
+  channel = "stable",
+  frameworkInstallMode: FrameworkInstallMode = "copy"
+): WorkspaceProject {
   return workspaceProjectSchema.parse({
     name,
     channel,
-    coreRepo: "gutula/gutu-core"
+    coreRepo: "gutula/gutu-core",
+    frameworkPath: FRAMEWORK_INSTALL_PATH,
+    frameworkInstallMode
   });
 }
 
@@ -211,6 +231,55 @@ export function createWorkspaceOverrides(): WorkspaceOverrides {
   });
 }
 
+export function resolveFrameworkSourceRootFromModulePath(
+  moduleFilePath: string,
+  options: {
+    pathApi?: PathApi;
+    exists?: (path: string) => boolean;
+  } = {}
+): string {
+  const pathApi = options.pathApi ?? nodePath;
+  const exists = options.exists ?? existsSync;
+  const moduleDir = pathApi.dirname(moduleFilePath);
+  const candidates = [
+    pathApi.resolve(moduleDir, "..", "..", "..", ".."),
+    pathApi.resolve(moduleDir, ".."),
+    pathApi.resolve(moduleDir, "..", ".."),
+    pathApi.resolve(moduleDir, "..", "..", "..", "..", "..")
+  ];
+  const seen = new Set<string>();
+
+  for (const candidate of candidates) {
+    if (seen.has(candidate)) {
+      continue;
+    }
+    seen.add(candidate);
+    if (isFrameworkSourceRoot(candidate, { pathApi, exists })) {
+      return candidate;
+    }
+  }
+
+  throw new Error(`Unable to resolve the gutu-core framework source root from '${moduleFilePath}'.`);
+}
+
+export function resolveFrameworkInstallMode(
+  requestedMode: FrameworkInstallMode | "auto" = "auto",
+  options: {
+    platform?: NodeJS.Platform;
+    symlinkSafe?: boolean;
+  } = {}
+): FrameworkInstallMode {
+  if (requestedMode === "copy" || requestedMode === "symlink") {
+    return requestedMode;
+  }
+
+  if ((options.platform ?? process.platform) === "win32") {
+    return "copy";
+  }
+
+  return options.symlinkSafe === false ? "copy" : "symlink";
+}
+
 export function scaffoldWorkspace(cwd: string, options: ScaffoldWorkspaceOptions): ScaffoldWorkspaceResult {
   const projectRoot = resolve(cwd, options.target);
   const channel = options.channel ?? "stable";
@@ -225,8 +294,20 @@ export function scaffoldWorkspace(cwd: string, options: ScaffoldWorkspaceOptions
     }
   }
 
+  mkdirSync(projectRoot, { recursive: true });
+
+  const frameworkSourceRoot = resolve(cwd, options.frameworkSourceRoot ?? resolveInstalledFrameworkSourceRoot());
+  if (!isFrameworkSourceRoot(frameworkSourceRoot)) {
+    throw new Error(`Unable to scaffold workspace because '${frameworkSourceRoot}' is not a valid gutu-core source root.`);
+  }
+
+  const platform = options.platform ?? process.platform;
+  const frameworkInstallMode = resolveFrameworkInstallMode(options.frameworkInstallMode ?? "auto", {
+    platform,
+    symlinkSafe: canUseFrameworkSymlink(projectRoot, frameworkSourceRoot, platform)
+  });
   const projectName = slugifyName(basename(projectRoot));
-  const project = createWorkspaceProject(projectName, channel);
+  const project = createWorkspaceProject(projectName, channel, frameworkInstallMode);
   const lock = createWorkspaceLock(channel);
   const overrides = createWorkspaceOverrides();
   const appName = `${projectName}-app`;
@@ -250,24 +331,30 @@ export function scaffoldWorkspace(cwd: string, options: ScaffoldWorkspaceOptions
     "gutu.overrides.json": JSON.stringify(overrides, null, 2) + "\n",
     "apps/.gitkeep": "",
     [`apps/${appName}/README.md`]: `# ${appName}\n\nPlace the consumer application here.\n`,
-    "vendor/framework/.gitkeep": "",
     "vendor/libraries/.gitkeep": "",
     "vendor/plugins/.gitkeep": "",
     ".gutu/cache/.gitkeep": "",
     ".gutu/state/.gitkeep": ""
   };
 
-  mkdirSync(projectRoot, { recursive: true });
   for (const [relativePath, contents] of Object.entries(files)) {
     const absolutePath = join(projectRoot, relativePath);
     mkdirSync(dirname(absolutePath), { recursive: true });
     writeFileSync(absolutePath, contents, "utf8");
   }
 
+  const frameworkRoot = join(projectRoot, "vendor", "framework");
+  installFrameworkRoot(frameworkSourceRoot, frameworkRoot, frameworkInstallMode, {
+    platform,
+    excludedSourceRoots: [projectRoot]
+  });
+
   return {
     ok: true,
     projectRoot,
-    createdFiles: Object.keys(files).sort()
+    createdFiles: Object.keys(files).sort(),
+    frameworkRoot,
+    frameworkInstallMode
   };
 }
 
@@ -554,6 +641,97 @@ function slugifyName(value: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "") || "gutu-workspace";
+}
+
+function resolveInstalledFrameworkSourceRoot(): string {
+  return resolveFrameworkSourceRootFromModulePath(fileURLToPath(import.meta.url));
+}
+
+function isFrameworkSourceRoot(
+  candidateRoot: string,
+  options: {
+    pathApi?: Pick<typeof nodePath, "join">;
+    exists?: (path: string) => boolean;
+  } = {}
+): boolean {
+  const pathApi = options.pathApi ?? nodePath;
+  const exists = options.exists ?? existsSync;
+  return (
+    exists(pathApi.join(candidateRoot, "package.json")) &&
+    exists(pathApi.join(candidateRoot, "framework", "core", "cli")) &&
+    exists(pathApi.join(candidateRoot, "framework", "core", "ecosystem"))
+  );
+}
+
+function canUseFrameworkSymlink(projectRoot: string, frameworkSourceRoot: string, platform: NodeJS.Platform): boolean {
+  if (platform === "win32") {
+    return false;
+  }
+
+  const probeRoot = join(projectRoot, ".gutu", "state");
+  const probePath = join(probeRoot, `.framework-link-probe-${process.pid}-${Date.now()}`);
+  mkdirSync(probeRoot, { recursive: true });
+
+  try {
+    symlinkSync(frameworkSourceRoot, probePath, symlinkTypeForPlatform(platform));
+    return true;
+  } catch {
+    return false;
+  } finally {
+    rmSync(probePath, { recursive: true, force: true });
+  }
+}
+
+function installFrameworkRoot(
+  sourceRoot: string,
+  targetRoot: string,
+  mode: FrameworkInstallMode,
+  options: {
+    platform: NodeJS.Platform;
+    excludedSourceRoots?: string[];
+  }
+) {
+  rmSync(targetRoot, { recursive: true, force: true });
+  mkdirSync(dirname(targetRoot), { recursive: true });
+
+  if (mode === "symlink") {
+    symlinkSync(sourceRoot, targetRoot, symlinkTypeForPlatform(options.platform));
+    return;
+  }
+
+  mkdirSync(targetRoot, { recursive: true });
+  const excludedSourceRoots = (options.excludedSourceRoots ?? []).map((entry) => resolve(entry));
+
+  for (const entry of readdirSync(sourceRoot)) {
+    const sourceEntry = join(sourceRoot, entry);
+    if (!shouldCopyFrameworkPath(sourceEntry, excludedSourceRoots)) {
+      continue;
+    }
+
+    cpSync(sourceEntry, join(targetRoot, entry), {
+      recursive: true,
+      filter(candidate) {
+        return shouldCopyFrameworkPath(candidate, excludedSourceRoots);
+      }
+    });
+  }
+}
+
+function shouldCopyFrameworkPath(sourcePath: string, excludedSourceRoots: readonly string[]): boolean {
+  if (FRAMEWORK_COPY_IGNORED_NAMES.has(basename(sourcePath))) {
+    return false;
+  }
+
+  return excludedSourceRoots.every((excludedRoot) => !isPathInside(sourcePath, excludedRoot));
+}
+
+function isPathInside(candidatePath: string, parentPath: string): boolean {
+  const relativePath = nodePath.relative(resolve(parentPath), resolve(candidatePath));
+  return relativePath === "" || (!relativePath.startsWith("..") && !nodePath.isAbsolute(relativePath));
+}
+
+function symlinkTypeForPlatform(platform: NodeJS.Platform): "dir" | "junction" {
+  return platform === "win32" ? "junction" : "dir";
 }
 
 async function installEntries(
