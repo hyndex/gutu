@@ -48,6 +48,7 @@ This board is the workspace-level staged tracker for the Gutu Business OS progra
 - [x] Add repo-root `ci` entrypoints so each extracted business repo can build, lint, test, and docs-check itself directly.
 - [x] Add named cross-plugin end-to-end business flow coverage plus durable report artifacts under `integrations/gutu-ecosystem-integration/reports/`.
 - [x] Add resilience coverage for duplicate create protection, revision mismatch protection, dead-letter replay, and downstream recovery across all 25 business plugins.
+- [x] Deepen the shared generated lifecycle so every business plugin now carries hold or release, amend, reverse, and richer downstream secondary-record tracking instead of only create or advance or reconcile scaffolds.
 - [ ] Deepen quote-to-cash, procure-to-pay, project-to-bill, and service-to-cash flows from scaffold coverage into domain-complete operational logic.
 - [x] Add direct contract scenarios across the core business plugins for billing intents, reservation intents, and reconciliation handoff.
 
@@ -88,4 +89,5 @@ This board is the workspace-level staged tracker for the Gutu Business OS progra
 ## Notes
 
 - The current milestone is to establish truthful structure, contracts, verification lanes, SQL-backed local persistence, downstream recovery semantics, exported ERP parity catalogs, repo-local CI, 11 named cross-plugin flow scenarios, full-suite resilience coverage across 25 plugins, addon scaffolding, and pack-catalog promotion scaffolding for the business suite, with shared business runtime and orchestration primitives now in place.
+- The shared generated lifecycle now goes beyond create or advance or reconcile scaffolds by covering hold or release, amendment, reversal, richer downstream follow-up records, and lifecycle-aware repo-root CI or docs-summary surfaces across the extracted business repos.
 - Domain-complete behavior remains a tracked follow-up across the staged items above and must be implemented repo by repo without violating ownership boundaries.

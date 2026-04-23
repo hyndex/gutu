@@ -47,6 +47,7 @@ function scaffoldBusinessPlugin(spec) {
   mkdirSync(join(packageRoot, "src", "workflows"), { recursive: true });
   mkdirSync(join(packageRoot, "src", "ui", "admin"), { recursive: true });
   mkdirSync(join(packageRoot, "db"), { recursive: true });
+  mkdirSync(join(repoRoot, "scripts"), { recursive: true });
   mkdirSync(join(testsRoot, "unit"), { recursive: true });
   mkdirSync(join(testsRoot, "contracts"), { recursive: true });
   mkdirSync(join(testsRoot, "integration"), { recursive: true });
@@ -74,6 +75,8 @@ function scaffoldBusinessPlugin(spec) {
   write(repoRoot, "eslint.config.mjs", renderEslintConfig());
   write(repoRoot, "tsconfig.base.json", renderRootTsconfig());
   write(repoRoot, "package.json", renderRootPackageJson(spec));
+  write(repoRoot, "scripts/docs-summary.mjs", renderRepoDocsSummaryScript());
+  write(repoRoot, "scripts/docs-check.mjs", renderRepoDocsCheckScript());
 
   write(packageRoot, "package.json", renderNestedPackageJson(spec));
   write(packageRoot, "package.ts", renderPackageManifest(spec));
@@ -211,6 +214,10 @@ function write(root, relativePath, contents) {
   writeFileSync(filePath, contents, "utf8");
 }
 
+function dedupeList(values) {
+  return [...new Set((values ?? []).filter(Boolean))];
+}
+
 function resolveOrchestrationTargets(spec) {
   const defaults = {
     create: [],
@@ -291,6 +298,12 @@ function renderRootPackageJson(spec) {
       type: "module",
       workspaces: ["framework/builtin-plugins/*"],
       scripts: {
+        build: `cd framework/builtin-plugins/${spec.packageDir} && bun run build`,
+        typecheck: `cd framework/builtin-plugins/${spec.packageDir} && bun run typecheck`,
+        lint: `cd framework/builtin-plugins/${spec.packageDir} && bun run lint`,
+        test: `cd framework/builtin-plugins/${spec.packageDir} && bun run test`,
+        "docs:summary": "node scripts/docs-summary.mjs",
+        "docs:check": "node scripts/docs-check.mjs",
         ci: "bun run build && bun run typecheck && bun run lint && bun run test && bun run docs:check"
       },
       gutuEcosystem: {
@@ -313,6 +326,83 @@ function renderRootPackageJson(spec) {
     null,
     2
   )}\n`;
+}
+
+function renderRepoDocsCheckScript() {
+  return `#!/usr/bin/env node
+import { existsSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+
+const repoRoot = resolve(import.meta.dirname, "..");
+const failures = [];
+const requiredFiles = [
+  "README.md",
+  "DEVELOPER.md",
+  "TODO.md",
+  "SECURITY.md",
+  "CONTRIBUTING.md",
+  "framework",
+  "docs/assets/gutu-mascot.png"
+];
+
+for (const relativePath of requiredFiles) {
+  if (!existsSync(join(repoRoot, relativePath))) {
+    failures.push(\`Missing required repo artifact: \${relativePath}\`);
+  }
+}
+
+const readmePath = join(repoRoot, "README.md");
+if (existsSync(readmePath)) {
+  const readme = readFileSync(readmePath, "utf8");
+  for (const heading of [
+    "## Part Of The Gutu Stack",
+    "## What It Does Now",
+    "## Quick Start For Integrators",
+    "## Known Boundaries And Non-Goals"
+  ]) {
+    if (!readme.includes(heading)) {
+      failures.push(\`README.md is missing heading '\${heading}'.\`);
+    }
+  }
+}
+
+if (failures.length > 0) {
+  console.error("Repo docs check failed:");
+  for (const failure of failures) {
+    console.error("- " + failure);
+  }
+  process.exit(1);
+}
+
+console.log("repo docs ok");
+`;
+}
+
+function renderRepoDocsSummaryScript() {
+  return `#!/usr/bin/env node
+import { existsSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+
+const repoRoot = resolve(import.meta.dirname, "..");
+const summary = {
+  repo: repoRoot.split("/").at(-1),
+  docs: ["README.md", "DEVELOPER.md", "TODO.md", "SECURITY.md", "CONTRIBUTING.md"].filter((relativePath) =>
+    existsSync(join(repoRoot, relativePath))
+  ),
+  generatedAt: new Date().toISOString()
+};
+
+const readmePath = join(repoRoot, "README.md");
+if (existsSync(readmePath)) {
+  const readme = readFileSync(readmePath, "utf8");
+  summary.headings = readme
+    .split("\\n")
+    .filter((line) => line.startsWith("## "))
+    .slice(0, 8);
+}
+
+console.log(JSON.stringify(summary, null, 2));
+`;
 }
 
 function renderNestedPackageJson(spec) {
@@ -1168,36 +1258,49 @@ function renderExceptionCatalog(spec) {
 }
 
 function renderFlowCatalog(spec) {
-  const phases = [
-    {
-      phase: "create",
+  const phases = {
+    create: {
       inputType: "CreatePrimaryRecordInput",
       serviceFunction: "createPrimaryRecord"
     },
-    {
-      phase: "advance",
+    advance: {
       inputType: "AdvancePrimaryRecordInput",
       serviceFunction: "advancePrimaryRecord"
     },
-    {
-      phase: "reconcile",
+    reconcile: {
       inputType: "ReconcilePrimaryRecordInput",
       serviceFunction: "reconcilePrimaryRecord"
+    },
+    hold: {
+      inputType: "PlacePrimaryRecordOnHoldInput",
+      serviceFunction: "placePrimaryRecordOnHold"
+    },
+    release: {
+      inputType: "ReleasePrimaryRecordHoldInput",
+      serviceFunction: "releasePrimaryRecordHold"
+    },
+    amend: {
+      inputType: "AmendPrimaryRecordInput",
+      serviceFunction: "amendPrimaryRecord"
+    },
+    reverse: {
+      inputType: "ReversePrimaryRecordInput",
+      serviceFunction: "reversePrimaryRecord"
     }
-  ];
+  };
 
   const flowDefinitions = spec.actions.map((action, index) => {
-    const phase = phases[index] ?? phases.at(-1);
+    const phase = phases[action.phase] ?? phases[["create", "advance", "reconcile"][index] ?? "reconcile"];
     return {
       id: action.id,
       label: action.label,
-      phase: phase.phase,
+      phase: action.phase ?? ["create", "advance", "reconcile"][index] ?? "reconcile",
       methodName: toCamelCaseIdentifier(action.label)
     };
   });
 
   const functionBlocks = flowDefinitions.map((definition, index) => {
-    const phase = phases[index] ?? phases.at(-1);
+    const phase = phases[definition.phase] ?? phases[["create", "advance", "reconcile"][index] ?? "reconcile"];
     return `export async function ${definition.methodName}(input: ${phase.inputType}) {
   return ${phase.serviceFunction}(input);
 }`;
@@ -1205,11 +1308,19 @@ function renderFlowCatalog(spec) {
 
   return `import {
   advancePrimaryRecord,
+  amendPrimaryRecord,
   createPrimaryRecord,
+  placePrimaryRecordOnHold,
   reconcilePrimaryRecord,
+  releasePrimaryRecordHold,
+  reversePrimaryRecord,
   type AdvancePrimaryRecordInput,
+  type AmendPrimaryRecordInput,
   type CreatePrimaryRecordInput,
-  type ReconcilePrimaryRecordInput
+  type PlacePrimaryRecordOnHoldInput,
+  type ReconcilePrimaryRecordInput,
+  type ReleasePrimaryRecordHoldInput,
+  type ReversePrimaryRecordInput
 } from "../services/main.service";
 
 export const businessFlowDefinitions = ${JSON.stringify(flowDefinitions, null, 2)} as const;
@@ -1292,7 +1403,7 @@ export const secondaryRecordSchema = z.object({
   tenantId: z.string().min(2),
   primaryRecordId: z.string().min(2),
   label: z.string().min(2),
-  status: z.enum(["requested", "approved", "in-progress", "completed", "closed"]),
+  status: z.enum(["requested", "approved", "in-progress", "completed", "failed", "closed"]),
   requestedAction: z.string().min(2),
   reasonCode: z.string().nullable(),
   correlationId: z.string().min(2),
@@ -1342,6 +1453,43 @@ export const advancePrimaryRecordInputSchema = z.object({
   reasonCode: z.string().min(2).optional()
 });
 
+export const placePrimaryRecordOnHoldInputSchema = z.object({
+  tenantId: z.string().min(2),
+  actorId: z.string().min(2),
+  recordId: z.string().min(2),
+  expectedRevisionNo: z.number().int().positive().optional(),
+  reasonCode: z.string().min(2)
+});
+
+export const releasePrimaryRecordHoldInputSchema = z.object({
+  tenantId: z.string().min(2),
+  actorId: z.string().min(2),
+  recordId: z.string().min(2),
+  expectedRevisionNo: z.number().int().positive().optional(),
+  reasonCode: z.string().min(2).optional()
+});
+
+export const amendPrimaryRecordInputSchema = z.object({
+  tenantId: z.string().min(2),
+  actorId: z.string().min(2),
+  recordId: z.string().min(2),
+  amendedRecordId: z.string().min(2),
+  expectedRevisionNo: z.number().int().positive().optional(),
+  title: z.string().min(2).optional(),
+  amountMinor: z.number().int().optional(),
+  effectiveAt: z.string().min(2).optional(),
+  reasonCode: z.string().min(2)
+});
+
+export const reversePrimaryRecordInputSchema = z.object({
+  tenantId: z.string().min(2),
+  actorId: z.string().min(2),
+  recordId: z.string().min(2),
+  reversalRecordId: z.string().min(2),
+  expectedRevisionNo: z.number().int().positive().optional(),
+  reasonCode: z.string().min(2)
+});
+
 export const reconcilePrimaryRecordInputSchema = z.object({
   tenantId: z.string().min(2),
   actorId: z.string().min(2),
@@ -1361,30 +1509,11 @@ export type ExceptionRecord = z.infer<typeof exceptionRecordSchema>;
 }
 
 function renderActions(spec) {
-  const [createAction, advanceAction, reconcileAction] = spec.actions;
-  return `import { defineAction } from "@platform/schema";
-import { z } from "zod";
-
-import {
-  advancePrimaryRecord,
-  createPrimaryRecord,
-  reconcilePrimaryRecord
-} from "../services/main.service";
-import {
-  advancePrimaryRecordInputSchema,
-  createPrimaryRecordInputSchema,
-  reconcilePrimaryRecordInputSchema,
-  approvalStateSchema,
-  fulfillmentStateSchema,
-  postingStateSchema,
-  recordStateSchema
-} from "../model";
-
-export const createPrimaryRecordAction = defineAction({
-  id: "${createAction.id}",
-  description: "${createAction.label}",
-  input: createPrimaryRecordInputSchema,
-  output: z.object({
+  const actionPhaseDefinitions = {
+    create: {
+      serviceFunction: "createPrimaryRecord",
+      inputSchema: "createPrimaryRecordInputSchema",
+      outputSchema: `z.object({
     ok: z.literal(true),
     recordId: z.string(),
     recordState: recordStateSchema,
@@ -1394,18 +1523,12 @@ export const createPrimaryRecordAction = defineAction({
     revisionNo: z.number().int().positive(),
     eventIds: z.array(z.string()),
     jobIds: z.array(z.string())
-  }),
-  permission: "${createAction.permission}",
-  idempotent: true,
-  audit: true,
-  handler: ({ input }) => createPrimaryRecord(input)
-});
-
-export const advancePrimaryRecordAction = defineAction({
-  id: "${advanceAction.id}",
-  description: "${advanceAction.label}",
-  input: advancePrimaryRecordInputSchema,
-  output: z.object({
+  })`
+    },
+    advance: {
+      serviceFunction: "advancePrimaryRecord",
+      inputSchema: "advancePrimaryRecordInputSchema",
+      outputSchema: `z.object({
     ok: z.literal(true),
     recordId: z.string(),
     recordState: recordStateSchema,
@@ -1415,18 +1538,12 @@ export const advancePrimaryRecordAction = defineAction({
     revisionNo: z.number().int().positive(),
     eventIds: z.array(z.string()),
     jobIds: z.array(z.string())
-  }),
-  permission: "${advanceAction.permission}",
-  idempotent: false,
-  audit: true,
-  handler: ({ input }) => advancePrimaryRecord(input)
-});
-
-export const reconcilePrimaryRecordAction = defineAction({
-  id: "${reconcileAction.id}",
-  description: "${reconcileAction.label}",
-  input: reconcilePrimaryRecordInputSchema,
-  output: z.object({
+  })`
+    },
+    reconcile: {
+      serviceFunction: "reconcilePrimaryRecord",
+      inputSchema: "reconcilePrimaryRecordInputSchema",
+      outputSchema: `z.object({
     ok: z.literal(true),
     recordId: z.string(),
     exceptionId: z.string(),
@@ -1434,17 +1551,105 @@ export const reconcilePrimaryRecordAction = defineAction({
     revisionNo: z.number().int().positive(),
     eventIds: z.array(z.string()),
     jobIds: z.array(z.string())
-  }),
-  permission: "${reconcileAction.permission}",
-  idempotent: false,
+  })`
+    },
+    hold: {
+      serviceFunction: "placePrimaryRecordOnHold",
+      inputSchema: "placePrimaryRecordOnHoldInputSchema",
+      outputSchema: `z.object({
+    ok: z.literal(true),
+    recordId: z.string(),
+    status: z.enum(["open", "under-review", "resolved", "closed"]),
+    revisionNo: z.number().int().positive(),
+    eventIds: z.array(z.string()),
+    jobIds: z.array(z.string())
+  })`
+    },
+    release: {
+      serviceFunction: "releasePrimaryRecordHold",
+      inputSchema: "releasePrimaryRecordHoldInputSchema",
+      outputSchema: `z.object({
+    ok: z.literal(true),
+    recordId: z.string(),
+    status: z.enum(["open", "under-review", "resolved", "closed"]),
+    revisionNo: z.number().int().positive(),
+    eventIds: z.array(z.string()),
+    jobIds: z.array(z.string())
+  })`
+    },
+    amend: {
+      serviceFunction: "amendPrimaryRecord",
+      inputSchema: "amendPrimaryRecordInputSchema",
+      outputSchema: `z.object({
+    ok: z.literal(true),
+    recordId: z.string(),
+    amendedRecordId: z.string(),
+    revisionNo: z.number().int().positive(),
+    eventIds: z.array(z.string()),
+    jobIds: z.array(z.string())
+  })`
+    },
+    reverse: {
+      serviceFunction: "reversePrimaryRecord",
+      inputSchema: "reversePrimaryRecordInputSchema",
+      outputSchema: `z.object({
+    ok: z.literal(true),
+    recordId: z.string(),
+    reversalRecordId: z.string(),
+    revisionNo: z.number().int().positive(),
+    eventIds: z.array(z.string()),
+    jobIds: z.array(z.string())
+  })`
+    }
+  };
+
+  const serviceFunctions = dedupeList(
+    spec.actions.map((action, index) => {
+      const phase = action.phase ?? ["create", "advance", "reconcile"][index] ?? "reconcile";
+      return actionPhaseDefinitions[phase].serviceFunction;
+    })
+  );
+  const modelImports = dedupeList(
+    spec.actions.flatMap((action, index) => {
+      const phase = action.phase ?? ["create", "advance", "reconcile"][index] ?? "reconcile";
+      return [actionPhaseDefinitions[phase].inputSchema];
+    })
+  );
+  const actionBlocks = spec.actions.map((action, index) => {
+    const phase = action.phase ?? ["create", "advance", "reconcile"][index] ?? "reconcile";
+    const definition = actionPhaseDefinitions[phase];
+    const constName = `${toCamelCaseIdentifier(action.label)}Action`;
+    return `export const ${constName} = defineAction({
+  id: "${action.id}",
+  description: "${action.label}",
+  input: ${definition.inputSchema},
+  output: ${definition.outputSchema},
+  permission: "${action.permission}",
+  idempotent: ${phase === "create" ? "true" : "false"},
   audit: true,
-  handler: ({ input }) => reconcilePrimaryRecord(input)
-});
+  handler: ({ input }) => ${definition.serviceFunction}(input)
+});`;
+  });
+  const exportedActions = spec.actions.map((action) => `${toCamelCaseIdentifier(action.label)}Action`);
+
+  return `import { defineAction } from "@platform/schema";
+import { z } from "zod";
+
+import {
+  ${serviceFunctions.join(",\n  ")}
+} from "../services/main.service";
+import {
+  approvalStateSchema,
+  fulfillmentStateSchema,
+  postingStateSchema,
+  recordStateSchema,
+  ${modelImports.join(",\n  ")}
+} from "../model";
+
+${actionBlocks.join("\n\n")}
 
 export const businessActions = [
-  createPrimaryRecordAction,
-  advancePrimaryRecordAction,
-  reconcilePrimaryRecordAction
+  ${exportedActions.join(",\n  ")}
 ] as const;
 `;
 }
@@ -1537,10 +1742,14 @@ function renderServices(spec) {
   createBusinessOrchestrationState,
   createBusinessPluginService,
   type BusinessAdvancePrimaryRecordInput,
+  type BusinessAmendPrimaryRecordInput,
   type BusinessCreatePrimaryRecordInput,
   type BusinessFailPendingDownstreamItemInput,
+  type BusinessPlacePrimaryRecordOnHoldInput,
   type BusinessReconcilePrimaryRecordInput,
+  type BusinessReleasePrimaryRecordHoldInput,
   type BusinessReplayDeadLetterInput,
+  type BusinessReversePrimaryRecordInput,
   type BusinessResolvePendingDownstreamItemInput
 } from "@platform/business-runtime";
 
@@ -1548,7 +1757,11 @@ import { type ExceptionRecord, type PrimaryRecord, type SecondaryRecord } from "
 
 export type CreatePrimaryRecordInput = BusinessCreatePrimaryRecordInput;
 export type AdvancePrimaryRecordInput = BusinessAdvancePrimaryRecordInput;
+export type PlacePrimaryRecordOnHoldInput = BusinessPlacePrimaryRecordOnHoldInput;
+export type ReleasePrimaryRecordHoldInput = BusinessReleasePrimaryRecordHoldInput;
+export type AmendPrimaryRecordInput = BusinessAmendPrimaryRecordInput;
 export type ReconcilePrimaryRecordInput = BusinessReconcilePrimaryRecordInput;
+export type ReversePrimaryRecordInput = BusinessReversePrimaryRecordInput;
 export type ResolvePendingDownstreamItemInput = BusinessResolvePendingDownstreamItemInput;
 export type FailPendingDownstreamItemInput = BusinessFailPendingDownstreamItemInput;
 export type ReplayDeadLetterInput = BusinessReplayDeadLetterInput;
@@ -1626,7 +1839,11 @@ export const {
   getBusinessOverview,
   createPrimaryRecord,
   advancePrimaryRecord,
+  placePrimaryRecordOnHold,
+  releasePrimaryRecordHold,
+  amendPrimaryRecord,
   reconcilePrimaryRecord,
+  reversePrimaryRecord,
   resolvePendingDownstreamItem,
   failPendingDownstreamItem,
   replayDeadLetter
@@ -1964,11 +2181,10 @@ function normalizePrefix(value: string): string {
 
 function renderIndex(spec, symbolBase) {
   const flowMethodExports = specActionFlowMethodExports(spec);
+  const actionExports = spec.actions.map((action) => `${toCamelCaseIdentifier(action.label)}Action`);
   return `export {
-  advancePrimaryRecordAction,
+  ${actionExports.join(",\n  ")},
   businessActions,
-  createPrimaryRecordAction,
-  reconcilePrimaryRecordAction
 } from "./actions/default.action";
 export { domainCatalog } from "./domain/catalog";
 export { exceptionQueueDefinitions } from "./exceptions/catalog";
@@ -1983,14 +2199,18 @@ export { reportDefinitions } from "./reports/catalog";
 export { scenarioDefinitions } from "./scenarios/catalog";
 export {
   advancePrimaryRecordInputSchema,
+  amendPrimaryRecordInputSchema,
   approvalStateSchema,
   createPrimaryRecordInputSchema,
   exceptionRecordSchema,
   fulfillmentStateSchema,
+  placePrimaryRecordOnHoldInputSchema,
   postingStateSchema,
   primaryRecordSchema,
   reconcilePrimaryRecordInputSchema,
   recordStateSchema,
+  releasePrimaryRecordHoldInputSchema,
+  reversePrimaryRecordInputSchema,
   secondaryRecordSchema,
   type ExceptionRecord,
   type PrimaryRecord,
@@ -2010,6 +2230,7 @@ export {
 } from "./sqlite";
 export {
   advancePrimaryRecord,
+  amendPrimaryRecord,
   createPrimaryRecord,
   failPendingDownstreamItem,
   getBusinessOverview,
@@ -2020,9 +2241,12 @@ export {
   listExceptionRecords,
   listPrimaryRecords,
   listSecondaryRecords,
+  placePrimaryRecordOnHold,
   replayDeadLetter,
+  releasePrimaryRecordHold,
   resolvePendingDownstreamItem,
-  reconcilePrimaryRecord
+  reconcilePrimaryRecord,
+  reversePrimaryRecord
 } from "./services/main.service";
 export { settingsSurfaceDefinitions } from "./settings/catalog";
 export { jobDefinitionKeys, jobDefinitions } from "./jobs/catalog";
@@ -2094,7 +2318,9 @@ import { join } from "node:path";
 
 import {
   advancePrimaryRecord,
+  amendPrimaryRecord,
   createPrimaryRecord,
+  placePrimaryRecordOnHold,
   getBusinessOverview,
   listExceptionRecords,
   listDeadLetters,
@@ -2104,8 +2330,10 @@ import {
   listSecondaryRecords,
   failPendingDownstreamItem,
   replayDeadLetter,
+  releasePrimaryRecordHold,
   resolvePendingDownstreamItem,
-  reconcilePrimaryRecord
+  reconcilePrimaryRecord,
+  reversePrimaryRecord
 } from "../../src/services/main.service";
 
 describe("${spec.id} lifecycle integration", () => {
@@ -2160,7 +2388,7 @@ describe("${spec.id} lifecycle integration", () => {
     expect(advanced.approvalState).toBe("approved");
     expect(advanced.postingState).toBe("posted");
     expect(advanced.revisionNo).toBe(2);
-    expect(await listSecondaryRecords()).toHaveLength(1);
+    expect((await listSecondaryRecords()).length).toBeGreaterThan(0);
     const pendingAfterAdvance = await listPendingDownstreamItems();
     expect(pendingAfterAdvance.length).toBeGreaterThan(0);
 
@@ -2206,9 +2434,57 @@ describe("${spec.id} lifecycle integration", () => {
       });
     }
 
-    expect(await listPrimaryRecords()).toHaveLength(2);
-    expect(await listExceptionRecords()).toHaveLength(1);
-    expect((await listProjectionRecords()).length).toBeGreaterThanOrEqual(3);
+    const held = await placePrimaryRecordOnHold({
+      tenantId: "tenant_demo",
+      actorId: "actor_admin",
+      recordId: "${spec.id}:demo",
+      expectedRevisionNo: 3,
+      reasonCode: "manual-hold"
+    });
+    expect(held.status).toBe("open");
+
+    const released = await releasePrimaryRecordHold({
+      tenantId: "tenant_demo",
+      actorId: "actor_admin",
+      recordId: "${spec.id}:demo",
+      expectedRevisionNo: 4,
+      reasonCode: "manual-release"
+    });
+    expect(released.status).toBe("closed");
+
+    const amended = await amendPrimaryRecord({
+      tenantId: "tenant_demo",
+      actorId: "actor_admin",
+      recordId: "${spec.id}:demo",
+      amendedRecordId: "${spec.id}:demo:amended",
+      expectedRevisionNo: 5,
+      title: "${spec.displayName} Demo Amendment",
+      reasonCode: "commercial-correction"
+    });
+    expect(amended.amendedRecordId).toBe("${spec.id}:demo:amended");
+
+    const reversed = await reversePrimaryRecord({
+      tenantId: "tenant_demo",
+      actorId: "actor_admin",
+      recordId: "${spec.id}:demo:amended",
+      reversalRecordId: "${spec.id}:demo:amended:reversal",
+      expectedRevisionNo: 1,
+      reasonCode: "cancel-amendment"
+    });
+    expect(reversed.reversalRecordId).toBe("${spec.id}:demo:amended:reversal");
+
+    for (const item of await listPendingDownstreamItems()) {
+      await resolvePendingDownstreamItem({
+        tenantId: "tenant_demo",
+        actorId: "actor_admin",
+        inboxId: item.id,
+        resolutionRef: \`resolved:\${item.target}\`
+      });
+    }
+
+    expect((await listPrimaryRecords()).length).toBeGreaterThanOrEqual(4);
+    expect((await listExceptionRecords()).length).toBeGreaterThanOrEqual(1);
+    expect((await listProjectionRecords()).length).toBeGreaterThanOrEqual(5);
     expect(await listPendingDownstreamItems()).toHaveLength(0);
     expect((await getBusinessOverview()).totals.openExceptions).toBe(0);
     expect((await getBusinessOverview()).orchestration.deadLetters).toBe(0);

@@ -122,6 +122,58 @@ async function runPluginResilience(pluginId) {
       stage: "reconcile"
     });
 
+    if (typeof pluginModule.placePrimaryRecordOnHold === "function") {
+      await pluginModule.placePrimaryRecordOnHold({
+        tenantId,
+        actorId,
+        recordId,
+        expectedRevisionNo: 3,
+        reasonCode: `${pluginId}:manual-hold`
+      });
+    }
+
+    if (typeof pluginModule.releasePrimaryRecordHold === "function") {
+      await pluginModule.releasePrimaryRecordHold({
+        tenantId,
+        actorId,
+        recordId,
+        expectedRevisionNo: 4,
+        reasonCode: `${pluginId}:manual-release`
+      });
+    }
+
+    if (typeof pluginModule.amendPrimaryRecord === "function") {
+      await pluginModule.amendPrimaryRecord({
+        tenantId,
+        actorId,
+        recordId,
+        amendedRecordId: `${recordId}-amended`,
+        expectedRevisionNo: 5,
+        reasonCode: `${pluginId}:amendment`
+      });
+    }
+
+    if (typeof pluginModule.reversePrimaryRecord === "function") {
+      await pluginModule.reversePrimaryRecord({
+        tenantId,
+        actorId,
+        recordId: `${recordId}-amended`,
+        reversalRecordId: `${recordId}-amended-reversal`,
+        expectedRevisionNo: 1,
+        reasonCode: `${pluginId}:reversal`
+      });
+    }
+
+    const pendingAfterLifecycle = (await pluginModule.listPendingDownstreamItems()).filter((entry) => entry.tenantId === tenantId);
+    for (const pendingItem of pendingAfterLifecycle) {
+      await pluginModule.resolvePendingDownstreamItem({
+        tenantId,
+        actorId,
+        inboxId: pendingItem.id,
+        resolutionRef: `${pluginId}:lifecycle:${sanitizeTarget(pendingItem.target)}`
+      });
+    }
+
     const pendingAfterRecovery = (await pluginModule.listPendingDownstreamItems()).filter((entry) => entry.tenantId === tenantId);
     if (pendingAfterRecovery.length !== 0) {
       throw new Error(`Pending downstream items remain after recovery: ${pendingAfterRecovery.length}.`);

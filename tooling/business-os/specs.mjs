@@ -19,6 +19,7 @@ export const businessTodoRequiredHeadings = [
 ];
 
 function businessSpec(input) {
+  const normalizedInput = withSharedLifecycleSurface(input);
   return {
     kind: "plugin",
     trustTier: "first-party",
@@ -29,12 +30,81 @@ function businessSpec(input) {
       runtime: "bun>=1.3.12",
       db: ["postgres", "sqlite"]
     },
-    ...input
+    ...normalizedInput
   };
 }
 
 function dedupeList(values) {
   return [...new Set((values ?? []).filter(Boolean))];
+}
+
+function deriveLifecycleNamespace(input) {
+  const command =
+    input.publicCommands?.[0] ??
+    input.actions?.[0]?.id ??
+    input.id ??
+    "business.records.create";
+  const tokens = String(command).split(".");
+  return tokens.length > 1 ? tokens.slice(0, -1).join(".") : command;
+}
+
+function deriveLifecyclePermission(input) {
+  const seedPermission = input.actions?.[0]?.permission ?? "business.records.write";
+  const tokens = String(seedPermission).split(".");
+  tokens[tokens.length - 1] = "write";
+  return tokens.join(".");
+}
+
+function withSharedLifecycleSurface(input) {
+  const baseActions = (input.actions ?? []).map((action, index) => ({
+    phase: action.phase ?? ["create", "advance", "reconcile"][index] ?? "reconcile",
+    ...action
+  }));
+  const lifecycleNamespace = deriveLifecycleNamespace(input);
+  const lifecyclePermission = deriveLifecyclePermission(input);
+  const sharedActions = [
+    {
+      id: `${lifecycleNamespace}.hold`,
+      permission: lifecyclePermission,
+      label: "Place Record On Hold",
+      phase: "hold"
+    },
+    {
+      id: `${lifecycleNamespace}.release`,
+      permission: lifecyclePermission,
+      label: "Release Record Hold",
+      phase: "release"
+    },
+    {
+      id: `${lifecycleNamespace}.amend`,
+      permission: lifecyclePermission,
+      label: "Amend Record",
+      phase: "amend"
+    },
+    {
+      id: `${lifecycleNamespace}.reverse`,
+      permission: lifecyclePermission,
+      label: "Reverse Record",
+      phase: "reverse"
+    }
+  ];
+
+  const actionMap = new Map();
+  for (const action of [...baseActions, ...sharedActions]) {
+    if (!actionMap.has(action.id)) {
+      actionMap.set(action.id, action);
+    }
+  }
+
+  const actions = [...actionMap.values()];
+  return {
+    ...input,
+    actions,
+    publicCommands: dedupeList([
+      ...(input.publicCommands ?? baseActions.map((action) => action.id)),
+      ...sharedActions.map((action) => action.id)
+    ])
+  };
 }
 
 function mergeDomainCatalog(base = {}, extra = {}) {
