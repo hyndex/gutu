@@ -365,7 +365,19 @@ These are shared infrastructure needs that come up repeatedly; knocking them out
 - [ ] Extend `buildDomainPlugin` to accept `connections` descriptor so detail rails auto-populate
 - [ ] Extend `buildDomainPlugin` to accept `workflows[]` declaratively (state machine engine)
 - [ ] Migrate all 8 standard reports to the new `ReportBuilder` API (already done ✅)
-- [ ] Migrate existing Kanban pages to the new `DnDKanban`
+- [x] Migrate existing Kanban pages to the new `DnDKanban` ✅ (LiveDnDKanban + all 5 plugin boards: 5849d11)
 - [ ] Migrate hand-rolled SVG charts to `EChartsCard` where they gain value (drilldowns, zoom)
 - [ ] Migrate party-relationships graph + automation workflows to `@xyflow/react`
-- [ ] Auto-generated rich detail for every factory plugin ✅ (shipped in commit 15bc988)
+- [x] Auto-generated rich detail for every factory plugin ✅ (shipped in commit 15bc988)
+
+---
+
+## Interactivity / customization parity with ERPNext (and beyond)
+
+Shipped in this pass (commits 5849d11 · b26d7f7 · 49164e3 · db798aa):
+
+- [x] **List view** — tanstack-react-table (column pin/reorder/show-hide/multi-sort/virtualized), saved views (personal/team/tenant presets with pin + default), density toggle, SmartColumnConfigurator popover, CSV/JSON/XLSX export, pagination with page-size selector.
+- [x] **Kanban** — `LiveDnDKanban` primitive wrapping dnd-kit with pointer/touch/keyboard sensors, drag-to-mutate backend via `runtime.resources.update(statusField)`, WIP-limit amber headers, per-column localStorage order, new `KanbanView` declarative type + `defineKanbanView()` builder.
+- [x] **Dashboard / Control Room** — edit mode on both `WorkspaceRenderer` (used by all Control Rooms) and `DashboardView`: drag to reorder widgets, eye-toggle to hide/show, Reset/Cancel/Done buttons, localStorage persistence keyed per workspace.
+- [x] **Forms** — `visibleWhen(ctx)`, `requiredWhen(ctx)`, `readonlyWhen(ctx)`, `canView(ctx)`, `canEdit(ctx)`, `defaultValue`, `description`, `unit`, `colSpan` on `FieldDescriptor`; `collapsible`, `visibleWhen`, `icon` on `FormSection`. Renderer applies all of them.
+- [x] **Reports / BI** — `ReportBuilder` now has Table/Chart/Pivot view-mode switcher, chart-type selector (Bar/Line/Area/Donut), Print action, sortable table columns. New `PivotTable` primitive with row/column/value/aggregation (sum/avg/count/min/max), row+column+grand totals, auto-detecting dimension vs. value fields from `ReportColumn.fieldtype`.
