@@ -1,0 +1,133 @@
+import type {
+  AnalyticsEmitter,
+  AnalyticsEvent,
+  AnalyticsEventMap,
+  AnalyticsEventName,
+  AnalyticsSink,
+  BaseEventMeta,
+} from "@/contracts/analytics";
+
+const FLUSH_INTERVAL_MS = 4000;
+const BATCH_MAX = 50;
+const SESSION_KEY = "gutu-admin-session-id";
+
+function ensureSessionId(): string {
+  if (typeof window === "undefined") return "server";
+  try {
+    const existing = window.sessionStorage.getItem(SESSION_KEY);
+    if (existing) return existing;
+    const fresh = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    window.sessionStorage.setItem(SESSION_KEY, fresh);
+    return fresh;
+  } catch {
+    return Math.random().toString(36).slice(2);
+  }
+}
+
+class AnalyticsEmitterImpl implements AnalyticsEmitter {
+  private readonly sinks = new Map<string, AnalyticsSink>();
+  private queue: AnalyticsEvent[] = [];
+  private meta: BaseEventMeta;
+  private flushTimer: ReturnType<typeof setInterval> | null = null;
+
+  constructor(initial: Partial<BaseEventMeta> = {}) {
+    this.meta = {
+      route: typeof window !== "undefined" ? window.location.hash.slice(1) || "/" : "/",
+      sessionId: ensureSessionId(),
+      at: new Date().toISOString(),
+      ...initial,
+    };
+    if (typeof window !== "undefined") {
+      this.flushTimer = setInterval(() => void this.flush(), FLUSH_INTERVAL_MS);
+      window.addEventListener("beforeunload", () => {
+        void this.flush();
+      });
+    }
+  }
+
+  emit<N extends AnalyticsEventName>(name: N, props: AnalyticsEventMap[N]): void {
+    const event: AnalyticsEvent<N> = {
+      name,
+      meta: { ...this.meta, at: new Date().toISOString() },
+      props,
+    };
+    this.queue.push(event as AnalyticsEvent);
+    if (this.queue.length >= BATCH_MAX) {
+      void this.flush();
+    }
+  }
+
+  addSink(sink: AnalyticsSink): () => void {
+    this.sinks.set(sink.id, sink);
+    return () => this.sinks.delete(sink.id);
+  }
+
+  async flush(): Promise<void> {
+    if (this.queue.length === 0) return;
+    const batch = this.queue;
+    this.queue = [];
+    await Promise.all(
+      Array.from(this.sinks.values()).map(async (sink) => {
+        try {
+          await sink.send(batch);
+        } catch (err) {
+          if (typeof console !== "undefined") {
+            console.warn(`[analytics] sink ${sink.id} failed`, err);
+          }
+        }
+      }),
+    );
+  }
+
+  setMeta(patch: Partial<BaseEventMeta>): void {
+    this.meta = { ...this.meta, ...patch };
+  }
+
+  dispose(): void {
+    if (this.flushTimer) clearInterval(this.flushTimer);
+    this.flushTimer = null;
+  }
+}
+
+export function createAnalytics(initial?: Partial<BaseEventMeta>): AnalyticsEmitter {
+  return new AnalyticsEmitterImpl(initial);
+}
+
+/** Dev sink — pretty-prints to console, grouped by name. */
+export const consoleSink: AnalyticsSink = {
+  id: "console",
+  send(events) {
+    if (typeof console === "undefined") return;
+    const byName = new Map<string, AnalyticsEvent[]>();
+    for (const ev of events) {
+      const bucket = byName.get(ev.name) ?? [];
+      bucket.push(ev);
+      byName.set(ev.name, bucket);
+    }
+    for (const [name, bucket] of byName) {
+      console.debug(`[analytics] ${name} (${bucket.length})`, bucket.map((e) => e.props));
+    }
+  },
+};
+
+/** REST sink — POSTs batches to `/api/analytics/events`. Silently degrades. */
+export const restSink: AnalyticsSink = {
+  id: "rest",
+  async send(events) {
+    if (typeof fetch === "undefined") return;
+    try {
+      const res = await fetch("/api/analytics/events", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ events }),
+        keepalive: true,
+      });
+      if (!res.ok && res.status !== 404) {
+        // 404 means endpoint not implemented server-side yet — silently drop.
+        throw new Error(`analytics: ${res.status}`);
+      }
+    } catch {
+      /* best-effort */
+    }
+  },
+};

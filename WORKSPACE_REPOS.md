@@ -58,6 +58,9 @@ the umbrella workspace repository.
 - `plugins/gutu-plugin-runtime-bridge-core`
 - `plugins/gutu-plugin-sales-core`
 - `plugins/gutu-plugin-search-core`
+- `plugins/gutu-plugin-storage-core`
+- `plugins/gutu-plugin-storage-local`
+- `plugins/gutu-plugin-storage-s3`
 - `plugins/gutu-plugin-subscriptions-core`
 - `plugins/gutu-plugin-support-service-core`
 - `plugins/gutu-plugin-template-core`
@@ -98,6 +101,7 @@ the umbrella workspace repository.
 - `libraries/gutu-lib-query`
 - `libraries/gutu-lib-router`
 - `libraries/gutu-lib-search`
+- `libraries/gutu-lib-storage`
 - `libraries/gutu-lib-telemetry-ui`
 - `libraries/gutu-lib-ui`
 - `libraries/gutu-lib-ui-editor`

@@ -1,0 +1,588 @@
+import * as React from "react";
+import { PageHeader } from "@/admin-primitives/PageHeader";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/admin-primitives/Card";
+import { Badge } from "@/primitives/Badge";
+import { Button } from "@/primitives/Button";
+import { Input } from "@/primitives/Input";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Download,
+  HelpCircle,
+  Package,
+  Power,
+  RefreshCw,
+  Trash2,
+  XCircle,
+} from "lucide-react";
+import { usePluginHost2, usePluginHostVersion } from "@/host/pluginHostContext";
+import type { PluginInstallRecord, PluginStatus } from "@/contracts/plugin-v2";
+
+/** Plugin Inspector — the admin UI for managing installed plugins.
+ *
+ *  Shows every plugin in the host with its manifest, status, capabilities,
+ *  contribution counts, and any errors. Supports install-from-URL, reload,
+ *  and uninstall. Lists every extension-registry entry with its contributor
+ *  so operators can see exactly who added what. */
+export function PluginInspectorPage() {
+  const host = usePluginHost2();
+  const version = usePluginHostVersion();
+  void version; // force re-render on change
+  const [installUrl, setInstallUrl] = React.useState("");
+  const [installing, setInstalling] = React.useState(false);
+  const [installError, setInstallError] = React.useState<string | null>(null);
+
+  const records = host?.getRecords() ?? [];
+  const conflicts = host?.contributions.conflicts ?? [];
+
+  const handleInstall = async () => {
+    if (!host) return;
+    const url = installUrl.trim();
+    if (!url) return;
+    setInstalling(true);
+    setInstallError(null);
+    try {
+      await host.installFromURL(url);
+      setInstallUrl("");
+    } catch (err) {
+      setInstallError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setInstalling(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="Plugins"
+        description="Every installed plugin — their manifest, contributions, and current health."
+      />
+
+      {/* Install from URL */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <span className="inline-flex items-center gap-2">
+              <Download className="h-4 w-4 text-accent" />
+              Install from URL
+            </span>
+          </CardTitle>
+          <CardDescription>
+            Paste a plugin manifest URL. The shell fetches the module, verifies
+            integrity (when declared), and activates it.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center gap-2">
+          <Input
+            className="flex-1"
+            placeholder="https://plugins.example.com/my-plugin/1.0.0/manifest.json"
+            value={installUrl}
+            onChange={(e) => setInstallUrl(e.target.value)}
+          />
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleInstall}
+            loading={installing}
+            disabled={!installUrl.trim() || !host}
+          >
+            Install
+          </Button>
+        </CardContent>
+        {installError && (
+          <div className="px-4 pb-3 text-xs text-intent-danger">{installError}</div>
+        )}
+      </Card>
+
+      {/* Conflicts */}
+      {conflicts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <span className="inline-flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-intent-warning" />
+                Conflicts — {conflicts.length}
+              </span>
+            </CardTitle>
+            <CardDescription>
+              Two or more plugins claimed the same contribution id. The last to
+              register wins; earlier registrations are shadowed.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y divide-border-subtle text-xs">
+              {conflicts.map((c) => (
+                <li
+                  key={`${c.kind}::${c.key}`}
+                  className="flex items-center gap-3 py-2"
+                >
+                  <Badge intent="warning">{c.kind}</Badge>
+                  <code className="font-mono">{c.key}</code>
+                  <span className="ml-auto text-text-muted">
+                    by {c.contributors.join(", ")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Plugins */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <span className="inline-flex items-center gap-2">
+              <Package className="h-4 w-4 text-accent" />
+              Installed — {records.length}
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <ul className="divide-y divide-border-subtle">
+            {records.length === 0 ? (
+              <li className="px-4 py-6 text-sm text-text-muted text-center">
+                No plugins installed.
+              </li>
+            ) : (
+              records.map((r) => (
+                <PluginRow key={r.manifest.id} record={r} host={host} />
+              ))
+            )}
+          </ul>
+        </CardContent>
+      </Card>
+
+      {/* Theme + layout picker */}
+      <ThemeAndLayoutPicker />
+
+      {/* Auth providers (if any) */}
+      <AuthProvidersCard />
+
+      {/* Trusted publisher keys for signed-remote install */}
+      <TrustedKeysCard />
+
+      {/* Registries — live extension points */}
+      <RegistriesCard />
+    </div>
+  );
+}
+
+function PluginRow({
+  record,
+  host,
+}: {
+  record: PluginInstallRecord;
+  host: ReturnType<typeof usePluginHost2>;
+}) {
+  const { manifest, status, error, contributionCounts, activationDurationMs } = record;
+  const [busy, setBusy] = React.useState(false);
+  const onReload = async () => {
+    if (!host) return;
+    setBusy(true);
+    try { await host.reload(manifest.id); } finally { setBusy(false); }
+  };
+  const onUninstall = async () => {
+    if (!host) return;
+    setBusy(true);
+    try { await host.uninstall(manifest.id); } finally { setBusy(false); }
+  };
+  return (
+    <li className="px-4 py-3">
+      <div className="flex items-start gap-3">
+        <StatusIcon status={status} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium text-sm">{manifest.label}</span>
+            <code className="font-mono text-xs text-text-muted">{manifest.id}</code>
+            <Badge intent="neutral">{manifest.version}</Badge>
+            {manifest.origin?.kind && (
+              <Badge intent="info">{manifest.origin.kind}</Badge>
+            )}
+            <StatusBadge status={status} />
+            {activationDurationMs !== undefined && (
+              <span
+                className="text-[10px] font-mono text-text-muted"
+                title={`Time spent inside activate()`}
+              >
+                {activationDurationMs.toFixed(1)}ms
+              </span>
+            )}
+          </div>
+          {manifest.description && (
+            <div className="text-xs text-text-muted mt-1">{manifest.description}</div>
+          )}
+          {manifest.requires?.plugins && Object.keys(manifest.requires.plugins).length > 0 && (
+            <div className="text-[11px] text-text-muted mt-1">
+              Requires:{" "}
+              {Object.entries(manifest.requires.plugins).map(([id, range], i, arr) => (
+                <span key={id}>
+                  <code className="font-mono">{id}</code>{" "}
+                  <span className="opacity-75">{range}</span>
+                  {i < arr.length - 1 ? ", " : ""}
+                </span>
+              ))}
+            </div>
+          )}
+          {error && (
+            <div className="text-xs text-intent-danger mt-1 font-mono break-words">
+              {error}
+            </div>
+          )}
+          {contributionCounts && Object.keys(contributionCounts).length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {Object.entries(contributionCounts).map(([k, v]) => (
+                <span
+                  key={k}
+                  className="inline-flex items-center gap-1 rounded-sm border border-border bg-surface-0 px-1.5 py-0.5 text-[10px] font-mono"
+                >
+                  {k}: {v}
+                </span>
+              ))}
+            </div>
+          )}
+          {manifest.requires?.capabilities && manifest.requires.capabilities.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {manifest.requires.capabilities.map((c) => (
+                <Badge key={c} intent="neutral">{c}</Badge>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={onReload}
+            disabled={busy || !host}
+            iconLeft={<RefreshCw className="h-3 w-3" />}
+          >
+            Reload
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={onUninstall}
+            disabled={busy || !host}
+            iconLeft={<Trash2 className="h-3 w-3" />}
+          >
+            Uninstall
+          </Button>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function StatusIcon({ status }: { status: PluginStatus }) {
+  switch (status) {
+    case "active":       return <CheckCircle2 className="h-4 w-4 text-intent-success mt-0.5" />;
+    case "quarantined":  return <AlertTriangle className="h-4 w-4 text-intent-danger mt-0.5" />;
+    case "deactivated":  return <Power className="h-4 w-4 text-text-muted mt-0.5" />;
+    case "loading":
+    case "activating":
+    case "pending":      return <RefreshCw className="h-4 w-4 text-accent mt-0.5 animate-spin" />;
+    default:             return <HelpCircle className="h-4 w-4 text-text-muted mt-0.5" />;
+  }
+}
+
+function StatusBadge({ status }: { status: PluginStatus }) {
+  const map: Record<PluginStatus, { label: string; intent: "success" | "danger" | "neutral" | "info" | "warning" }> = {
+    active:       { label: "Active",       intent: "success" },
+    quarantined:  { label: "Quarantined",  intent: "danger" },
+    deactivated:  { label: "Deactivated",  intent: "neutral" },
+    loading:      { label: "Loading",      intent: "info" },
+    activating:   { label: "Activating",   intent: "info" },
+    pending:      { label: "Pending",      intent: "warning" },
+  };
+  const { label, intent } = map[status];
+  return <Badge intent={intent}>{label}</Badge>;
+}
+
+/** Theme + Layout picker — reads live from the registries, applies the
+ *  selected theme's CSS custom properties to document.documentElement, and
+ *  persists the choice in localStorage. */
+function ThemeAndLayoutPicker() {
+  const host = usePluginHost2();
+  const version = usePluginHostVersion();
+  void version;
+  const [theme, setTheme] = React.useState<string>(
+    () => localStorage.getItem("gutu.theme") ?? "shell.light",
+  );
+  const [layout, setLayout] = React.useState<string>(
+    () => localStorage.getItem("gutu.layout") ?? "shell.standard",
+  );
+
+  React.useEffect(() => {
+    if (!host) return;
+    const spec = host.registries.themes.get(theme);
+    if (!spec) return;
+    const root = document.documentElement;
+    // Record the chosen colour scheme + overlay its tokens.
+    root.dataset.theme = theme;
+    root.dataset.colorScheme = spec.mode;
+    for (const [k, v] of Object.entries(spec.tokens ?? {})) {
+      root.style.setProperty(k, v);
+    }
+    localStorage.setItem("gutu.theme", theme);
+  }, [theme, host]);
+
+  React.useEffect(() => {
+    if (!host) return;
+    const spec = host.registries.layouts.get(layout);
+    if (!spec) return;
+    document.documentElement.dataset.layout = layout;
+    if (spec.density) document.documentElement.dataset.density = spec.density;
+    if (spec.sidebar) document.documentElement.dataset.sidebar = spec.sidebar;
+    if (spec.topbar) document.documentElement.dataset.topbar = spec.topbar;
+    localStorage.setItem("gutu.layout", layout);
+  }, [layout, host]);
+
+  if (!host) return null;
+  const themes = host.registries.themes.list();
+  const layouts = host.registries.layouts.list();
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Appearance</CardTitle>
+        <CardDescription>
+          Pick a theme / layout. Any plugin can contribute its own via{" "}
+          <code className="font-mono">ctx.registries.themes.register(...)</code>.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Theme</div>
+            <select
+              value={theme}
+              onChange={(e) => setTheme(e.target.value)}
+              className="w-full h-9 rounded border border-border bg-surface-0 px-2 text-sm"
+            >
+              {themes.map((t) => (
+                <option key={t.key} value={t.key}>
+                  {t.value.label ?? t.key} · {t.value.mode} · by {t.contributor}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <div className="text-xs text-text-muted uppercase tracking-wider mb-1">Layout</div>
+            <select
+              value={layout}
+              onChange={(e) => setLayout(e.target.value)}
+              className="w-full h-9 rounded border border-border bg-surface-0 px-2 text-sm"
+            >
+              {layouts.map((l) => (
+                <option key={l.key} value={l.key}>
+                  {l.value.label ?? l.key} · by {l.contributor}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Auth providers card — lists every contributed auth provider with a
+ *  one-click "Sign in with …" button. Useful for re-authentication and
+ *  linking secondary identities. Pre-auth sign-in integration is a
+ *  separate architectural change (requires loading auth-provider plugins
+ *  before RuntimeProvider mounts). */
+function AuthProvidersCard() {
+  const host = usePluginHost2();
+  const version = usePluginHostVersion();
+  void version;
+  if (!host) return null;
+  const providers = host.registries.authProviders.list();
+  if (providers.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Auth providers</CardTitle>
+        <CardDescription>
+          Additional sign-in methods contributed by plugins. Click to authenticate.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-2">
+          {providers.map((p) => (
+            <Button
+              key={p.key}
+              variant="ghost"
+              size="sm"
+              onClick={() => void p.value.signIn().catch(() => { /* plugin handles */ })}
+              iconLeft={<Download className="h-3 w-3" />}
+            >
+              Sign in with {p.value.label}
+              <span className="ml-2 text-[10px] text-text-muted">· {p.contributor}</span>
+            </Button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Trusted publisher keys — used by signature verification during
+ *  install-from-URL. Operators add publishers they trust. */
+function TrustedKeysCard() {
+  const [keys, setKeys] = React.useState<readonly { publicKey: string; keyId: string; label: string; addedAt: string }[]>([]);
+  const [keyId, setKeyId] = React.useState("");
+  const [label, setLabel] = React.useState("");
+  const [publicKey, setPublicKey] = React.useState("");
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    /* Lazy-load to keep the signature module out of the initial bundle. */
+    import("@/runtime/pluginSignature").then((m) => {
+      setKeys(m.loadTrustedKeys());
+    });
+  }, []);
+
+  const add = async () => {
+    setError(null);
+    const pk = publicKey.trim();
+    if (!pk) {
+      setError("Public key is required");
+      return;
+    }
+    try {
+      const m = await import("@/runtime/pluginSignature");
+      const next = m.addTrustedKey({
+        publicKey: pk,
+        keyId: keyId.trim() || `key_${Date.now()}`,
+        label: label.trim() || "unnamed",
+        addedAt: new Date().toISOString(),
+      });
+      setKeys(next);
+      setKeyId("");
+      setLabel("");
+      setPublicKey("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const remove = async (pk: string) => {
+    const m = await import("@/runtime/pluginSignature");
+    setKeys(m.removeTrustedKey(pk));
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Trusted publisher keys</CardTitle>
+        <CardDescription>
+          Remote-plugin manifests that declare a <code>signature</code> must
+          be signed by one of these Ed25519 public keys. Signed-plugin install
+          is refused when the publisher's key isn't here.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <ul className="divide-y divide-border-subtle">
+          {keys.length === 0 ? (
+            <li className="px-1 py-3 text-xs text-text-muted">No trusted keys yet.</li>
+          ) : (
+            keys.map((k) => (
+              <li key={k.publicKey} className="flex items-start gap-2 py-2">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium">{k.label}</div>
+                  <div className="text-[10px] font-mono text-text-muted break-all">{k.publicKey}</div>
+                  <div className="text-[10px] text-text-muted">
+                    id: {k.keyId} · added {new Date(k.addedAt).toLocaleString()}
+                  </div>
+                </div>
+                <Button variant="ghost" size="xs" onClick={() => void remove(k.publicKey)}>
+                  Remove
+                </Button>
+              </li>
+            ))
+          )}
+        </ul>
+        <div className="grid grid-cols-3 gap-2">
+          <Input
+            placeholder="Label (e.g. Acme Labs)"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            className="col-span-1"
+          />
+          <Input
+            placeholder="Key ID (e.g. acme-2024)"
+            value={keyId}
+            onChange={(e) => setKeyId(e.target.value)}
+            className="col-span-1"
+          />
+          <Input
+            placeholder="SPKI public key (base64)"
+            value={publicKey}
+            onChange={(e) => setPublicKey(e.target.value)}
+            className="col-span-1 font-mono text-xs"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="primary" size="sm" onClick={() => void add()} disabled={!publicKey.trim()}>
+            Add trusted key
+          </Button>
+          {error && <span className="text-xs text-intent-danger">{error}</span>}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RegistriesCard() {
+  const host = usePluginHost2();
+  const version = usePluginHostVersion();
+  void version;
+  if (!host) return null;
+  const { registries } = host;
+  const sections: { label: string; entries: readonly { key: string; contributor: string }[] }[] = [
+    { label: "Field kinds", entries: registries.fieldKinds.list() },
+    { label: "Widget types", entries: registries.widgetTypes.list() },
+    { label: "View modes", entries: registries.viewModes.list() },
+    { label: "Chart kinds", entries: registries.chartKinds.list() },
+    { label: "Themes", entries: registries.themes.list() },
+    { label: "Layouts", entries: registries.layouts.list() },
+    { label: "Data sources", entries: registries.dataSources.list() },
+    { label: "Exporters", entries: registries.exporters.list() },
+    { label: "Importers", entries: registries.importers.list() },
+    { label: "Auth providers", entries: registries.authProviders.list() },
+    { label: "Notification channels", entries: registries.notificationChannels.list() },
+    { label: "Filter operators", entries: registries.filterOps.list() },
+    { label: "Expression functions", entries: registries.expressionFunctions.list() },
+  ].filter((s) => s.entries.length > 0);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Extension registries</CardTitle>
+        <CardDescription>
+          Every open extension point — the shell seeds defaults; plugins extend
+          by registering during <code>activate()</code>.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          {sections.map((s) => (
+            <div key={s.label}>
+              <div className="font-medium text-text-primary mb-1">
+                {s.label} — {s.entries.length}
+              </div>
+              <ul className="space-y-0.5">
+                {s.entries.map((e) => (
+                  <li key={e.key} className="flex items-center gap-2">
+                    <code className="font-mono text-[11px]">{e.key}</code>
+                    <span className="text-text-muted ml-auto">{e.contributor}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
