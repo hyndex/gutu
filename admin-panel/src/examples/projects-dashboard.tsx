@@ -5,6 +5,22 @@ import { buildReportLibrary } from "./_factory/reportLibraryHelper";
 const workspace: WorkspaceDescriptor = {
   id: "projects.control-room",
   label: "Projects Control Room",
+  filterBar: [
+    {
+      field: "status",
+      label: "Status",
+      kind: "enum",
+      options: [
+        { value: "planning", label: "Planning" },
+        { value: "in_progress", label: "In progress" },
+        { value: "on_hold", label: "On hold" },
+        { value: "completed", label: "Completed" },
+        { value: "cancelled", label: "Cancelled" },
+      ],
+    },
+    { field: "manager", label: "Manager", kind: "text" },
+    { field: "client", label: "Client", kind: "text" },
+  ],
   widgets: [
     { id: "h1", type: "header", col: 12, label: "Delivery pulse", level: 2 },
     { id: "k-active", type: "number_card", col: 3, label: "Active projects",

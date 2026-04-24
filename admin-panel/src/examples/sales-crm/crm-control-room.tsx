@@ -15,6 +15,26 @@ const workspace: WorkspaceDescriptor = {
   label: "CRM Control Room",
   description: "Live pulse of pipeline, conversion, and campaign ROI.",
   personalizable: true,
+  filterBar: [
+    {
+      field: "owner",
+      label: "Owner",
+      kind: "text",
+      placeholder: "Owner email",
+    },
+    {
+      field: "status",
+      label: "Status",
+      kind: "enum",
+      appliesTo: ["crm.lead"],
+      options: [
+        { value: "new", label: "New" },
+        { value: "contacted", label: "Contacted" },
+        { value: "qualified", label: "Qualified" },
+        { value: "disqualified", label: "Disqualified" },
+      ],
+    },
+  ],
   widgets: [
     /* ────────── KPI strip ────────── */
     { id: "hdr-pulse", type: "header", col: 12, label: "Pulse", level: 2 },

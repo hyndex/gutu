@@ -5,6 +5,32 @@ import { buildReportLibrary } from "./_factory/reportLibraryHelper";
 const workspace: WorkspaceDescriptor = {
   id: "support-service.control-room",
   label: "Support Control Room",
+  filterBar: [
+    {
+      field: "status",
+      label: "Status",
+      kind: "enum",
+      options: [
+        { value: "open", label: "Open" },
+        { value: "in_progress", label: "In progress" },
+        { value: "waiting", label: "Waiting" },
+        { value: "resolved", label: "Resolved" },
+        { value: "closed", label: "Closed" },
+      ],
+    },
+    {
+      field: "priority",
+      label: "Priority",
+      kind: "enum",
+      options: [
+        { value: "urgent", label: "Urgent" },
+        { value: "high", label: "High" },
+        { value: "normal", label: "Normal" },
+        { value: "low", label: "Low" },
+      ],
+    },
+    { field: "assignee", label: "Agent", kind: "text" },
+  ],
   widgets: [
     { id: "h1", type: "header", col: 12, label: "Queue pulse", level: 2 },
     { id: "k-open", type: "number_card", col: 3, label: "Open tickets",

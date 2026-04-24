@@ -14,7 +14,7 @@ import type { ChartWidget as ChartSpec } from "@/contracts/widgets";
 import { mergeFilters, useWorkspaceFilter } from "./workspaceFilter";
 
 export function ChartWidget({ widget }: { widget: ChartSpec }) {
-  const workspaceFilter = useWorkspaceFilter();
+  const workspaceFilter = useWorkspaceFilter(widget.aggregation.resource);
   const effectiveSpec = React.useMemo(
     () =>
       workspaceFilter

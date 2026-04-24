@@ -5,6 +5,33 @@ import { buildReportLibrary } from "./_factory/reportLibraryHelper";
 const workspace: WorkspaceDescriptor = {
   id: "maintenance-cmms.control-room",
   label: "CMMS Control Room",
+  filterBar: [
+    {
+      field: "status",
+      label: "Status",
+      kind: "enum",
+      options: [
+        { value: "open", label: "Open" },
+        { value: "in_progress", label: "In progress" },
+        { value: "on_hold", label: "On hold" },
+        { value: "completed", label: "Completed" },
+        { value: "cancelled", label: "Cancelled" },
+      ],
+    },
+    {
+      field: "priority",
+      label: "Priority",
+      kind: "enum",
+      options: [
+        { value: "critical", label: "Critical" },
+        { value: "high", label: "High" },
+        { value: "medium", label: "Medium" },
+        { value: "low", label: "Low" },
+      ],
+    },
+    { field: "technician", label: "Technician", kind: "text" },
+    { field: "asset", label: "Asset", kind: "text" },
+  ],
   widgets: [
     { id: "h1", type: "header", col: 12, label: "Maintenance pulse", level: 2 },
     { id: "k-open", type: "number_card", col: 3, label: "Open WOs",

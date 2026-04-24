@@ -5,6 +5,21 @@ import { buildReportLibrary } from "../_factory/reportLibraryHelper";
 const workspace: WorkspaceDescriptor = {
   id: "audit.control-room",
   label: "Audit Control Room",
+  filterBar: [
+    {
+      field: "level",
+      label: "Level",
+      kind: "enum",
+      options: [
+        { value: "info", label: "Info" },
+        { value: "warn", label: "Warn" },
+        { value: "error", label: "Error" },
+        { value: "critical", label: "Critical" },
+      ],
+    },
+    { field: "actor", label: "Actor", kind: "text", placeholder: "Actor id or email" },
+    { field: "action", label: "Action", kind: "text" },
+  ],
   widgets: [
     { id: "h1", type: "header", col: 12, label: "Audit pulse", level: 2 },
     { id: "k-events", type: "number_card", col: 3, label: "Events (24h)",

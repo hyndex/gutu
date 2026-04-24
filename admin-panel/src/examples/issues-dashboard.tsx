@@ -5,6 +5,31 @@ import { buildReportLibrary } from "./_factory/reportLibraryHelper";
 const workspace: WorkspaceDescriptor = {
   id: "issues.control-room",
   label: "Issues Control Room",
+  filterBar: [
+    {
+      field: "status",
+      label: "Status",
+      kind: "enum",
+      options: [
+        { value: "open", label: "Open" },
+        { value: "in_progress", label: "In progress" },
+        { value: "resolved", label: "Resolved" },
+        { value: "closed", label: "Closed" },
+      ],
+    },
+    {
+      field: "severity",
+      label: "Severity",
+      kind: "enum",
+      options: [
+        { value: "critical", label: "Critical" },
+        { value: "high", label: "High" },
+        { value: "medium", label: "Medium" },
+        { value: "low", label: "Low" },
+      ],
+    },
+    { field: "assignee", label: "Assignee", kind: "text" },
+  ],
   widgets: [
     { id: "h1", type: "header", col: 12, label: "Bug pulse", level: 2 },
     { id: "k-open", type: "number_card", col: 3, label: "Open issues",

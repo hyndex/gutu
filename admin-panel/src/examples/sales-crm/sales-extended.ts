@@ -204,7 +204,7 @@ export const SALES_EXTENDED_VIEWS: readonly View[] = [
     columns: [
       { field: "code", label: "Code", width: 90 },
       { field: "name", label: "Name", sortable: true },
-      { field: "totalPrice", label: "Price", align: "right", kind: "currency", sortable: true },
+      { field: "totalPrice", label: "Price", align: "right", kind: "currency", sortable: true, totaling: "avg" },
       { field: "discountPct", label: "Discount %", align: "right", kind: "number" },
       { field: "active", label: "Active", kind: "boolean" },
     ],
@@ -245,7 +245,7 @@ export const SALES_EXTENDED_VIEWS: readonly View[] = [
       { field: "region", label: "Region" },
       { field: "leaderEmail", label: "Leader" },
       { field: "members", label: "Members", align: "right", kind: "number" },
-      { field: "quarterlyTarget", label: "Target", align: "right", kind: "currency" },
+      { field: "quarterlyTarget", label: "Target", align: "right", kind: "currency", totaling: "sum" },
       { field: "currentAttainment", label: "Attainment %", align: "right", kind: "number" },
     ],
   }),

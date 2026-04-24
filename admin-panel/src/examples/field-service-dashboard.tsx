@@ -5,6 +5,22 @@ import { buildReportLibrary } from "./_factory/reportLibraryHelper";
 const workspace: WorkspaceDescriptor = {
   id: "field-service.control-room",
   label: "Field Service Control Room",
+  filterBar: [
+    {
+      field: "status",
+      label: "Status",
+      kind: "enum",
+      options: [
+        { value: "open", label: "Open" },
+        { value: "scheduled", label: "Scheduled" },
+        { value: "in_progress", label: "In progress" },
+        { value: "completed", label: "Completed" },
+        { value: "cancelled", label: "Cancelled" },
+      ],
+    },
+    { field: "technician", label: "Technician", kind: "text" },
+    { field: "region", label: "Region", kind: "text" },
+  ],
   widgets: [
     { id: "h1", type: "header", col: 12, label: "Dispatch pulse", level: 2 },
     { id: "k-open", type: "number_card", col: 3, label: "Open jobs",

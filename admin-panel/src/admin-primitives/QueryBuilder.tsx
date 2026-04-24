@@ -385,6 +385,14 @@ function LeafEditor({
           ))}
         </SelectContent>
       </Select>
+      {arity === 0 && (
+        <span
+          className="inline-flex h-7 items-center rounded-sm border border-border bg-surface-1 px-2 text-[11px] italic text-text-muted"
+          title="This operator has no value — the engine evaluates the condition on its own (e.g. 'this month' is dynamic)."
+        >
+          self-contained
+        </span>
+      )}
       {arity === 1 && (
         <LeafValueInput field={field} op={value.op} value={value.value} onChange={setV} />
       )}

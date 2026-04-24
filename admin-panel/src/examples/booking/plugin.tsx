@@ -82,7 +82,7 @@ const bookingList = defineListView({
         { value: "completed", label: "Completed", intent: "success" },
       ],
     },
-    { field: "amount", label: "Amount", kind: "currency", align: "right", width: 100 },
+    { field: "amount", label: "Amount", kind: "currency", align: "right", width: 100, totaling: "sum" },
   ],
   filters: [
     {

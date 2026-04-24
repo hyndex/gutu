@@ -235,8 +235,8 @@ export const serviceListView = defineListView({
     { field: "code", label: "Code", width: 90 },
     { field: "name", label: "Name", sortable: true },
     { field: "category", label: "Category", kind: "enum" },
-    { field: "durationMin", label: "Duration (min)", align: "right", kind: "number" },
-    { field: "price", label: "Price", align: "right", kind: "currency" },
+    { field: "durationMin", label: "Duration (min)", align: "right", kind: "number", totaling: "avg" },
+    { field: "price", label: "Price", align: "right", kind: "currency", totaling: "avg" },
     { field: "active", label: "Active", kind: "boolean" },
   ],
 });
@@ -270,7 +270,7 @@ export const staffListView = defineListView({
     { field: "code", label: "Code", width: 90 },
     { field: "name", label: "Name", sortable: true },
     { field: "role", label: "Role" },
-    { field: "hourlyRate", label: "Rate / hr", align: "right", kind: "currency" },
+    { field: "hourlyRate", label: "Rate / hr", align: "right", kind: "currency", totaling: "avg" },
     { field: "active", label: "Active", kind: "boolean" },
   ],
 });

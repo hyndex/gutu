@@ -5,6 +5,11 @@ import { buildReportLibrary } from "./_factory/reportLibraryHelper";
 const workspace: WorkspaceDescriptor = {
   id: "inventory.control-room",
   label: "Inventory Control Room",
+  filterBar: [
+    { field: "warehouse", label: "Warehouse", kind: "text" },
+    { field: "category", label: "Category", kind: "text" },
+    { field: "sku", label: "SKU", kind: "text", placeholder: "Exact or partial" },
+  ],
   widgets: [
     { id: "h1", type: "header", col: 12, label: "Stock pulse", level: 2 },
     { id: "k-items", type: "number_card", col: 3, label: "Active SKUs",

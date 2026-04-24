@@ -5,6 +5,21 @@ import { buildReportLibrary } from "./_factory/reportLibraryHelper";
 const workspace: WorkspaceDescriptor = {
   id: "auth.control-room",
   label: "Auth & Security Control Room",
+  filterBar: [
+    {
+      field: "status",
+      label: "Status",
+      kind: "enum",
+      appliesTo: ["auth.user"],
+      options: [
+        { value: "active", label: "Active" },
+        { value: "invited", label: "Invited" },
+        { value: "suspended", label: "Suspended" },
+        { value: "disabled", label: "Disabled" },
+      ],
+    },
+    { field: "role", label: "Role", kind: "text" },
+  ],
   widgets: [
     { id: "h1", type: "header", col: 12, label: "Identity pulse", level: 2 },
     { id: "k-users", type: "number_card", col: 3, label: "Users",

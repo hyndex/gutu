@@ -1,4 +1,7 @@
-import type { WorkspaceDescriptor } from "@/contracts/widgets";
+import type {
+  WorkspaceDescriptor,
+  WorkspaceFilterField,
+} from "@/contracts/widgets";
 import type { FilterTree } from "@/contracts/saved-views";
 import { buildControlRoom } from "./controlRoomHelper";
 import type { CustomView } from "@/contracts/views";
@@ -43,6 +46,8 @@ export function buildCompactControlRoom(args: {
   kpis: readonly KPISpec[];
   charts: readonly ChartSpec[];
   shortcuts: readonly ShortcutSpec[];
+  /** Optional filter bar — values AND-merge into every widget's aggregation. */
+  filterBar?: readonly WorkspaceFilterField[];
 }): CustomView {
   const cols = Math.floor(12 / Math.min(args.kpis.length, 4));
   const chartCols = args.charts.length <= 2 ? 6 : args.charts.length <= 4 ? 6 : 4;
@@ -94,6 +99,7 @@ export function buildCompactControlRoom(args: {
   const workspace: WorkspaceDescriptor = {
     id: `${args.viewId}.workspace`,
     label: args.title,
+    filterBar: args.filterBar,
     widgets: [
       { id: "h1", type: "header", col: 12, label: "Overview", level: 2 },
       ...kpis,

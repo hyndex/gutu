@@ -157,14 +157,21 @@ export type Widget =
  *  evaluation — so NumberCards, Charts and QuickLists all respect the same
  *  slice. */
 export interface WorkspaceFilterField {
-  /** Field path on the underlying records. Use `_.wildcard` to target just a
-   *  subset of widgets when the same field name is used across resources. */
+  /** Field path on the underlying records. */
   field: string;
   label: string;
   kind: "text" | "enum" | "boolean" | "date-range";
   options?: readonly { value: string; label: string }[];
   /** Placeholder for the text/enum input. */
   placeholder?: string;
+  /** Restrict the filter to widgets whose `aggregation.resource` (or
+   *  `QuickListWidget.resource`) is in this list. When omitted, the filter
+   *  applies to every widget. Use this when a workspace combines resources
+   *  that don't share the same field name. */
+  appliesTo?: readonly string[];
+  /** When true, the filter is also applied to widgets that have NO resource
+   *  match — effectively "best effort" for shared fields. Default false. */
+  fallbackAll?: boolean;
 }
 
 export interface WorkspaceDescriptor {

@@ -5,6 +5,21 @@ import { buildReportLibrary } from "./_factory/reportLibraryHelper";
 const workspace: WorkspaceDescriptor = {
   id: "quality.control-room",
   label: "Quality Control Room",
+  filterBar: [
+    {
+      field: "status",
+      label: "Status",
+      kind: "enum",
+      options: [
+        { value: "open", label: "Open" },
+        { value: "in_progress", label: "In progress" },
+        { value: "passed", label: "Passed" },
+        { value: "failed", label: "Failed" },
+        { value: "closed", label: "Closed" },
+      ],
+    },
+    { field: "inspector", label: "Inspector", kind: "text" },
+  ],
   widgets: [
     { id: "h1", type: "header", col: 12, label: "Quality pulse", level: 2 },
     { id: "k-pending", type: "number_card", col: 3, label: "Pending inspections",

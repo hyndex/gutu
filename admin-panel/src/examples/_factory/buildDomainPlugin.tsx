@@ -38,6 +38,12 @@ export interface DomainFieldConfig {
   align?: "left" | "right" | "center";
   readonly?: boolean;
   formSection?: string;   // name of form section (default "Details")
+  /** Aggregate this column in ListView's totals-footer. Inferred automatically
+   *  from `kind` + name heuristics when omitted; pass `false` to suppress. */
+  totaling?: "sum" | "avg" | "count" | "min" | "max" | false;
+  /** Safe arithmetic expression evaluated per row. Exposes the computed value
+   *  as `field.name`. Example: `"revenue - cost"`. */
+  expr?: string;
 }
 
 export interface DomainResourceConfig {
@@ -174,6 +180,8 @@ function buildViews(cfg: DomainPluginConfig, r: DomainResourceConfig) {
       align: f.align,
       kind: f.kind,
       options: f.options,
+      expr: f.expr,
+      totaling: resolveTotaling(f),
     }));
 
   const list = defineListView({
@@ -320,6 +328,39 @@ function shouldListField(f: DomainFieldConfig): boolean {
   if (f.list === true) return true;
   // default: include primitives, exclude textarea/json
   return !["textarea", "json"].includes(f.kind);
+}
+
+/** Pick a default totaling function for a domain field. Currency columns
+ *  always sum; numeric columns sum only when the field name suggests it's
+ *  naturally aggregatable (amount, revenue, qty, cost, etc.). The author
+ *  can override with `totaling: "avg" | "count" | false` on the field. */
+const AGGREGATABLE_NUMBER_NAMES = new RegExp(
+  [
+    "amount", "amt", "revenue", "cost", "subtotal", "total", "price",
+    "value", "volume", "quantity", "qty", "count", "hours", "hrs",
+    "days", "units", "income", "expense", "balance", "savings",
+    "tax", "discount", "fee", "fees", "margin", "spend", "budget",
+    "paid", "unpaid", "due", "outstanding", "limit", "utilized", "target",
+    "gross", "net", "profit", "loss", "capacity", "allocation", "stock",
+    "inventory", "onhand", "reorder", "reserved", "available", "credits",
+    "debits", "commission", "bonus", "deduction", "earnings", "salary",
+    "rate", "wage", "ytd", "mtd", "qtd", "receivables", "payables",
+  ].join("|"),
+  "i",
+);
+
+function resolveTotaling(
+  f: DomainFieldConfig,
+): ColumnDescriptor["totaling"] {
+  if (f.totaling === false) return undefined;
+  if (f.totaling) return f.totaling;
+  if (f.kind === "currency") return "sum";
+  if (f.kind === "number") {
+    // Heuristic: only sum if the field name hints it's a naturally additive
+    // metric. Avoids accidentally summing version numbers, priority, ratings.
+    if (AGGREGATABLE_NUMBER_NAMES.test(f.name)) return "sum";
+  }
+  return undefined;
 }
 
 function fieldToZod(f: DomainFieldConfig): ZodTypeAny {

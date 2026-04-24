@@ -9,7 +9,7 @@ import { filterRows } from "@/lib/filterEngine";
 import { mergeFilters, useWorkspaceFilter } from "./workspaceFilter";
 
 export function QuickListWidget({ widget }: { widget: QuickListSpec }) {
-  const workspaceFilter = useWorkspaceFilter();
+  const workspaceFilter = useWorkspaceFilter(widget.resource);
   const { data, loading } = useList(widget.resource, {
     page: 1,
     // Grab a larger window when a workspace filter is in play, so post-fetch

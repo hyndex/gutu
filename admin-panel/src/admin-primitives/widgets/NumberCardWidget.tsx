@@ -8,7 +8,7 @@ import type { NumberCardWidget as NumberCardSpec } from "@/contracts/widgets";
 import { mergeFilters, useWorkspaceFilter } from "./workspaceFilter";
 
 export function NumberCardWidget({ widget }: { widget: NumberCardSpec }) {
-  const workspaceFilter = useWorkspaceFilter();
+  const workspaceFilter = useWorkspaceFilter(widget.aggregation.resource);
   const effectiveSpec = React.useMemo(
     () =>
       workspaceFilter

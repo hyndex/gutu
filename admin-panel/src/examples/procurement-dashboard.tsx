@@ -5,6 +5,23 @@ import { buildReportLibrary } from "./_factory/reportLibraryHelper";
 const workspace: WorkspaceDescriptor = {
   id: "procurement.control-room",
   label: "Procurement Control Room",
+  filterBar: [
+    {
+      field: "status",
+      label: "Status",
+      kind: "enum",
+      options: [
+        { value: "draft", label: "Draft" },
+        { value: "submitted", label: "Submitted" },
+        { value: "pending", label: "Pending" },
+        { value: "approved", label: "Approved" },
+        { value: "rejected", label: "Rejected" },
+        { value: "closed", label: "Closed" },
+      ],
+    },
+    { field: "supplier", label: "Supplier", kind: "text" },
+    { field: "buyer", label: "Buyer", kind: "text", placeholder: "Buyer id" },
+  ],
   widgets: [
     { id: "h1", type: "header", col: 12, label: "Procurement pulse", level: 2 },
     { id: "k-open", type: "number_card", col: 3, label: "Open POs",

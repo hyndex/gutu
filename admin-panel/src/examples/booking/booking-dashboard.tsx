@@ -5,6 +5,21 @@ import { buildReportLibrary } from "../_factory/reportLibraryHelper";
 const workspace: WorkspaceDescriptor = {
   id: "booking.control-room",
   label: "Booking Control Room",
+  filterBar: [
+    {
+      field: "status",
+      label: "Status",
+      kind: "enum",
+      options: [
+        { value: "draft", label: "Draft" },
+        { value: "confirmed", label: "Confirmed" },
+        { value: "completed", label: "Completed" },
+        { value: "cancelled", label: "Cancelled" },
+      ],
+    },
+    { field: "resource", label: "Resource", kind: "text" },
+    { field: "customer", label: "Customer", kind: "text" },
+  ],
   widgets: [
     { id: "h1", type: "header", col: 12, label: "Schedule pulse", level: 2 },
     { id: "k-today", type: "number_card", col: 3, label: "Bookings today",

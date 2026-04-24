@@ -5,6 +5,21 @@ import { buildReportLibrary } from "./_factory/reportLibraryHelper";
 const workspace: WorkspaceDescriptor = {
   id: "accounting.control-room",
   label: "Accounting Control Room",
+  filterBar: [
+    {
+      field: "status",
+      label: "Status",
+      kind: "enum",
+      options: [
+        { value: "draft", label: "Draft" },
+        { value: "open", label: "Open" },
+        { value: "paid", label: "Paid" },
+        { value: "overdue", label: "Overdue" },
+        { value: "void", label: "Void" },
+      ],
+    },
+    { field: "customer", label: "Customer", kind: "text" },
+  ],
   widgets: [
     { id: "h1", type: "header", col: 12, label: "Cash flow pulse", level: 2 },
     { id: "k-ar", type: "number_card", col: 3, label: "AR open",

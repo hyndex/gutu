@@ -28,7 +28,7 @@ import { SpacerWidget } from "./SpacerWidget";
 import { QuickListWidget } from "./QuickListWidget";
 import {
   WorkspaceFilterContext,
-  buildFilterTree,
+  buildFilterState,
 } from "./workspaceFilter";
 
 const STORAGE_PREFIX = "gutu-workspace-";
@@ -116,7 +116,7 @@ export function WorkspaceRenderer({
   const workspaceFilter = React.useMemo(
     () =>
       workspace.filterBar
-        ? buildFilterTree(workspace.filterBar, filterValues)
+        ? buildFilterState(workspace.filterBar, filterValues)
         : undefined,
     [workspace.filterBar, filterValues],
   );

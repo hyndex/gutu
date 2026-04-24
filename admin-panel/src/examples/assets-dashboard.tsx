@@ -5,6 +5,21 @@ import { buildReportLibrary } from "./_factory/reportLibraryHelper";
 const workspace: WorkspaceDescriptor = {
   id: "assets.control-room",
   label: "Assets Control Room",
+  filterBar: [
+    {
+      field: "status",
+      label: "Status",
+      kind: "enum",
+      options: [
+        { value: "in_service", label: "In service" },
+        { value: "out_of_service", label: "Out of service" },
+        { value: "retired", label: "Retired" },
+        { value: "disposed", label: "Disposed" },
+      ],
+    },
+    { field: "category", label: "Category", kind: "text" },
+    { field: "location", label: "Location", kind: "text" },
+  ],
   widgets: [
     { id: "h1", type: "header", col: 12, label: "Fleet pulse", level: 2 },
     { id: "k-total", type: "number_card", col: 3, label: "Total assets",

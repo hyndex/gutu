@@ -129,6 +129,21 @@ export interface KanbanView extends ViewBase {
   readonly renderCard: (record: Record<string, unknown>) => ReactNode;
   /** Optional client-side filter. */
   readonly filter?: (record: Record<string, unknown>) => boolean;
+  /** Simple quick-filters shown as chips above the board. */
+  readonly filters?: readonly FilterDescriptor[];
+  /** Fields to expose to the advanced QueryBuilder popover. When omitted,
+   *  the QueryBuilder isn't rendered. */
+  readonly advancedFilterFields?: readonly {
+    readonly field: string;
+    readonly label?: string;
+    readonly kind: FieldDescriptor["kind"];
+    readonly options?: FieldDescriptor["options"];
+  }[];
+  /** Enable the search input above the board. */
+  readonly search?: boolean;
+  /** Fields to search through when `search` is true. Defaults to common
+   *  `name`/`title`/`label` fields when omitted. */
+  readonly searchFields?: readonly string[];
   /** Page size for initial fetch (default 200). */
   readonly pageSize?: number;
   /** Click a card → navigate to this path (defaults to `${basePath}/${id}`). */

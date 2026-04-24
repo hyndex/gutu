@@ -5,6 +5,22 @@ import { buildReportLibrary } from "./_factory/reportLibraryHelper";
 const workspace: WorkspaceDescriptor = {
   id: "hr-payroll.control-room",
   label: "HR & Payroll Control Room",
+  filterBar: [
+    { field: "department", label: "Department", kind: "text" },
+    { field: "location", label: "Location", kind: "text" },
+    {
+      field: "status",
+      label: "Status",
+      kind: "enum",
+      appliesTo: ["hr-payroll.employee"],
+      options: [
+        { value: "active", label: "Active" },
+        { value: "onboarding", label: "Onboarding" },
+        { value: "on_leave", label: "On leave" },
+        { value: "terminated", label: "Terminated" },
+      ],
+    },
+  ],
   widgets: [
     { id: "h1", type: "header", col: 12, label: "People pulse", level: 2 },
     { id: "k-headcount", type: "number_card", col: 3, label: "Headcount",
