@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useRuntime } from "@/runtime/context";
 import type { AnyPlugin } from "@/contracts/plugin-v2";
-import { buildRegistry, type AdminRegistry } from "@/shell/registry";
+import type { AdminRegistry } from "@/shell/registry";
 import {
   createPluginHost2,
   topoSortPlugins,

@@ -22,7 +22,10 @@ import * as React from "react";
 import { z } from "zod";
 import { Barcode, Package, TriangleAlert } from "lucide-react";
 import { definePlugin } from "@/contracts/plugin-v2";
-import { buildDomainPlugin } from "@/examples/_factory/buildDomainPlugin";
+import {
+  contributeDomain,
+  type DomainPluginConfig,
+} from "@/examples/_factory/buildDomainPlugin";
 import { Badge } from "@/primitives/Badge";
 import type { FieldKindSpec } from "@/contracts/plugin-v2";
 
@@ -65,7 +68,7 @@ const BarcodeForm: FieldKindSpec["form"] = ({ name, value, onChange, required, r
 /* -------------------------------------------------------------- */
 /* Resource construction (factory-backed)                           */
 /* -------------------------------------------------------------- */
-const warehouseDomain = buildDomainPlugin({
+const warehouseDomainConfig: DomainPluginConfig = {
   id: "com.gutu.warehouse",
   label: "Warehouse",
   icon: "Warehouse",
@@ -133,7 +136,7 @@ const warehouseDomain = buildDomainPlugin({
       },
     },
   ],
-});
+};
 
 /* -------------------------------------------------------------- */
 /* The v2 plugin — wraps the domain contributions + extra hooks    */
@@ -187,23 +190,9 @@ export default definePlugin<WarehouseApi>({
       filterOperators: ["eq", "neq", "contains", "starts_with", "ends_with"],
     });
 
-    /* 2. Register the auto-generated domain contributions (resources/views/
-     *    nav/actions) from the factory. */
-    if (warehouseDomain.admin?.navSections) {
-      ctx.contribute.navSections(warehouseDomain.admin.navSections);
-    }
-    if (warehouseDomain.admin?.nav) {
-      ctx.contribute.nav(warehouseDomain.admin.nav);
-    }
-    if (warehouseDomain.admin?.resources) {
-      ctx.contribute.resources(warehouseDomain.admin.resources);
-    }
-    if (warehouseDomain.admin?.views) {
-      ctx.contribute.views(warehouseDomain.admin.views);
-    }
-    if (warehouseDomain.admin?.commands?.length) {
-      ctx.contribute.commands(warehouseDomain.admin.commands);
-    }
+    /* 2. Register the factory-derived domain contributions (resources,
+     *    nav, views, commands) in a single call. */
+    contributeDomain(ctx, warehouseDomainConfig);
 
     /* 3. View extension — add "Warehouse stock" tab to any Sales Order detail. */
     ctx.contribute.viewExtensions([

@@ -1,10 +1,10 @@
 import { z } from "zod";
 import {
   defineListView,
-  definePlugin,
   defineResource,
   defineCustomView,
 } from "@/builders";
+import { definePlugin } from "@/contracts/plugin-v2";
 import { Badge } from "@/primitives/Badge";
 import { formatRelative } from "@/lib/format";
 import { EmptyState } from "@/admin-primitives/EmptyState";
@@ -120,64 +120,58 @@ const liveLog = defineCustomView({
   render: () => <LiveAuditPage />,
 });
 
+const auditNavSections = [{ id: "platform", label: "Platform", order: 100 }];
+const auditNav = [
+  {
+    id: "audit-events", label: "Audit log", icon: "History",
+    path: "/audit", view: "audit.live.view", section: "platform", order: 10,
+  },
+  {
+    id: "audit-events-seeded", label: "Audit log (seeded demo)", icon: "Database",
+    path: "/audit/seeded", view: "audit.events", section: "platform", order: 11,
+  },
+  {
+    id: "audit-about", label: "About audit", icon: "Info",
+    path: "/audit/about", view: "audit.about", section: "platform", order: 20,
+  },
+  {
+    id: "audit-event-detail", label: "Event detail (sample)", icon: "FileText",
+    path: "/audit/event-sample", view: "audit.event-detail.view", section: "platform", order: 25,
+  },
+  { id: "audit-control-room", label: "Control Room", icon: "LayoutDashboard", path: "/audit/control-room", view: "audit.control-room.view", section: "platform", order: 5 },
+  { id: "audit-reports", label: "Reports", icon: "BarChart3", path: "/audit/reports", view: "audit.reports.view", section: "platform", order: 12 },
+];
+const auditResources = [eventResource];
+const auditViews = [
+  liveLog, eventsList, about, auditEventDetailView,
+  auditControlRoomView, auditReportsIndexView, auditReportsDetailView,
+];
+const auditCommands = [
+  { id: "audit.go.control-room", label: "Audit: Control Room", icon: "LayoutDashboard", run: () => { window.location.hash = "/audit/control-room"; } },
+  { id: "audit.go.reports", label: "Audit: Reports", icon: "BarChart3", run: () => { window.location.hash = "/audit/reports"; } },
+  { id: "audit.go.log", label: "Audit: Live log", icon: "History", run: () => { window.location.hash = "/audit"; } },
+];
+
 export const auditPlugin = definePlugin({
-  id: "audit",
-  label: "Audit",
-  version: "0.1.0",
-  description: "Tamper-evident event log.",
-  icon: "History",
-  admin: {
-    navSections: [{ id: "platform", label: "Platform", order: 100 }],
-    nav: [
-      {
-        id: "audit-events",
-        label: "Audit log",
-        icon: "History",
-        path: "/audit",
-        view: "audit.live.view",
-        section: "platform",
-        order: 10,
-      },
-      {
-        id: "audit-events-seeded",
-        label: "Audit log (seeded demo)",
-        icon: "Database",
-        path: "/audit/seeded",
-        view: "audit.events",
-        section: "platform",
-        order: 11,
-      },
-      {
-        id: "audit-about",
-        label: "About audit",
-        icon: "Info",
-        path: "/audit/about",
-        view: "audit.about",
-        section: "platform",
-        order: 20,
-      },
-      {
-        id: "audit-event-detail",
-        label: "Event detail (sample)",
-        icon: "FileText",
-        path: "/audit/event-sample",
-        view: "audit.event-detail.view",
-        section: "platform",
-        order: 25,
-      },
-      { id: "audit-control-room", label: "Control Room", icon: "LayoutDashboard", path: "/audit/control-room", view: "audit.control-room.view", section: "platform", order: 5 },
-      { id: "audit-reports", label: "Reports", icon: "BarChart3", path: "/audit/reports", view: "audit.reports.view", section: "platform", order: 12 },
-    ],
-    resources: [eventResource],
-    views: [
-      liveLog, eventsList, about, auditEventDetailView,
-      auditControlRoomView, auditReportsIndexView, auditReportsDetailView,
-    ],
-    commands: [
-      { id: "audit.go.control-room", label: "Audit: Control Room", icon: "LayoutDashboard", run: () => { window.location.hash = "/audit/control-room"; } },
-      { id: "audit.go.reports", label: "Audit: Reports", icon: "BarChart3", run: () => { window.location.hash = "/audit/reports"; } },
-      { id: "audit.go.log", label: "Audit: Live log", icon: "History", run: () => { window.location.hash = "/audit"; } },
-    ],
+  manifest: {
+    id: "audit",
+    version: "0.1.0",
+    label: "Audit",
+    description: "Tamper-evident event log.",
+    icon: "History",
+    requires: {
+      shell: "*",
+      capabilities: ["resources:read", "nav", "commands"],
+    },
+    activationEvents: [{ kind: "onStart" }],
+    origin: { kind: "explicit" },
+  },
+  async activate(ctx) {
+    ctx.contribute.navSections(auditNavSections);
+    ctx.contribute.nav(auditNav);
+    ctx.contribute.resources(auditResources);
+    ctx.contribute.views(auditViews);
+    ctx.contribute.commands(auditCommands);
   },
 });
 

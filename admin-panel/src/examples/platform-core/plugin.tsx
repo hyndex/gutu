@@ -1,4 +1,5 @@
-import { defineCustomView, definePlugin } from "@/builders";
+import { defineCustomView } from "@/builders";
+import { definePlugin } from "@/contracts/plugin-v2";
 import {
   HomeOverviewPage,
   NotificationsInboxPage,
@@ -17,16 +18,8 @@ import { TenantManagementPage } from "./TenantManagement";
 /** Platform-core plugin — cross-cutting pages that don't belong to any one
  *  domain: global home, settings hub, profile, search, notifications inbox,
  *  onboarding wizard, auth previews, release notes. */
-export const platformCorePlugin = definePlugin({
-  id: "platform-core",
-  label: "Platform Core",
-  icon: "Sparkles",
-  version: "0.1.0",
-  description:
-    "Cross-plugin shell pages — home, settings, profile, search, notifications, auth previews.",
-  admin: {
-    navSections: [{ id: "__home", label: "", order: 0 }],
-    nav: [
+const platformCoreNavSections = [{ id: "__home", label: "", order: 0 }];
+const platformCoreNav = [
       {
         id: "platform.home",
         label: "Home",
@@ -125,8 +118,8 @@ export const platformCorePlugin = definePlugin({
         section: "platform",
         order: 99.91,
       },
-    ],
-    views: [
+];
+const platformCoreViews = [
       defineCustomView({
         id: "platform.home.view",
         title: "Home",
@@ -205,8 +198,8 @@ export const platformCorePlugin = definePlugin({
         resource: "platform.signup",
         render: () => <SignUpPreviewPage />,
       }),
-    ],
-    commands: [
+];
+const platformCoreCommands = [
       {
         id: "platform.goto.home",
         label: "Go to Home",
@@ -242,6 +235,27 @@ export const platformCorePlugin = definePlugin({
           window.location.hash = "/search";
         },
       },
-    ],
+];
+
+export const platformCorePlugin = definePlugin({
+  manifest: {
+    id: "platform-core",
+    version: "0.1.0",
+    label: "Platform Core",
+    description:
+      "Cross-plugin shell pages — home, settings, profile, search, notifications, auth previews.",
+    icon: "Sparkles",
+    requires: {
+      shell: "*",
+      capabilities: ["nav", "commands"],
+    },
+    activationEvents: [{ kind: "onStart" }],
+    origin: { kind: "explicit" },
+  },
+  async activate(ctx) {
+    ctx.contribute.navSections(platformCoreNavSections);
+    ctx.contribute.nav(platformCoreNav);
+    ctx.contribute.views(platformCoreViews);
+    ctx.contribute.commands(platformCoreCommands);
   },
 });

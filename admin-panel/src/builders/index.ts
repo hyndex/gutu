@@ -6,12 +6,15 @@ import type {
   CustomView,
   KanbanView,
 } from "@/contracts/views";
-import type { Plugin, AdminContribution } from "@/contracts/plugin";
 import type { ResourceDefinition } from "@/contracts/resources";
 
-/** Tier 6 — Fluent builders.
- *  They are intentionally thin: `defineX` is an `identity + validation` pass.
- *  The payoff is inference — plugins get strict types without extra generics. */
+/** Fluent view/resource builders.
+ *  Intentionally thin: `defineX` is an `identity + validation` pass.
+ *  The payoff is inference — plugins get strict types without extra generics.
+ *
+ *  For plugin authoring, import `definePlugin` from `@/contracts/plugin-v2`.
+ *  This module no longer exports a legacy `Plugin` shape — v2 is the only
+ *  supported contract. */
 
 export function defineListView(view: Omit<ListView, "type">): ListView {
   return { ...view, type: "list" };
@@ -42,16 +45,7 @@ export function defineResource<R extends ResourceDefinition>(resource: R): R {
   return resource;
 }
 
-export function defineAdmin(contribution: AdminContribution): AdminContribution {
-  return contribution;
-}
-
-export function definePlugin(plugin: Plugin): Plugin {
-  validatePlugin(plugin);
-  return plugin;
-}
-
-/* ---- Validation (runs at startup; surfaces misuse loudly) -------------- */
+/* ---- Validation ---------------------------------------------------------- */
 
 function validateResource(r: ResourceDefinition): void {
   if (!r.id || typeof r.id !== "string") {
@@ -59,25 +53,5 @@ function validateResource(r: ResourceDefinition): void {
   }
   if (!r.schema || typeof (r.schema as { parse?: unknown }).parse !== "function") {
     throw new Error(`[defineResource] resource "${r.id}" missing zod schema`);
-  }
-}
-
-function validatePlugin(p: Plugin): void {
-  if (!p.id || typeof p.id !== "string") {
-    throw new Error(`[definePlugin] plugin.id is required`);
-  }
-  const seenView = new Set<string>();
-  for (const v of p.admin?.views ?? []) {
-    if (seenView.has(v.id)) {
-      throw new Error(`[definePlugin ${p.id}] duplicate view id "${v.id}"`);
-    }
-    seenView.add(v.id);
-  }
-  const seenRes = new Set<string>();
-  for (const r of p.admin?.resources ?? []) {
-    if (seenRes.has(r.id)) {
-      throw new Error(`[definePlugin ${p.id}] duplicate resource id "${r.id}"`);
-    }
-    seenRes.add(r.id);
   }
 }

@@ -4,9 +4,9 @@ import {
   defineDetailView,
   defineFormView,
   defineListView,
-  definePlugin,
   defineResource,
 } from "@/builders";
+import { definePlugin } from "@/contracts/plugin-v2";
 import { KPI } from "@/admin-primitives/KPI";
 import { EmptyState } from "@/admin-primitives/EmptyState";
 import { Badge } from "@/primitives/Badge";
@@ -320,15 +320,10 @@ function Row({ label, value }: { label: string; value: unknown }) {
   );
 }
 
-export const bookingPlugin = definePlugin({
-  id: "booking",
-  label: "Booking",
-  version: "0.1.0",
-  description: "Schedule and manage bookings.",
-  icon: "Calendar",
-  admin: {
-    navSections: [{ id: "operations", label: "Operations", order: 20 }],
-    nav: [
+const bookingNavSections = [
+  { id: "operations", label: "Operations", order: 20 },
+];
+const bookingNav = [
       {
         id: "bookings-home",
         label: "Overview",
@@ -364,31 +359,55 @@ export const bookingPlugin = definePlugin({
       { id: "booking.availability-rules.nav", label: "Availability rules", icon: "Clock", path: "/bookings/availability-rules", view: "booking.availability-rules.list", section: "operations", order: 17 },
       { id: "booking.locations.nav", label: "Locations", icon: "MapPin", path: "/bookings/locations", view: "booking.locations.list", section: "operations", order: 18 },
       { id: "booking.waitlist.nav", label: "Waitlist", icon: "ListOrdered", path: "/bookings/waitlist", view: "booking.waitlist.list", section: "operations", order: 19 },
-    ],
-    resources: [bookingResource, ...BOOKING_EXTENDED_RESOURCES],
-    views: [
-      bookingDashboard, bookingList, bookingForm, bookingDetail, bookingCalendarView,
-      bookingControlRoomView, bookingReportsIndexView, bookingReportsDetailView,
-      ...BOOKING_EXTENDED_VIEWS,
-    ],
-    commands: [
-      {
-        id: "booking.new",
-        label: "New booking",
-        icon: "Plus",
-        keywords: ["create", "add", "appointment"],
-        shortcut: "⌘N",
-        run: () => {
-          window.location.hash = "/bookings/new";
-        },
-      },
-      { id: "booking.go.control-room", label: "Booking: Control Room", icon: "LayoutDashboard", run: () => { window.location.hash = "/bookings/control-room"; } },
-      { id: "booking.go.reports", label: "Booking: Reports", icon: "BarChart3", run: () => { window.location.hash = "/bookings/reports"; } },
-      { id: "booking.go.calendar", label: "Booking: Calendar", icon: "CalendarDays", run: () => { window.location.hash = "/bookings/calendar"; } },
-      { id: "booking.go.waitlist", label: "Booking: Waitlist", icon: "ListOrdered", run: () => { window.location.hash = "/bookings/waitlist"; } },
-      { id: "booking.new-service", label: "New service", icon: "Briefcase", run: () => { window.location.hash = "/bookings/services/new"; } },
-      { id: "booking.new-staff", label: "New staff member", icon: "UserCircle", run: () => { window.location.hash = "/bookings/staff/new"; } },
-    ],
+];
+const bookingResources = [bookingResource, ...BOOKING_EXTENDED_RESOURCES];
+const bookingViews = [
+  bookingDashboard, bookingList, bookingForm, bookingDetail, bookingCalendarView,
+  bookingControlRoomView, bookingReportsIndexView, bookingReportsDetailView,
+  ...BOOKING_EXTENDED_VIEWS,
+];
+const bookingCommands = [
+  {
+    id: "booking.new",
+    label: "New booking",
+    icon: "Plus",
+    keywords: ["create", "add", "appointment"],
+    shortcut: "⌘N",
+    run: () => {
+      window.location.hash = "/bookings/new";
+    },
+  },
+  { id: "booking.go.control-room", label: "Booking: Control Room", icon: "LayoutDashboard", run: () => { window.location.hash = "/bookings/control-room"; } },
+  { id: "booking.go.reports", label: "Booking: Reports", icon: "BarChart3", run: () => { window.location.hash = "/bookings/reports"; } },
+  { id: "booking.go.calendar", label: "Booking: Calendar", icon: "CalendarDays", run: () => { window.location.hash = "/bookings/calendar"; } },
+  { id: "booking.go.waitlist", label: "Booking: Waitlist", icon: "ListOrdered", run: () => { window.location.hash = "/bookings/waitlist"; } },
+  { id: "booking.new-service", label: "New service", icon: "Briefcase", run: () => { window.location.hash = "/bookings/services/new"; } },
+  { id: "booking.new-staff", label: "New staff member", icon: "UserCircle", run: () => { window.location.hash = "/bookings/staff/new"; } },
+];
+
+export const bookingPlugin = definePlugin({
+  manifest: {
+    id: "booking",
+    version: "0.1.0",
+    label: "Booking",
+    description: "Schedule and manage bookings.",
+    icon: "Calendar",
+    requires: {
+      shell: "*",
+      capabilities: [
+        "resources:read", "resources:write", "resources:delete",
+        "nav", "commands", "storage",
+      ],
+    },
+    activationEvents: [{ kind: "onStart" }],
+    origin: { kind: "explicit" },
+  },
+  async activate(ctx) {
+    ctx.contribute.navSections(bookingNavSections);
+    ctx.contribute.nav(bookingNav);
+    ctx.contribute.resources(bookingResources);
+    ctx.contribute.views(bookingViews);
+    ctx.contribute.commands(bookingCommands);
   },
 });
 

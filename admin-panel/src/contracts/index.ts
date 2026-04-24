@@ -4,4 +4,4 @@ export * from "./actions";
 export * from "./views";
 export * from "./nav";
 export * from "./commands";
-export * from "./plugin";
+export * from "./plugin-v2";

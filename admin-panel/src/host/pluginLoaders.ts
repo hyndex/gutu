@@ -21,6 +21,8 @@
 import type { AnyPlugin } from "@/contracts/plugin-v2";
 import { isV2Plugin } from "@/contracts/plugin-v2";
 
+/* Note: AnyPlugin === PluginV2 now. Legacy plugin shape has been retired. */
+
 /* ================================================================== */
 /* Filesystem loader                                                   */
 /* ================================================================== */
@@ -80,19 +82,12 @@ export async function loadFilesystemPlugins(): Promise<AnyPlugin[]> {
   return out;
 }
 
-/** Best-effort — find a plugin-like export in a module's named exports
- *  when no `default` is declared. Matches either v1 `{id, admin}` or v2
- *  `{manifest, activate}`. */
+/** Best-effort — find a v2 plugin-like export in a module's named exports
+ *  when no `default` is declared. */
 function findPluginExport(mod: Record<string, unknown>): AnyPlugin | undefined {
   for (const v of Object.values(mod)) {
     if (!v || typeof v !== "object") continue;
     if (isV2Plugin(v as AnyPlugin)) return v as AnyPlugin;
-    if (
-      "id" in (v as object) &&
-      ("admin" in (v as object) || "onActivate" in (v as object))
-    ) {
-      return v as AnyPlugin;
-    }
   }
   return undefined;
 }

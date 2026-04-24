@@ -574,11 +574,11 @@ export function definePlugin<TApi = unknown>(plugin: PluginV2<TApi>): PluginV2<T
 }
 
 /* ================================================================== */
-/* AnyPlugin — the union the host accepts                              */
+/* Type guards                                                         */
 /* ================================================================== */
 
-import type { Plugin as LegacyPlugin } from "./plugin";
-export type AnyPlugin = PluginV2 | LegacyPlugin;
+/** The only runtime plugin shape accepted by the host. */
+export type AnyPlugin = PluginV2;
 
 export function isV2Plugin(p: AnyPlugin): p is PluginV2 {
   return "manifest" in p && "activate" in p && typeof (p as PluginV2).activate === "function";

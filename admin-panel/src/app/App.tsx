@@ -123,46 +123,12 @@ const plugins = [
   auditPlugin,
 ];
 
-/** Bridged legacy plugins.
- *
- *  This list is where you mount existing `@platform/admin-contracts`
- *  plugins (anything exporting `adminContributions`) inside the new shell.
- *
- *  To add one:
- *    import { adminContributions as crmLegacy } from "gutu-plugin-crm-core";
- *    bridgedPlugins.push(
- *      adoptLegacyContributions(crmLegacy, {
- *        sourceId: "crm-core",
- *        plugin: { id: "gutu-plugin-crm-core", label: "CRM Core", version: "1.4.0", icon: "Users" },
- *      }),
- *    );
- *
- *  When a plugin migrates to the next-gen API (see packages/admin-shell-bridge
- *  migration guide), remove it from this list and add its native `definePlugin`
- *  export to `plugins` above.
- */
-import { adoptLegacyContributions, type BridgedPlugin } from "@gutu/admin-shell-bridge";
-void adoptLegacyContributions; // keep import live for future registration
-
-const bridgedPlugins: BridgedPlugin[] = [
-  // Legacy @platform/admin-contracts plugins go here once their repos are
-  // linked as workspace dependencies. Example:
-  //
-  // adoptLegacyContributions(crmCoreContributions, {
-  //   sourceId: "crm-core",
-  //   plugin: { id: "gutu-plugin-crm-core", label: "CRM Core", version: "1.4.0", icon: "Users" },
-  // }),
-];
-
 export function App() {
-  // Legacy + bridged plugins are accepted alongside new v2 plugins — see
-  // `AnyPlugin` in `@/contracts/plugin-v2`. Filesystem-discovered plugins
-  // under `src/plugins/*` are merged automatically by AdminRoot.
-  // Stable reference — the plugin list never changes at runtime for the
-  // shell itself; runtime install/uninstall goes through the Plugin Inspector.
-  const all = React.useMemo(
-    () => [...plugins, ...(bridgedPlugins as unknown as typeof plugins)],
-    [],
-  );
+  // All first-party plugins are v2. Filesystem-discovered plugins under
+  // `src/plugins/*` and npm specifiers from `package.json.gutuPlugins` are
+  // merged automatically by AdminRoot. Stable reference — plugins are
+  // installed/uninstalled at runtime via the Plugin Inspector, not by
+  // mutating this list.
+  const all = React.useMemo(() => plugins, []);
   return <AdminRoot plugins={all} />;
 }

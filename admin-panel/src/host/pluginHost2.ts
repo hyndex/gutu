@@ -13,10 +13,7 @@
  *    8. Maintain a `PluginHost` singleton per shell that the Inspector UI
  *       subscribes to for live state.
  *
- *  Migration: the legacy `usePluginHost` is preserved; AppShell now uses
- *  `usePluginHost2` which internally wraps any legacy `Plugin` via
- *  `wrapLegacyPlugin`.
- */
+ *  This is the single runtime path — every plugin is a v2 `PluginV2`. */
 
 import type { MockBackend } from "@/runtime/mockBackend";
 import type {
@@ -29,10 +26,8 @@ import type {
   Capability,
   PeerAccess,
 } from "@/contracts/plugin-v2";
-import { isV2Plugin } from "@/contracts/plugin-v2";
 import {
   createContributionStore,
-  wrapLegacyPlugin,
   buildPluginContext,
   type ContributionStore,
 } from "@/runtime/pluginContext";
@@ -214,8 +209,8 @@ export function createPluginHost2(args: {
             }
           }
         }
-        // Also honour the legacy `resource.__seed` for any resources this
-        // plugin contributed (maintains compatibility with wrapLegacyPlugin).
+        // Resource-level seed metadata: plugins may attach `__seed` to any
+        // ResourceDefinition they contribute; the mock backend picks it up.
         for (const { resource, pluginId } of contributions.resources.values()) {
           if (pluginId !== manifest.id) continue;
           const seedRows = (resource as { __seed?: readonly Record<string, unknown>[] }).__seed;
@@ -316,19 +311,16 @@ export function createPluginHost2(args: {
   };
 
   /* ----- Public surface ----- */
-  const install = async (pluginOrLegacy: AnyPlugin): Promise<PluginInstallRecord> => {
-    const v2 = isV2Plugin(pluginOrLegacy)
-      ? pluginOrLegacy
-      : wrapLegacyPlugin(pluginOrLegacy as Parameters<typeof wrapLegacyPlugin>[0]);
+  const install = async (plugin: AnyPlugin): Promise<PluginInstallRecord> => {
     // Reject duplicate ids.
-    if (active.has(v2.manifest.id)) {
-      const prev = active.get(v2.manifest.id)!;
+    if (active.has(plugin.manifest.id)) {
+      const prev = active.get(plugin.manifest.id)!;
       if (prev.status === "active") {
         return toRecord(prev);
       }
-      await deactivatePlugin(v2.manifest.id);
+      await deactivatePlugin(plugin.manifest.id);
     }
-    const entry = await activatePlugin(v2);
+    const entry = await activatePlugin(plugin);
     return toRecord(entry);
   };
 
@@ -449,26 +441,17 @@ export function createPluginHost2(args: {
 /** Sort plugins by their `requires.plugins` graph. Returns the ordered list
  *  + any cycles as `{pluginId, reason}`. Plugins whose deps aren't present
  *  are returned at the end; activation will quarantine them. */
-export function topoSortPlugins(plugins: readonly AnyPlugin[]): {
-  ordered: AnyPlugin[];
+export function topoSortPlugins(plugins: readonly PluginV2[]): {
+  ordered: PluginV2[];
   cycles: { path: string[] }[];
 } {
-  const byId = new Map<string, AnyPlugin>();
-  for (const p of plugins) {
-    const manifest = isV2Plugin(p)
-      ? p.manifest
-      : { id: (p as { id: string }).id };
-    byId.set(manifest.id, p);
-  }
+  const byId = new Map<string, PluginV2>();
+  for (const p of plugins) byId.set(p.manifest.id, p);
 
-  const ordered: AnyPlugin[] = [];
+  const ordered: PluginV2[] = [];
   const cycles: { path: string[] }[] = [];
   const visited = new Set<string>();
   const stack = new Set<string>();
-  const depsOf = (p: AnyPlugin): string[] => {
-    if (!isV2Plugin(p)) return [];
-    return Object.keys(p.manifest.requires?.plugins ?? {});
-  };
 
   const visit = (id: string, path: string[]) => {
     if (visited.has(id)) return;
@@ -479,7 +462,7 @@ export function topoSortPlugins(plugins: readonly AnyPlugin[]): {
     const plugin = byId.get(id);
     if (!plugin) return;
     stack.add(id);
-    for (const dep of depsOf(plugin)) {
+    for (const dep of Object.keys(plugin.manifest.requires?.plugins ?? {})) {
       visit(dep, [...path, id]);
     }
     stack.delete(id);
@@ -487,10 +470,7 @@ export function topoSortPlugins(plugins: readonly AnyPlugin[]): {
     ordered.push(plugin);
   };
 
-  for (const p of plugins) {
-    const id = isV2Plugin(p) ? p.manifest.id : (p as { id: string }).id;
-    visit(id, []);
-  }
+  for (const p of plugins) visit(p.manifest.id, []);
   return { ordered, cycles };
 }
 

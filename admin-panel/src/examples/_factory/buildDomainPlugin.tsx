@@ -5,12 +5,10 @@ import {
   defineDetailView,
   defineFormView,
   defineListView,
-  definePlugin,
   defineResource,
 } from "@/builders";
 import type { FieldDescriptor, EnumOption } from "@/contracts/fields";
 import type { NavItem, NavSection } from "@/contracts/nav";
-import type { Plugin } from "@/contracts/plugin";
 import type { ActionDescriptor } from "@/contracts/actions";
 import type { CommandDescriptor } from "@/contracts/commands";
 import type {
@@ -19,6 +17,7 @@ import type {
   View,
 } from "@/contracts/views";
 import { RichDealDetailPage } from "./richDetailFactory";
+import { definePlugin, type PluginV2 } from "@/contracts/plugin-v2";
 
 /** Compact per-field config that produces: zod schema, form input, list column,
  *  and detail renderer — everything aligned, nothing duplicated. */
@@ -100,8 +99,15 @@ export interface DomainPluginConfig {
   disableRichDetail?: boolean;
 }
 
-/** Single builder that takes the compact config and produces a full plugin. */
-export function buildDomainPlugin(cfg: DomainPluginConfig): Plugin {
+/** Core helper — registers every domain contribution (resources, nav,
+ *  views, widgets, commands) in a single activate() call. Exposed so
+ *  plugins that want to compose additional behaviour (extra field kinds,
+ *  view extensions, etc.) can layer it on without re-implementing the
+ *  domain boilerplate. */
+export function contributeDomain(
+  ctx: import("@/contracts/plugin-v2").PluginContext,
+  cfg: DomainPluginConfig,
+): void {
   const resources = cfg.resources.map((r) => buildResource(cfg, r));
   const navItems: NavItem[] = cfg.resources.map((r, idx) => ({
     id: `${cfg.id}.${r.id}.nav`,
@@ -112,29 +118,49 @@ export function buildDomainPlugin(cfg: DomainPluginConfig): Plugin {
     section: cfg.section.id,
     order: (cfg.order ?? 0) * 100 + (r.navOrder ?? idx),
   }));
-
   const views = cfg.resources.flatMap((r) => buildViews(cfg, r));
   const widgets = cfg.resources.flatMap((r) => r.widgets ?? []);
-
   const extraNavNormalized: NavItem[] = (cfg.extraNav ?? []).map((n, i) => ({
     section: cfg.section.id,
     order: (cfg.order ?? 0) * 100 + 50 + i,
     ...n,
   }));
 
+  if (resources.length > 0) ctx.contribute.resources(resources);
+  ctx.contribute.navSections([cfg.section]);
+  const allNav = [...navItems, ...extraNavNormalized];
+  if (allNav.length > 0) ctx.contribute.nav(allNav);
+  const allViews = [...views, ...(cfg.extraViews ?? [])];
+  if (allViews.length > 0) ctx.contribute.views(allViews);
+  if (widgets.length > 0) ctx.contribute.widgets(widgets);
+  if (cfg.commands?.length) ctx.contribute.commands(cfg.commands);
+}
+
+/** Build a v2 plugin from a compact domain config. */
+export function buildDomainPlugin(cfg: DomainPluginConfig): PluginV2 {
   return definePlugin({
-    id: cfg.id,
-    label: cfg.label,
-    icon: cfg.icon,
-    description: cfg.description,
-    version: "0.1.0",
-    admin: {
-      navSections: [cfg.section],
-      nav: [...navItems, ...extraNavNormalized],
-      resources,
-      views: [...views, ...(cfg.extraViews ?? [])],
-      widgets: widgets.length > 0 ? widgets : undefined,
-      commands: cfg.commands,
+    manifest: {
+      id: cfg.id,
+      version: "0.1.0",
+      label: cfg.label,
+      description: cfg.description,
+      icon: cfg.icon,
+      requires: {
+        shell: "*",
+        capabilities: [
+          "resources:read",
+          "resources:write",
+          "resources:delete",
+          "nav",
+          "commands",
+          "storage",
+        ],
+      },
+      activationEvents: [{ kind: "onStart" }],
+      origin: { kind: "explicit" },
+    },
+    async activate(ctx) {
+      contributeDomain(ctx, cfg);
     },
   });
 }

@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { definePlugin, defineResource } from "@/builders";
+import { defineResource } from "@/builders";
+import { definePlugin } from "@/contracts/plugin-v2";
 import {
   salesDealDetailView,
   salesDealsView,
@@ -62,15 +63,8 @@ const quoteResource = defineResource({
 (quoteResource as unknown as { __seed: Record<string, unknown>[] }).__seed =
   QUOTES as unknown as Record<string, unknown>[];
 
-export const salesPlugin = definePlugin({
-  id: "sales",
-  label: "Sales",
-  icon: "TrendingUp",
-  description: "Deals, quotes, forecast, and leaderboard.",
-  version: "0.2.0",
-  admin: {
-    navSections: [{ id: "sales", label: "Sales & CRM", order: 10 }],
-    nav: [
+const salesNavSections = [{ id: "sales", label: "Sales & CRM", order: 10 }];
+const salesNav = [
       { id: "sales.overview", label: "Sales overview", icon: "LayoutDashboard", path: "/sales", view: "sales.overview.view", section: "sales", order: 20 },
       { id: "sales.control-room", label: "Control Room", icon: "Gauge", path: "/sales/control-room", view: "sales.control-room.view", section: "sales", order: 20.5 },
       { id: "sales.deals", label: "Deals", icon: "Handshake", path: "/sales/deals", view: "sales.deals.view", section: "sales", order: 21 },
@@ -89,31 +83,52 @@ export const salesPlugin = definePlugin({
       { id: "sales.commission", label: "Commission Rules", icon: "Percent", path: "/sales/commission-rules", view: "sales.commission-rules.list", section: "sales", order: 29.8 },
       { id: "sales.pricing", label: "Pricing Rules", icon: "Tag", path: "/sales/pricing-rules", view: "sales.pricing-rules.list", section: "sales", order: 29.85 },
       { id: "sales.delivery", label: "Delivery Schedule", icon: "Truck", path: "/sales/delivery-schedules", view: "sales.delivery-schedules.list", section: "sales", order: 29.9 },
-      { id: "sales.reports", label: "Reports", icon: "BarChart3", path: "/sales/reports", view: "sales.reports.view", section: "sales", order: 29.95 },
-    ],
-    resources: [dealResource, quoteResource, ...SALES_EXTENDED_RESOURCES],
-    views: [
-      salesOverviewView,
-      salesDealsView,
-      salesPipelineView,
-      salesForecastView,
-      salesLeaderboardView,
-      salesRevenueView,
-      salesFunnelView,
-      salesQuotesView,
-      salesDealDetailView,
-      salesControlRoomView,
-      salesReportsIndexView,
-      salesReportsDetailView,
-      ...SALES_EXTENDED_VIEWS,
-    ],
-    commands: [
-      { id: "sales.go.overview", label: "Sales: Overview", icon: "LayoutDashboard", run: () => { window.location.hash = "/sales"; } },
-      { id: "sales.go.control-room", label: "Sales: Control Room", icon: "Gauge", run: () => { window.location.hash = "/sales/control-room"; } },
-      { id: "sales.go.pipeline", label: "Sales: Pipeline", icon: "Layers", run: () => { window.location.hash = "/sales/pipeline"; } },
-      { id: "sales.go.forecast", label: "Sales: Forecast", icon: "Target", run: () => { window.location.hash = "/sales/forecast"; } },
-      { id: "sales.go.leaderboard", label: "Sales: Leaderboard", icon: "Trophy", run: () => { window.location.hash = "/sales/leaderboard"; } },
-      { id: "sales.go.reports", label: "Sales: Reports", icon: "BarChart3", run: () => { window.location.hash = "/sales/reports"; } },
-    ],
+  { id: "sales.reports", label: "Reports", icon: "BarChart3", path: "/sales/reports", view: "sales.reports.view", section: "sales", order: 29.95 },
+];
+const salesResources = [dealResource, quoteResource, ...SALES_EXTENDED_RESOURCES];
+const salesViews = [
+  salesOverviewView,
+  salesDealsView,
+  salesPipelineView,
+  salesForecastView,
+  salesLeaderboardView,
+  salesRevenueView,
+  salesFunnelView,
+  salesQuotesView,
+  salesDealDetailView,
+  salesControlRoomView,
+  salesReportsIndexView,
+  salesReportsDetailView,
+  ...SALES_EXTENDED_VIEWS,
+];
+const salesCommands = [
+  { id: "sales.go.overview", label: "Sales: Overview", icon: "LayoutDashboard", run: () => { window.location.hash = "/sales"; } },
+  { id: "sales.go.control-room", label: "Sales: Control Room", icon: "Gauge", run: () => { window.location.hash = "/sales/control-room"; } },
+  { id: "sales.go.pipeline", label: "Sales: Pipeline", icon: "Layers", run: () => { window.location.hash = "/sales/pipeline"; } },
+  { id: "sales.go.forecast", label: "Sales: Forecast", icon: "Target", run: () => { window.location.hash = "/sales/forecast"; } },
+  { id: "sales.go.leaderboard", label: "Sales: Leaderboard", icon: "Trophy", run: () => { window.location.hash = "/sales/leaderboard"; } },
+  { id: "sales.go.reports", label: "Sales: Reports", icon: "BarChart3", run: () => { window.location.hash = "/sales/reports"; } },
+];
+
+export const salesPlugin = definePlugin({
+  manifest: {
+    id: "sales",
+    version: "0.2.0",
+    label: "Sales",
+    description: "Deals, quotes, forecast, and leaderboard.",
+    icon: "TrendingUp",
+    requires: {
+      shell: "*",
+      capabilities: ["resources:read", "resources:write", "resources:delete", "nav", "commands"],
+    },
+    activationEvents: [{ kind: "onStart" }],
+    origin: { kind: "explicit" },
+  },
+  async activate(ctx) {
+    ctx.contribute.navSections(salesNavSections);
+    ctx.contribute.nav(salesNav);
+    ctx.contribute.resources(salesResources);
+    ctx.contribute.views(salesViews);
+    ctx.contribute.commands(salesCommands);
   },
 });
