@@ -5,6 +5,7 @@ import { seedSalesCrm } from "./sales-crm";
 import { seedFactory } from "./factory";
 import { seedExtended } from "./extended";
 import { seedCrmExtended } from "./crm-extended";
+import { seedSalesExtended } from "./sales-extended";
 
 /** Idempotent: if the records table already has data, do nothing unless
  *  `force: true` is passed. Auth users are seeded when empty regardless. */
@@ -28,18 +29,20 @@ export async function seedAll(opts: { force?: boolean } = {}): Promise<void> {
       );
     }
 
-    // Always try to backfill CRM-extended resources — per-resource idempotent,
+    // Always try to backfill extended resources — per-resource idempotent,
     // so existing data is preserved and only missing resources get seeded.
     const crmExt = seedCrmExtended();
-    const crmExtTotal = Object.values(crmExt).reduce((a, b) => a + b, 0);
-    if (crmExtTotal > 0) {
+    const salesExt = seedSalesExtended();
+    const combined = { ...crmExt, ...salesExt };
+    const extTotal = Object.values(combined).reduce((a, b) => a + b, 0);
+    if (extTotal > 0) {
       console.log(
-        `[seed] backfilled CRM-extended: ${crmExtTotal} records across ${
-          Object.entries(crmExt).filter(([, n]) => n > 0).length
+        `[seed] backfilled extended: ${extTotal} records across ${
+          Object.entries(combined).filter(([, n]) => n > 0).length
         } resources`,
       );
     }
-    if (hasExtended.c > 0 && crmExtTotal === 0) {
+    if (hasExtended.c > 0 && extTotal === 0) {
       console.log(`[seed] records: ${row.c} already present, skipping (pass --force to reseed)`);
     }
     return;
@@ -54,7 +57,8 @@ export async function seedAll(opts: { force?: boolean } = {}): Promise<void> {
   const factory = seedFactory();
   const extended = seedExtended();
   const crmExt = seedCrmExtended();
-  const all = { ...crm, ...factory, ...extended, ...crmExt };
+  const salesExt = seedSalesExtended();
+  const all = { ...crm, ...factory, ...extended, ...crmExt, ...salesExt };
   const total = Object.values(all).reduce((a, b) => a + b, 0);
   console.log(
     `[seed] inserted ${total} records across ${Object.keys(all).length} resources in ${Date.now() - t0}ms`,
