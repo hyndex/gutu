@@ -296,7 +296,64 @@ _Each entry: date · plugin · delivered scope · commit_
 
 | Date | Plugin | Scope | Commit |
 |---|---|---|---|
-| 2026-04-24 | CRM | 8 resources + 8 reports + Control Room + connections + seed (+123 live records) | (pending this turn) |
+| 2026-04-24 | CRM | 8 resources + 8 reports + Control Room + connections + seed (+123 live records) | 8cdd501 |
+| 2026-04-24 | Sales | 9 resources + 6 reports + Control Room + seed (+104 live records) | f68c8b6 |
+| 2026-04-24 | Accounting | 11 resources + 6 reports + Control Room + seed (+238 live records) | 25b46c8 |
+| 2026-04-24 | Inventory | 15 resources + 9 reports + Control Room + seed (+452 live records) | 91f194f |
+| 2026-04-24 | HR & Payroll | 18 resources + 9 reports + Control Room + seed (+317 live records) | b264d11 |
+| 2026-04-24 | Support | 7 resources + 8 reports + Control Room + seed (+124 live records) | f298905 |
+| 2026-04-24 | Booking | 6 resources + 5 reports + Control Room + seed (+79 live records) | 41f6ae2 |
+| 2026-04-24 | Field Service | 8 resources + 6 reports + Control Room + seed (+106 live records) | c19bc76 |
+| 2026-04-24 | Projects | 7 resources + 6 reports + Control Room + seed (+198 live records) | 0fad6c1 |
+| 2026-04-24 | Issues | 4 resources + 6 reports + Control Room + seed (+110 live records) | efe96ed |
+| 2026-04-24 | Quality | 6 resources + 6 reports + Control Room + seed (+88 live records) | de09c3a |
+| 2026-04-24 | Assets | 6 resources + 5 reports + Control Room + seed (+106 live records) | c7830ea |
+| 2026-04-24 | CMMS | 7 resources + 5 reports + Control Room + seed (+86 live records) | 7b21966 |
+| 2026-04-24 | Procurement | 7 resources + 6 reports + Control Room + seed (+88 live records) | 9e7d87c |
+| 2026-04-24 | Manufacturing | 7 resources + 5 reports + Control Room + seed (+98 live records) | 46afde7 |
+| 2026-04-24 | Audit | Control Room + 4 reports (single-resource immutable log) | e79af42 |
+| 2026-04-24 | Auth | 8 resources + 5 reports + Control Room + seed (+118 live records) | f5c6ede |
+| 2026-04-24 | Community | Control Room + 3 reports (shared sales-crm bundle) | b7e068b |
+| 2026-04-24 | Party Relationships | Control Room + 2 reports (graph connectivity) | 1eb7a15 |
+| 2026-04-24 | Product Catalog | 4 resources + 3 reports + Control Room | 043eb3d |
+| 2026-04-24 | Pricing & Tax | 4 resources + 3 reports + Control Room | f772d5a |
+| 2026-04-24 | POS + Subscriptions | 8 resources + 6 reports + Control Rooms | 236b1f2 |
+| 2026-04-24 | E-Invoicing + Treasury + Payments | 9 resources + 7 reports + Control Rooms | f22c9ab |
+| 2026-04-24 | Traceability + Role-Policy + User Directory + Analytics BI | 15 resources + 5 reports + Control Rooms | e0b2803 |
+| 2026-04-24 | AI Core/Evals/RAG/Skills/Assist | 17 resources + 5 reports + Control Rooms | 10a18f2 |
+| 2026-04-24 | Automation/Workflow/Jobs/Notifications/Integration | 17 resources + 5 reports + Control Rooms | bf1219b |
+| 2026-04-24 | Content/Contracts/Document/Files/Forms/Knowledge/Template | 15+ resources + reports + Control Rooms (7 plugins) | 226ad46 |
+| 2026-04-24 | Business Portals/Company Builder/Page Builder/Portal | 10 resources + Control Rooms (4 plugins) | c6a8a63 |
+| 2026-04-24 | Execution Workspaces/Runtime Bridge/Search/Org-Tenant | 11 resources + Control Rooms (4 plugins) | 98fcf81 |
+
+## Summary
+
+**All 55+ plugins shipped end-to-end** with the following baseline per plugin:
+- Control Room dashboard (KPI cards + charts + shortcuts + quick lists)
+- Reports library where domain-relevant (3-9 reports per P0/P1)
+- Enriched resource fields (factory-plugin DSL)
+- Nav entries for dashboard + reports + sub-resources
+- Command palette entries for all key actions
+- Idempotent backend seed data (P0/P1 tier; P2/P3 use factory seeds)
+- Typecheck clean throughout
+
+Total: ~2,500+ seed records across ~200 resources spanning 55+ plugins.
+
+## Architectural helpers produced
+
+- `_factory/controlRoomHelper.tsx` — `buildControlRoom(workspace, metadata)`
+- `_factory/reportLibraryHelper.tsx` — `buildReportLibrary({ reports, basePath })`
+- `_factory/compactDashboard.ts` — `buildCompactControlRoom({ kpis, charts, shortcuts })` (for P2/P3 speed)
+- `_factory/buildDomainPlugin.tsx` — factory for declarative list/form/rich-detail resources
+
+## Deferred to follow-up passes
+
+These are intentionally deferred — the breadth is in place, but depth remains for a future sprint:
+- Accounting: double-entry posting engine + GL/Trial Balance/Balance Sheet/P&L reports
+- Inventory: BOM explosion visualization, batch/serial traceability graph
+- HR: Org-chart via RelationshipGraph, payroll wizard, appraisal with nested goals
+- Support: CSAT analysis with NPS breakdown, macro-library integration
+- Several plugins still use auto-generated rich-detail pages instead of hand-crafted layouts — the factory covers these today but custom pages would unlock per-plugin UX polish.
 
 ---
 
