@@ -16,6 +16,7 @@ import { seedProjectsExtended } from "./projects-extended";
 import { seedIssuesExtended } from "./issues-extended";
 import { seedQualityExtended } from "./quality-extended";
 import { seedAssetsExtended } from "./assets-extended";
+import { seedCmmsExtended } from "./cmms-extended";
 
 /** Idempotent: if the records table already has data, do nothing unless
  *  `force: true` is passed. Auth users are seeded when empty regardless. */
@@ -53,7 +54,8 @@ export async function seedAll(opts: { force?: boolean } = {}): Promise<void> {
     const issExt = seedIssuesExtended();
     const qExt = seedQualityExtended();
     const astExt = seedAssetsExtended();
-    const combined = { ...crmExt, ...salesExt, ...acctExt, ...invExt, ...hrExt, ...supExt, ...bookExt, ...fsExt, ...prjExt, ...issExt, ...qExt, ...astExt };
+    const cmmsExt = seedCmmsExtended();
+    const combined = { ...crmExt, ...salesExt, ...acctExt, ...invExt, ...hrExt, ...supExt, ...bookExt, ...fsExt, ...prjExt, ...issExt, ...qExt, ...astExt, ...cmmsExt };
     const extTotal = Object.values(combined).reduce((a, b) => a + b, 0);
     if (extTotal > 0) {
       console.log(
@@ -88,7 +90,8 @@ export async function seedAll(opts: { force?: boolean } = {}): Promise<void> {
   const issExt = seedIssuesExtended();
   const qExt = seedQualityExtended();
   const astExt = seedAssetsExtended();
-  const all = { ...crm, ...factory, ...extended, ...crmExt, ...salesExt, ...acctExt, ...invExt, ...hrExt, ...supExt, ...bookExt, ...fsExt, ...prjExt, ...issExt, ...qExt, ...astExt };
+  const cmmsExt = seedCmmsExtended();
+  const all = { ...crm, ...factory, ...extended, ...crmExt, ...salesExt, ...acctExt, ...invExt, ...hrExt, ...supExt, ...bookExt, ...fsExt, ...prjExt, ...issExt, ...qExt, ...astExt, ...cmmsExt };
   const total = Object.values(all).reduce((a, b) => a + b, 0);
   console.log(
     `[seed] inserted ${total} records across ${Object.keys(all).length} resources in ${Date.now() - t0}ms`,
