@@ -145,7 +145,17 @@ export async function discoverAllPlugins(args: {
 }): Promise<DiscoveryResult> {
   const explicit = args.explicit ?? [];
   const filesystem = args.disableFilesystem ? [] : await loadFilesystemPlugins();
-  const npm = args.npmSpecifiers ? await loadNpmPlugins(args.npmSpecifiers) : [];
+  // Merge explicit npm specifiers with any declared via
+  // `VITE_GUTU_PLUGINS` (CSV list injected from `package.json`'s
+  // `gutuPlugins` array by the build pipeline, or set at runtime).
+  const envSpecs = (typeof import.meta !== "undefined"
+    ? ((import.meta as unknown as { env?: Record<string, string> }).env?.VITE_GUTU_PLUGINS ?? "")
+    : "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const npmSpecs = [...(args.npmSpecifiers ?? []), ...envSpecs];
+  const npm = npmSpecs.length > 0 ? await loadNpmPlugins(npmSpecs) : [];
   const builtins: AnyPlugin[] = [];
   if (args.includeBuiltins !== false) {
     // Built-in plugins (Plugin Inspector, etc.) — always on.

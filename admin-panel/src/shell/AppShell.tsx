@@ -331,9 +331,36 @@ function RouteView({
     case "custom":
       if (route.view.type !== "custom") return null;
       return <>{route.view.render()}</>;
+    case "external":
+      return <ExternalViewRenderer view={route.view} basePath={base} />;
     default:
       return null;
   }
+}
+
+/** Renders a plugin-contributed view whose `type` isn't a built-in. Looks
+ *  up the renderer in `registries.viewModes` — the registry key is the
+ *  type with the `external:` prefix stripped. */
+function ExternalViewRenderer({
+  view,
+  basePath,
+}: {
+  view: import("@/contracts/views").View;
+  basePath: string;
+}) {
+  const host = usePluginHost2();
+  const key = view.type.startsWith("external:") ? view.type.slice("external:".length) : view.type;
+  const spec = host?.registries.viewModes.get(key);
+  if (!spec) {
+    return (
+      <EmptyState
+        title={`No renderer for view mode "${key}"`}
+        description={`Install a plugin that registers this view mode via \`ctx.registries.viewModes.register("${key}", { renderer, accepts })\`.`}
+      />
+    );
+  }
+  const Renderer = spec.renderer;
+  return <Renderer view={view} basePath={basePath} />;
 }
 
 /** Find a plugin-contributed shortcut whose keys match the normalized seq. */

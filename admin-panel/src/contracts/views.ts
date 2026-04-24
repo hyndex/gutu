@@ -151,10 +151,26 @@ export interface KanbanView extends ViewBase {
   readonly actions?: readonly ActionDescriptor[];
 }
 
+/** Plugin-contributed view — any view whose `type` isn't one of the
+ *  built-ins. The shell looks up a renderer for `view.type` in the
+ *  `registries.viewModes` registry at render time.
+ *
+ *  `type` uses a distinct `external:` prefix so TypeScript can narrow
+ *  unions cleanly. Plugin authors contribute types like "external:map"
+ *  or "external:timeline"; the registry strips the prefix when looking
+ *  up the renderer. */
+export interface ExternalView extends ViewBase {
+  readonly type: `external:${string}`;
+  /** Opaque payload passed to the renderer; shape is enforced by the
+   *  contributing plugin. */
+  readonly payload?: unknown;
+}
+
 export type View =
   | ListView
   | FormView
   | DetailView
   | DashboardView
   | KanbanView
-  | CustomView;
+  | CustomView
+  | ExternalView;

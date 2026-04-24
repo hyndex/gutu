@@ -4,7 +4,17 @@ import type { View } from "@/contracts/views";
 export interface Route {
   path: string;
   view: View;
-  mode: "list" | "new" | "edit" | "detail" | "dashboard" | "custom" | "kanban";
+  /** Built-in modes + `external` for plugin-contributed view modes that
+   *  resolve via the `registries.viewModes` registry. */
+  mode:
+    | "list"
+    | "new"
+    | "edit"
+    | "detail"
+    | "dashboard"
+    | "custom"
+    | "kanban"
+    | "external";
   id?: string;
   navItemPath?: string;
 }
@@ -120,6 +130,8 @@ function classify(view: View, base: string, remainder: string): Route {
       return { path: base, view, mode: "new", navItemPath: base };
     if (view.type === "detail")
       return { path: base, view, mode: "detail", navItemPath: base };
+    if (view.type.startsWith("external:"))
+      return { path: base, view, mode: "external", navItemPath: base };
   }
   const parts = remainder.replace(/^\//, "").split("/");
   if (parts[0] === "new")

@@ -7,6 +7,7 @@ import {
   topoSortPlugins,
   type PluginHost2,
 } from "./pluginHost2";
+import { createActivationEngine, type ActivationEngine } from "./activationEngine";
 import type { View, DashboardWidget } from "@/contracts/views";
 import type { NavItem, NavSection } from "@/contracts/nav";
 import type { ResourceDefinition } from "@/contracts/resources";
@@ -18,6 +19,8 @@ export interface PluginHostResult {
   registry: AdminRegistry | null;
   /** The v2 host — lets AppShell/Inspector subscribe to plugin state. */
   host: PluginHost2 | null;
+  /** Lazy-activation engine — exposes pending plugins + activateNow(). */
+  activation: ActivationEngine | null;
   error?: Error;
 }
 
@@ -31,11 +34,15 @@ export interface PluginHostResult {
 export function usePluginHost(plugins: readonly AnyPlugin[]): PluginHostResult {
   const runtime = useRuntime();
   const [host] = React.useState<PluginHost2>(() => createPluginHost2({ runtime }));
+  const [activation] = React.useState<ActivationEngine>(() =>
+    createActivationEngine({ host, runtime }),
+  );
   const [registry, setRegistry] = React.useState<AdminRegistry | null>(null);
   const [ready, setReady] = React.useState(false);
   const [error, setError] = React.useState<Error | undefined>();
 
-  // Initial activation: topo-sort, install serially.
+  // Initial activation: topo-sort, register through the engine so plugins
+  // with non-onStart triggers lazy-load at the right moment.
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -47,7 +54,7 @@ export function usePluginHost(plugins: readonly AnyPlugin[]): PluginHostResult {
         }
         for (const p of ordered) {
           if (cancelled) return;
-          await host.install(p);
+          await activation.register(p);
         }
         if (!cancelled) setReady(true);
       } catch (err) {
@@ -57,7 +64,7 @@ export function usePluginHost(plugins: readonly AnyPlugin[]): PluginHostResult {
     return () => {
       cancelled = true;
     };
-  }, [host, plugins]);
+  }, [host, activation, plugins]);
 
   // Keep the aggregated registry fresh whenever contributions change.
   // Two-level debounce:
@@ -90,7 +97,7 @@ export function usePluginHost(plugins: readonly AnyPlugin[]): PluginHostResult {
     return host.subscribe(rebuild);
   }, [host, plugins]);
 
-  return { ready, registry, host, error };
+  return { ready, registry, host, activation, error };
 }
 
 /** Build an AdminRegistry from the v2 contribution store — the shell still

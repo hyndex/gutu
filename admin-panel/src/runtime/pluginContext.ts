@@ -572,12 +572,19 @@ function makePermissionGate(manifest: PluginManifest): PermissionGate {
   return {
     has(cap) {
       if (granted.has(cap)) return true;
-      // Fine-grained resource: `resource:<id>` implies no write, so
-      // `resource:<id>:write` is a distinct grant.
-      return granted.has(cap);
+      // Fine-grained ladder for generic → specific caps:
+      //   resources:write grants resource:<anything>:write
+      //   resources:read  grants resource:<anything>         (read)
+      //   resources:delete grants resource:<anything>:delete
+      if (typeof cap === "string" && cap.startsWith("resource:")) {
+        if (cap.endsWith(":write") && granted.has("resources:write")) return true;
+        if (cap.endsWith(":delete") && granted.has("resources:delete")) return true;
+        if (!cap.endsWith(":write") && !cap.endsWith(":delete") && granted.has("resources:read")) return true;
+      }
+      return false;
     },
     require(cap) {
-      if (!granted.has(cap)) {
+      if (!this.has(cap)) {
         throw new CapabilityError(manifest.id, cap);
       }
     },
@@ -653,30 +660,39 @@ function makeScopedResourceClient(
   runtime: RuntimeContextValue,
   permissions: PermissionGate,
 ): ScopedResourceClient {
-  const guard = (cap: Capability) => {
-    if (!permissions.has(cap)) {
-      throw new CapabilityError(manifest.id, cap);
-    }
+  /** Enforces: per-resource caps are checked first; a plugin can declare
+   *  `resource:sales.deal:write` without the broad `resources:write`.
+   *  If it declared neither, the broad cap is checked next. */
+  const guard = (operation: "read" | "write" | "delete", resource: string) => {
+    const fine =
+      operation === "read"
+        ? (`resource:${resource}` as Capability)
+        : (`resource:${resource}:${operation}` as Capability);
+    const broad =
+      operation === "read" ? "resources:read" : operation === "write" ? "resources:write" : "resources:delete";
+    if (permissions.has(fine)) return;
+    if (permissions.has(broad as Capability)) return;
+    throw new CapabilityError(manifest.id, fine);
   };
   return {
     async list(resource, query) {
-      guard("resources:read");
+      guard("read", resource);
       return runtime.resources.list(resource, (query as Parameters<typeof runtime.resources.list>[1]) ?? {});
     },
     async get(resource, id) {
-      guard("resources:read");
+      guard("read", resource);
       return runtime.resources.get(resource, id);
     },
     async create(resource, body) {
-      guard("resources:write");
+      guard("write", resource);
       return runtime.resources.create(resource, body);
     },
     async update(resource, id, patch) {
-      guard("resources:write");
+      guard("write", resource);
       return runtime.resources.update(resource, id, patch);
     },
     async delete(resource, id) {
-      guard("resources:delete");
+      guard("delete", resource);
       return runtime.resources.delete(resource, id);
     },
   };

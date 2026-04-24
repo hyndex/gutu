@@ -5,7 +5,7 @@ import { usePluginHost } from "./PluginHost";
 import { AuthGuard } from "./AuthGuard";
 import { Spinner } from "@/primitives/Spinner";
 import { ErrorState } from "@/admin-primitives/ErrorState";
-import { PluginHostContext } from "./pluginHostContext";
+import { PluginHostContext, ActivationEngineContext } from "./pluginHostContext";
 import type { AnyPlugin } from "@/contracts/plugin-v2";
 import { discoverAllPlugins } from "./pluginLoaders";
 
@@ -77,7 +77,7 @@ function AdminInner({
     () => discovered ?? [],
     [discovered],
   );
-  const { ready, registry, host, error } = usePluginHost(stablePlugins);
+  const { ready, registry, host, activation, error } = usePluginHost(stablePlugins);
 
   if (error) {
     return (
@@ -96,7 +96,9 @@ function AdminInner({
   }
   return (
     <PluginHostContext.Provider value={host}>
-      <AppShell registry={registry} />
+      <ActivationEngineContext.Provider value={activation}>
+        <AppShell registry={registry} />
+      </ActivationEngineContext.Provider>
     </PluginHostContext.Provider>
   );
 }

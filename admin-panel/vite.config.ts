@@ -1,8 +1,28 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
+import fs from "node:fs";
+
+/** Read `package.json`'s `gutuPlugins` array and expose it as
+ *  `import.meta.env.VITE_GUTU_PLUGINS` (CSV). This lets plugin authors
+ *  publish to npm and have the shell auto-pick them up — they just add
+ *  `"gutuPlugins": ["@acme/gutu-foo"]` to package.json. */
+function readGutuPlugins(): string {
+  try {
+    const pkgPath = path.resolve(__dirname, "package.json");
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8")) as {
+      gutuPlugins?: string[];
+    };
+    return (pkg.gutuPlugins ?? []).filter(Boolean).join(",");
+  } catch {
+    return "";
+  }
+}
 
 export default defineConfig({
+  define: {
+    "import.meta.env.VITE_GUTU_PLUGINS": JSON.stringify(readGutuPlugins()),
+  },
   plugins: [react()],
   resolve: {
     alias: {
