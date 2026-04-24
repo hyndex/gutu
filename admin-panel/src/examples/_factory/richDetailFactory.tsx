@@ -24,6 +24,13 @@ import type {
   DomainResourceConfig,
 } from "./buildDomainPlugin";
 import { renderValue } from "./renderValue";
+import {
+  OverviewSections,
+  BIPanel,
+  AutoConnectionsPanel,
+  ActionsPanel,
+} from "./detailSections";
+import { useRegistry } from "@/shell/registry";
 
 /** Auto-generated RichDetailPage for every factory-built resource.
  *
@@ -37,6 +44,28 @@ import { renderValue } from "./renderValue";
  *  deals need "Line items + Quotes + Forecast", etc.) — those live in
  *  their plugin's own file using the same primitive.
  */
+
+import type { AdminRegistry } from "@/shell/registry";
+import type { NavItem } from "@/contracts/nav";
+
+/** Map resource id → list-view base path, derived from nav items. Used by
+ *  AutoConnectionsPanel to build deep-links. */
+function buildBasePathMap(registry: AdminRegistry): Record<string, string> {
+  const out: Record<string, string> = {};
+  const walk = (items: readonly NavItem[]) => {
+    for (const n of items) {
+      if (n.view && n.path) {
+        const v = registry.views[n.view];
+        if (v && "resource" in v && typeof v.resource === "string" && v.type === "list") {
+          out[v.resource] = n.path;
+        }
+      }
+      if (n.children) walk(n.children);
+    }
+  };
+  walk(registry.nav);
+  return out;
+}
 
 function Icon({ name }: { name?: string }) {
   if (!name) return null;
@@ -115,6 +144,7 @@ export function RichDealDetailPage({
 }) {
   const hash = useHash();
   const runtime = useRuntime();
+  const registry = useRegistry();
   const fullResourceId = `${plugin.id}.${resource.id}`;
 
   // Extract record id from the hash path. Convention: <basePath>/<id>.
@@ -247,27 +277,45 @@ export function RichDealDetailPage({
           id: "overview",
           label: "Overview",
           render: () => (
-            <Card>
-              <CardHeader>
-                <CardTitle>Fields</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                  {resource.fields.map((f) => (
-                    <React.Fragment key={f.name}>
-                      <div className="flex flex-col min-w-0">
-                        <dt className="text-xs text-text-muted uppercase tracking-wider">
-                          {f.label ?? humanize(f.name)}
-                        </dt>
-                        <dd className="text-sm text-text-primary mt-0.5 break-words">
-                          {renderValue(rec[f.name], f)}
-                        </dd>
-                      </div>
-                    </React.Fragment>
-                  ))}
-                </dl>
-              </CardContent>
-            </Card>
+            <OverviewSections record={rec} fields={resource.fields} />
+          ),
+        },
+        {
+          id: "bi",
+          label: "BI",
+          render: () => (
+            <BIPanel
+              resource={fullResourceId}
+              record={rec}
+              fields={resource.fields}
+            />
+          ),
+        },
+        {
+          id: "connections",
+          label: "Connections",
+          render: () =>
+            registry ? (
+              <AutoConnectionsPanel
+                resource={fullResourceId}
+                recordId={id}
+                registry={registry}
+                basePathMap={buildBasePathMap(registry)}
+              />
+            ) : (
+              <TabEmpty title="Registry unavailable" />
+            ),
+        },
+        {
+          id: "actions",
+          label: "Actions",
+          render: () => (
+            <ActionsPanel
+              actions={resource.actions ?? []}
+              record={rec}
+              resource={fullResourceId}
+              onNavigateEdit={() => navigateTo(editPath)}
+            />
           ),
         },
         {

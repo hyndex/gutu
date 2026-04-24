@@ -1,3 +1,4 @@
+import * as React from "react";
 import type {
   Plugin,
   AdminContribution,
@@ -7,6 +8,16 @@ import type { ResourceDefinition } from "@/contracts/resources";
 import type { View } from "@/contracts/views";
 import type { ActionDescriptor } from "@/contracts/actions";
 import type { CommandDescriptor } from "@/contracts/commands";
+
+/** React context that exposes the aggregated AdminRegistry to deeply-nested
+ *  custom views (e.g. rich detail pages) that need to introspect plugins
+ *  beyond their own. Set by AppShell at the root. */
+export const RegistryContext = React.createContext<AdminRegistry | null>(null);
+
+/** Hook — returns the live registry or null when no provider is mounted. */
+export function useRegistry(): AdminRegistry | null {
+  return React.useContext(RegistryContext);
+}
 
 /** Aggregates all active plugin contributions into lookup tables the shell
  *  and view renderers consume. */

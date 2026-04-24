@@ -5,7 +5,7 @@ import { CommandPalette } from "./CommandPalette";
 import { Toaster } from "./Toaster";
 import { ConfirmHost } from "./ConfirmHost";
 import { Breadcrumbs } from "@/admin-primitives/Breadcrumbs";
-import type { AdminRegistry } from "./registry";
+import { type AdminRegistry, RegistryContext } from "./registry";
 import { useHash, navigateTo } from "@/views/useRoute";
 import { resolveRoute } from "./router";
 import { ListViewRenderer } from "@/views/ListView";
@@ -94,6 +94,7 @@ export function AppShell({ registry }: AppShellProps) {
   const crumbs = route ? buildCrumbs(route.path, registry) : [];
 
   return (
+    <RegistryContext.Provider value={registry}>
     <TooltipProvider delayDuration={200}>
       <div className="flex h-full w-full bg-surface-1 text-text-primary">
         <Sidebar registry={registry} currentPath={hash} />
@@ -132,6 +133,7 @@ export function AppShell({ registry }: AppShellProps) {
         <ConfirmHost />
       </div>
     </TooltipProvider>
+    </RegistryContext.Provider>
   );
 }
 
@@ -239,14 +241,18 @@ function resolveDetailView(resource: string, registry: AdminRegistry) {
   ) as typeof registry.views[string] & { type: "detail" } | undefined;
 }
 
-/** A custom view named "<resource>.<something>-detail.view" is treated as the
- *  rich detail page for that resource — used when a plugin wants full control. */
+/** A custom view named exactly "<resource>-detail.view" or "<resource>.detail.view"
+ *  is treated as the rich detail page for that resource. We require exact-id
+ *  matching so report-library views (e.g. "issues.reports-detail.view") don't
+ *  accidentally shadow the record detail view. */
 function resolveCustomDetailView(resource: string, registry: AdminRegistry) {
+  const wantA = `${resource}-detail.view`;
+  const wantB = `${resource}.detail.view`;
   return Object.values(registry.views).find(
     (v) =>
       v.type === "custom" &&
       v.resource === resource &&
-      (v.id.endsWith("-detail.view") || v.id.endsWith(".detail.view")),
+      (v.id === wantA || v.id === wantB),
   ) as (typeof registry.views)[string] & { type: "custom" } | undefined;
 }
 

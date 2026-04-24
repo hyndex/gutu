@@ -23,6 +23,14 @@ import { defineCustomView } from "@/builders";
 import type { CustomView } from "@/contracts/views";
 import type { DomainFieldConfig } from "./buildDomainPlugin";
 import { renderValue } from "./renderValue";
+import {
+  OverviewSections,
+  BIPanel,
+  AutoConnectionsPanel,
+  ActionsPanel,
+} from "./detailSections";
+import { useRegistry, type AdminRegistry } from "@/shell/registry";
+import type { NavItem } from "@/contracts/nav";
 
 /** Rich detail page generated directly from a Zod schema.
  *
@@ -81,6 +89,7 @@ export function detailViewFromZod(args: DetailFromZodArgs): CustomView {
 function RichZodDetailPage({ args }: { args: DetailFromZodArgs }) {
   const hash = useHash();
   const runtime = useRuntime();
+  const registry = useRegistry();
   const id = hash.split("/").pop() ?? "";
   const { data: record, loading, error } = useRecord(args.resource, id);
   const { data: auditPage } = useLiveAudit({ pageSize: 100 });
@@ -212,26 +221,40 @@ function RichZodDetailPage({ args }: { args: DetailFromZodArgs }) {
         {
           id: "overview",
           label: "Overview",
+          render: () => <OverviewSections record={rec} fields={fields} />,
+        },
+        {
+          id: "bi",
+          label: "BI",
           render: () => (
-            <Card>
-              <CardHeader>
-                <CardTitle>Fields</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                  {fields.map((f) => (
-                    <div key={f.name} className="flex flex-col min-w-0">
-                      <dt className="text-xs text-text-muted uppercase tracking-wider">
-                        {f.label ?? humanize(f.name)}
-                      </dt>
-                      <dd className="text-sm text-text-primary mt-0.5 break-words">
-                        {renderValue(rec[f.name], f)}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </CardContent>
-            </Card>
+            <BIPanel resource={args.resource} record={rec} fields={fields} />
+          ),
+        },
+        {
+          id: "connections",
+          label: "Connections",
+          render: () =>
+            registry ? (
+              <AutoConnectionsPanel
+                resource={args.resource}
+                recordId={id}
+                registry={registry}
+                basePathMap={buildBasePathMap(registry)}
+              />
+            ) : (
+              <TabEmpty title="Registry unavailable" />
+            ),
+        },
+        {
+          id: "actions",
+          label: "Actions",
+          render: () => (
+            <ActionsPanel
+              actions={[]}
+              record={rec}
+              resource={args.resource}
+              onNavigateEdit={() => navigateTo(editPath)}
+            />
           ),
         },
         {
@@ -383,6 +406,23 @@ function RichZodDetailPage({ args }: { args: DetailFromZodArgs }) {
 /* ------------------------------------------------------------------------ */
 /* Helpers                                                                   */
 /* ------------------------------------------------------------------------ */
+
+function buildBasePathMap(registry: AdminRegistry): Record<string, string> {
+  const out: Record<string, string> = {};
+  const walk = (items: readonly NavItem[]) => {
+    for (const n of items) {
+      if (n.view && n.path) {
+        const v = registry.views[n.view];
+        if (v && "resource" in v && typeof v.resource === "string" && v.type === "list") {
+          out[v.resource] = n.path;
+        }
+      }
+      if (n.children) walk(n.children);
+    }
+  };
+  walk(registry.nav);
+  return out;
+}
 
 function Icon({ name }: { name?: string }) {
   if (!name) return <Icons.FileText className="h-5 w-5 text-accent" />;

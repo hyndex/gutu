@@ -306,7 +306,8 @@ function buildViews(cfg: DomainPluginConfig, r: DomainResourceConfig) {
     (v) =>
       v.type === "custom" &&
       v.resource === resourceId &&
-      (v.id.endsWith("-detail.view") || v.id.endsWith(".detail.view")),
+      (v.id === `${resourceId}-detail.view` ||
+        v.id === `${resourceId}.detail.view`),
   );
   if (!cfg.disableRichDetail && !hasCustomDetail) {
     views.push(
