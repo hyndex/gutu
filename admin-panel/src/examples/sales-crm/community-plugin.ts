@@ -7,6 +7,11 @@ import {
   communitySpacesView,
 } from "./community-pages";
 import { POSTS, SPACES, MODERATION } from "./data";
+import {
+  communityControlRoomView,
+  communityReportsIndexView,
+  communityReportsDetailView,
+} from "./community-dashboard";
 
 const PostSchema = z.object({
   id: z.string(),
@@ -82,9 +87,11 @@ export const communityPlugin = definePlugin({
   admin: {
     navSections: [{ id: "sales", label: "Sales & CRM", order: 10 }],
     nav: [
+      { id: "community.control-room", label: "Control Room", icon: "LayoutDashboard", path: "/community/control-room", view: "community.control-room.view", section: "sales", order: 39 },
       { id: "community.feed", label: "Feed", icon: "MessageCircle", path: "/community/feed", view: "community.feed.view", section: "sales", order: 40 },
       { id: "community.spaces", label: "Spaces", icon: "Hash", path: "/community/spaces", view: "community.spaces.view", section: "sales", order: 41 },
       { id: "community.moderation", label: "Moderation", icon: "ShieldAlert", path: "/community/moderation", view: "community.moderation.view", section: "sales", order: 42 },
+      { id: "community.reports", label: "Reports", icon: "BarChart3", path: "/community/reports", view: "community.reports.view", section: "sales", order: 43 },
     ],
     resources: [postResource, spaceResource, reportResource],
     views: [
@@ -92,11 +99,16 @@ export const communityPlugin = definePlugin({
       communitySpacesView,
       communitySpaceDetailView,
       communityModerationView,
+      communityControlRoomView,
+      communityReportsIndexView,
+      communityReportsDetailView,
     ],
     commands: [
+      { id: "community.go.control-room", label: "Community: Control Room", icon: "LayoutDashboard", run: () => { window.location.hash = "/community/control-room"; } },
       { id: "community.go.feed", label: "Community: Feed", icon: "MessageCircle", run: () => { window.location.hash = "/community/feed"; } },
       { id: "community.go.spaces", label: "Community: Spaces", icon: "Hash", run: () => { window.location.hash = "/community/spaces"; } },
       { id: "community.go.mod", label: "Community: Moderation", icon: "ShieldAlert", run: () => { window.location.hash = "/community/moderation"; } },
+      { id: "community.go.reports", label: "Community: Reports", icon: "BarChart3", run: () => { window.location.hash = "/community/reports"; } },
     ],
   },
 });
