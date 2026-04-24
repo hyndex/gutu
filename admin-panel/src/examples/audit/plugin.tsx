@@ -10,6 +10,11 @@ import { formatRelative } from "@/lib/format";
 import { EmptyState } from "@/admin-primitives/EmptyState";
 import { auditEventDetailView } from "./AuditEventDetailPage";
 import { LiveAuditPage } from "./LiveAuditPage";
+import {
+  auditControlRoomView,
+  auditReportsIndexView,
+  auditReportsDetailView,
+} from "./audit-dashboard";
 
 const EventSchema = z.object({
   id: z.string(),
@@ -160,9 +165,19 @@ export const auditPlugin = definePlugin({
         section: "platform",
         order: 25,
       },
+      { id: "audit-control-room", label: "Control Room", icon: "LayoutDashboard", path: "/audit/control-room", view: "audit.control-room.view", section: "platform", order: 5 },
+      { id: "audit-reports", label: "Reports", icon: "BarChart3", path: "/audit/reports", view: "audit.reports.view", section: "platform", order: 12 },
     ],
     resources: [eventResource],
-    views: [liveLog, eventsList, about, auditEventDetailView],
+    views: [
+      liveLog, eventsList, about, auditEventDetailView,
+      auditControlRoomView, auditReportsIndexView, auditReportsDetailView,
+    ],
+    commands: [
+      { id: "audit.go.control-room", label: "Audit: Control Room", icon: "LayoutDashboard", run: () => { window.location.hash = "/audit/control-room"; } },
+      { id: "audit.go.reports", label: "Audit: Reports", icon: "BarChart3", run: () => { window.location.hash = "/audit/reports"; } },
+      { id: "audit.go.log", label: "Audit: Live log", icon: "History", run: () => { window.location.hash = "/audit"; } },
+    ],
   },
 });
 
