@@ -13,6 +13,15 @@ import { Badge } from "@/primitives/Badge";
 import { formatDateTime } from "@/lib/format";
 import { bookingCalendarView } from "./BookingCalendarPage";
 import { BookingDashboardKpis } from "./BookingDashboardKpis";
+import {
+  BOOKING_EXTENDED_RESOURCES,
+  BOOKING_EXTENDED_VIEWS,
+} from "./booking-extended";
+import {
+  bookingControlRoomView,
+  bookingReportsIndexView,
+  bookingReportsDetailView,
+} from "./booking-dashboard";
 
 const BookingSchema = z.object({
   id: z.string(),
@@ -347,9 +356,21 @@ export const bookingPlugin = definePlugin({
         section: "operations",
         order: 11,
       },
+      { id: "booking.control-room.nav", label: "Control Room", icon: "LayoutDashboard", path: "/bookings/control-room", view: "booking.control-room.view", section: "operations", order: 12 },
+      { id: "booking.reports.nav", label: "Reports", icon: "BarChart3", path: "/bookings/reports", view: "booking.reports.view", section: "operations", order: 13 },
+      { id: "booking.services.nav", label: "Services", icon: "Briefcase", path: "/bookings/services", view: "booking.services.list", section: "operations", order: 14 },
+      { id: "booking.resources.nav", label: "Bookable Resources", icon: "DoorOpen", path: "/bookings/resources", view: "booking.resources.list", section: "operations", order: 15 },
+      { id: "booking.staff.nav", label: "Staff", icon: "UserCircle", path: "/bookings/staff", view: "booking.staff.list", section: "operations", order: 16 },
+      { id: "booking.availability-rules.nav", label: "Availability rules", icon: "Clock", path: "/bookings/availability-rules", view: "booking.availability-rules.list", section: "operations", order: 17 },
+      { id: "booking.locations.nav", label: "Locations", icon: "MapPin", path: "/bookings/locations", view: "booking.locations.list", section: "operations", order: 18 },
+      { id: "booking.waitlist.nav", label: "Waitlist", icon: "ListOrdered", path: "/bookings/waitlist", view: "booking.waitlist.list", section: "operations", order: 19 },
     ],
-    resources: [bookingResource],
-    views: [bookingDashboard, bookingList, bookingForm, bookingDetail, bookingCalendarView],
+    resources: [bookingResource, ...BOOKING_EXTENDED_RESOURCES],
+    views: [
+      bookingDashboard, bookingList, bookingForm, bookingDetail, bookingCalendarView,
+      bookingControlRoomView, bookingReportsIndexView, bookingReportsDetailView,
+      ...BOOKING_EXTENDED_VIEWS,
+    ],
     commands: [
       {
         id: "booking.new",
@@ -361,6 +382,12 @@ export const bookingPlugin = definePlugin({
           window.location.hash = "/bookings/new";
         },
       },
+      { id: "booking.go.control-room", label: "Booking: Control Room", icon: "LayoutDashboard", run: () => { window.location.hash = "/bookings/control-room"; } },
+      { id: "booking.go.reports", label: "Booking: Reports", icon: "BarChart3", run: () => { window.location.hash = "/bookings/reports"; } },
+      { id: "booking.go.calendar", label: "Booking: Calendar", icon: "CalendarDays", run: () => { window.location.hash = "/bookings/calendar"; } },
+      { id: "booking.go.waitlist", label: "Booking: Waitlist", icon: "ListOrdered", run: () => { window.location.hash = "/bookings/waitlist"; } },
+      { id: "booking.new-service", label: "New service", icon: "Briefcase", run: () => { window.location.hash = "/bookings/services/new"; } },
+      { id: "booking.new-staff", label: "New staff member", icon: "UserCircle", run: () => { window.location.hash = "/bookings/staff/new"; } },
     ],
   },
 });
