@@ -4,10 +4,13 @@ import type { AnyPlugin } from "@/contracts/plugin-v2";
 import type { AdminRegistry } from "@/shell/registry";
 import {
   createPluginHost2,
-  topoSortPlugins,
+  layerPlugins,
+  runWithConcurrency,
+  DEFAULT_ACTIVATION_CONCURRENCY,
   type PluginHost2,
 } from "./pluginHost2";
 import { createActivationEngine, type ActivationEngine } from "./activationEngine";
+import { isV2Plugin } from "@/contracts/plugin-v2";
 import type { View, DashboardWidget } from "@/contracts/views";
 import type { NavItem, NavSection } from "@/contracts/nav";
 import type { ResourceDefinition } from "@/contracts/resources";
@@ -41,20 +44,27 @@ export function usePluginHost(plugins: readonly AnyPlugin[]): PluginHostResult {
   const [ready, setReady] = React.useState(false);
   const [error, setError] = React.useState<Error | undefined>();
 
-  // Initial activation: topo-sort, register through the engine so plugins
-  // with non-onStart triggers lazy-load at the right moment.
+  // Initial activation: layer plugins by dependency depth, then activate
+  // each layer in parallel (bounded concurrency). Plugins with non-onStart
+  // activation events register with the engine but don't activate yet.
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { ordered, cycles } = topoSortPlugins(plugins);
+        // Everything is PluginV2 post-migration — the filter is a safety
+        // net for any ad-hoc plugin passed by tests.
+        const v2s = plugins.filter(isV2Plugin);
+        const { layers, cycles } = layerPlugins(v2s);
         for (const c of cycles) {
           // eslint-disable-next-line no-console
           console.warn("[plugin-host] dependency cycle detected:", c.path.join(" → "));
         }
-        for (const p of ordered) {
+        for (const layer of layers) {
           if (cancelled) return;
-          await activation.register(p);
+          await runWithConcurrency(layer, DEFAULT_ACTIVATION_CONCURRENCY, async (p) => {
+            if (cancelled) return;
+            await activation.register(p);
+          });
         }
         if (!cancelled) setReady(true);
       } catch (err) {

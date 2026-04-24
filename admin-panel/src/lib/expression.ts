@@ -189,7 +189,11 @@ function parse(expr: string): AstNode {
     while (true) {
       const t = peek();
       if (!t || t.kind !== "punct") break;
+      // Ternary is the lowest-precedence operator and right-associative —
+      // it may only be consumed at minPrec === 0 (the outermost call),
+      // otherwise `a > b ? x : y` would bind the ternary to `b`.
       if (t.value === "?") {
+        if (minPrec > 0) break;
         p++;
         const a = parseExpr(0);
         eat(":");

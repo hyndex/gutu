@@ -66,6 +66,14 @@ export interface PluginHost2 {
 /** Current running shell API version. Bumped on breaking contract changes. */
 export const SHELL_API_VERSION = "2.0.0";
 
+/** Hard ceiling on a single plugin's `activate()` call. A hung plugin
+ *  is quarantined after this elapses. Configurable via env / arg. */
+export const DEFAULT_ACTIVATION_TIMEOUT_MS = 15_000;
+
+/** Maximum parallel activations. Dependent plugins still serialize;
+ *  independent groups fan out. */
+export const DEFAULT_ACTIVATION_CONCURRENCY = 8;
+
 interface ActiveEntry {
   readonly manifest: PluginManifest;
   readonly plugin: PluginV2;
@@ -73,6 +81,7 @@ interface ActiveEntry {
   disposers: Disposable[];
   error?: string;
   activatedAt?: number;
+  activationDurationMs?: number;
   /** Sandbox handle when manifest.sandbox is "iframe" or "worker". */
   sandbox?: { dispose: () => void };
 }
@@ -135,6 +144,18 @@ export function createPluginHost2(args: {
     }
   };
 
+  /* ----- Analytics emission ----- */
+  const analyticsEmit = (
+    event: string,
+    props: Record<string, unknown>,
+  ) => {
+    try {
+      (runtime.analytics as unknown as {
+        emit: (ev: string, p: Record<string, unknown>) => void;
+      }).emit(event, props);
+    } catch { /* swallow — analytics must never break the host */ }
+  };
+
   /* ----- Per-plugin activation ----- */
   const activatePlugin = async (plugin: PluginV2): Promise<ActiveEntry> => {
     const manifest = plugin.manifest;
@@ -195,10 +216,22 @@ export function createPluginHost2(args: {
         peers,
         notifyStoreChange: emit,
       });
-      await plugin.activate(context);
+      const activationStart = performance.now();
+      await withTimeout(
+        plugin.activate(context),
+        DEFAULT_ACTIVATION_TIMEOUT_MS,
+        `Plugin "${manifest.id}" activate() exceeded ${DEFAULT_ACTIVATION_TIMEOUT_MS}ms`,
+      );
       entry.disposers = disposers;
       entry.status = "active";
       entry.activatedAt = Date.now();
+      entry.activationDurationMs = performance.now() - activationStart;
+      analyticsEmit("plugin.activated", {
+        pluginId: manifest.id,
+        version: manifest.version,
+        durationMs: entry.activationDurationMs,
+        origin: manifest.origin?.kind,
+      });
       // Flush plugin-contributed seeds into the mock backend, if present.
       const backend = (runtime as { __backend?: MockBackend }).__backend;
       if (backend) {
@@ -229,6 +262,12 @@ export function createPluginHost2(args: {
       contributions.dropByPlugin(manifest.id);
       // eslint-disable-next-line no-console
       console.error(`[plugin-host] "${manifest.id}" activate() threw`, err);
+      analyticsEmit("plugin.quarantined", {
+        pluginId: manifest.id,
+        version: manifest.version,
+        error: entry.error,
+        origin: manifest.origin?.kind,
+      });
       emitPeer("quarantined", manifest.id);
     } finally {
       emit();
@@ -306,6 +345,10 @@ export function createPluginHost2(args: {
     contributions.dropByPlugin(pluginId);
     entry.status = "deactivated";
     entry.disposers = [];
+    analyticsEmit("plugin.deactivated", {
+      pluginId,
+      version: entry.manifest.version,
+    });
     emitPeer("deactivated", pluginId);
     emit();
   };
@@ -339,17 +382,64 @@ export function createPluginHost2(args: {
   };
 
   const installFromURL = async (url: string): Promise<PluginInstallRecord> => {
-    const res = await fetch(url, { mode: "cors" });
+    // 1. Validate URL shape before hitting the network.
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      throw new Error(`Invalid manifest URL: "${url}"`);
+    }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error(`Unsupported manifest scheme: ${parsed.protocol}`);
+    }
+
+    // 2. Fetch with timeout — 10 seconds is ample for a JSON manifest.
+    const res = await fetchWithTimeout(url, { mode: "cors" }, 10_000);
     if (!res.ok) throw new Error(`Manifest fetch failed: ${res.status} ${res.statusText}`);
-    const manifest = (await res.json()) as PluginManifest & { entry?: string };
-    if (!manifest.id) throw new Error("Manifest missing id");
-    if (!manifest.entry) throw new Error("Manifest missing entry URL");
+    const contentType = res.headers.get("content-type") ?? "";
+    if (!contentType.includes("json") && !contentType.includes("text")) {
+      throw new Error(`Manifest has unexpected content-type: "${contentType}"`);
+    }
+
+    // 3. Parse JSON with precise errors.
+    let manifest: PluginManifest & { entry?: string };
+    try {
+      manifest = (await res.json()) as PluginManifest & { entry?: string };
+    } catch (err) {
+      throw new Error(
+        `Manifest JSON parse failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+
+    // 4. Required field validation.
+    if (!manifest.id) throw new Error("Manifest missing `id`");
+    if (!manifest.version) throw new Error("Manifest missing `version`");
+    if (!manifest.label) throw new Error("Manifest missing `label`");
+    if (!manifest.entry) throw new Error("Manifest missing `entry` URL");
+    if (manifest.requires?.shell && !semverSatisfies(SHELL_API_VERSION, manifest.requires.shell)) {
+      throw new Error(
+        `Plugin "${manifest.id}" requires shell ${manifest.requires.shell}, host is ${SHELL_API_VERSION}`,
+      );
+    }
     // Integrity check — compute SHA-384 of the entry bytes when declared.
     const entryUrl = new URL(manifest.entry, url).toString();
-    const entryRes = await fetch(entryUrl, { mode: "cors" });
+    const entryRes = await fetchWithTimeout(entryUrl, { mode: "cors" }, 30_000);
     if (!entryRes.ok)
-      throw new Error(`Plugin entry fetch failed: ${entryRes.status}`);
+      throw new Error(`Plugin entry fetch failed: ${entryRes.status} ${entryRes.statusText}`);
+    const entryType = entryRes.headers.get("content-type") ?? "";
+    if (!entryType.includes("javascript") && !entryType.includes("module")) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[plugin-host] remote entry content-type="${entryType}" — expected application/javascript. Attempting import anyway.`,
+      );
+    }
     const buf = await entryRes.clone().arrayBuffer();
+    if (buf.byteLength === 0) {
+      throw new Error("Plugin entry bundle is empty (0 bytes).");
+    }
+    if (buf.byteLength > 32 * 1024 * 1024) {
+      throw new Error(`Plugin entry bundle exceeds 32MB (${Math.round(buf.byteLength / 1024 / 1024)}MB). Refused.`);
+    }
     if (manifest.origin?.integrity) {
       const expected = manifest.origin.integrity;
       const actual = await computeSRI(buf);
@@ -428,6 +518,7 @@ export function createPluginHost2(args: {
       status: e.status,
       error: e.error,
       activatedAt: e.activatedAt,
+      activationDurationMs: e.activationDurationMs,
       contributionCounts: contributions.countByPlugin(e.manifest.id),
       consentedCapabilities: e.manifest.requires?.capabilities,
     };
@@ -474,9 +565,134 @@ export function topoSortPlugins(plugins: readonly PluginV2[]): {
   return { ordered, cycles };
 }
 
+/** Partition plugins into activation layers (Kahn's algorithm). Plugins in
+ *  the same layer have no dependency between each other and can be
+ *  activated in parallel. Subsequent layers wait for predecessors.
+ *  Returns `layers: PluginV2[][]` + cycles detected. */
+export function layerPlugins(plugins: readonly PluginV2[]): {
+  layers: PluginV2[][];
+  cycles: { path: string[] }[];
+} {
+  const byId = new Map<string, PluginV2>();
+  for (const p of plugins) byId.set(p.manifest.id, p);
+
+  const inDegree = new Map<string, number>();
+  const dependents = new Map<string, string[]>();
+
+  for (const p of plugins) {
+    inDegree.set(p.manifest.id, 0);
+    dependents.set(p.manifest.id, []);
+  }
+  for (const p of plugins) {
+    const deps = Object.keys(p.manifest.requires?.plugins ?? {});
+    for (const dep of deps) {
+      if (byId.has(dep)) {
+        inDegree.set(p.manifest.id, (inDegree.get(p.manifest.id) ?? 0) + 1);
+        dependents.get(dep)!.push(p.manifest.id);
+      }
+    }
+  }
+
+  const layers: PluginV2[][] = [];
+  let current = plugins.filter((p) => (inDegree.get(p.manifest.id) ?? 0) === 0);
+  while (current.length > 0) {
+    layers.push(current);
+    const next: PluginV2[] = [];
+    for (const p of current) {
+      for (const child of dependents.get(p.manifest.id) ?? []) {
+        const remaining = (inDegree.get(child) ?? 0) - 1;
+        inDegree.set(child, remaining);
+        if (remaining === 0) {
+          const plugin = byId.get(child);
+          if (plugin) next.push(plugin);
+        }
+      }
+    }
+    current = next;
+  }
+
+  const processed = new Set(layers.flat().map((p) => p.manifest.id));
+  const cycles: { path: string[] }[] = [];
+  for (const p of plugins) {
+    if (!processed.has(p.manifest.id)) {
+      cycles.push({ path: [p.manifest.id] });
+    }
+  }
+
+  return { layers, cycles };
+}
+
+/** Run async tasks with bounded concurrency. */
+export async function runWithConcurrency<T, R>(
+  items: readonly T[],
+  concurrency: number,
+  task: (item: T) => Promise<R>,
+): Promise<R[]> {
+  if (concurrency <= 1) {
+    const out: R[] = [];
+    for (const it of items) out.push(await task(it));
+    return out;
+  }
+  const results: R[] = new Array(items.length);
+  let idx = 0;
+  const worker = async () => {
+    while (true) {
+      const i = idx++;
+      if (i >= items.length) return;
+      results[i] = await task(items[i]);
+    }
+  };
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, worker);
+  await Promise.all(workers);
+  return results;
+}
+
 /* ====================================================================== */
 /* SRI helper                                                              */
 /* ====================================================================== */
+
+/** Fetch with a deadline — aborts via AbortController when elapsed. */
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  ms: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new Error("timeout")), ms);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Race a Promise against a deadline. Throws with the given message when
+ *  the deadline fires. Used to keep hung plugin `activate()` calls from
+ *  wedging the shell. */
+function withTimeout<T>(p: Promise<T> | T, ms: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error(message));
+    }, ms);
+    Promise.resolve(p).then(
+      (v) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (err) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
 
 async function computeSRI(buf: ArrayBuffer): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-384", buf);

@@ -559,6 +559,7 @@ export interface PluginInstallRecord {
   readonly status: PluginStatus;
   readonly error?: string;
   readonly activatedAt?: number;
+  readonly activationDurationMs?: number;
   readonly contributionCounts?: Readonly<Record<string, number>>;
   readonly consentedCapabilities?: readonly Capability[];
 }

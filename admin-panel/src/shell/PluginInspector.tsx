@@ -175,7 +175,7 @@ function PluginRow({
   record: PluginInstallRecord;
   host: ReturnType<typeof usePluginHost2>;
 }) {
-  const { manifest, status, error, contributionCounts } = record;
+  const { manifest, status, error, contributionCounts, activationDurationMs } = record;
   const [busy, setBusy] = React.useState(false);
   const onReload = async () => {
     if (!host) return;
@@ -200,9 +200,29 @@ function PluginRow({
               <Badge intent="info">{manifest.origin.kind}</Badge>
             )}
             <StatusBadge status={status} />
+            {activationDurationMs !== undefined && (
+              <span
+                className="text-[10px] font-mono text-text-muted"
+                title={`Time spent inside activate()`}
+              >
+                {activationDurationMs.toFixed(1)}ms
+              </span>
+            )}
           </div>
           {manifest.description && (
             <div className="text-xs text-text-muted mt-1">{manifest.description}</div>
+          )}
+          {manifest.requires?.plugins && Object.keys(manifest.requires.plugins).length > 0 && (
+            <div className="text-[11px] text-text-muted mt-1">
+              Requires:{" "}
+              {Object.entries(manifest.requires.plugins).map(([id, range], i, arr) => (
+                <span key={id}>
+                  <code className="font-mono">{id}</code>{" "}
+                  <span className="opacity-75">{range}</span>
+                  {i < arr.length - 1 ? ", " : ""}
+                </span>
+              ))}
+            </div>
           )}
           {error && (
             <div className="text-xs text-intent-danger mt-1 font-mono break-words">

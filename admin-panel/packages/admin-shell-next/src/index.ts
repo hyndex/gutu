@@ -1,16 +1,13 @@
 /** @gutu/admin-shell-next — public API surface.
  *
- *  This package is the versioned, public contract plugin authors use.
+ *  This package is the versioned, public contract plugin authors depend on.
  *  Internals live in admin-panel/src/. This package re-exports the parts
  *  that are safe to depend on and marks everything else as implementation
  *  detail.
  *
- *  Two coexisting APIs in the ecosystem today:
- *    - @platform/admin-contracts (existing) — workspace/page/command registry
- *    - @gutu/admin-shell-next (this)         — schema-driven resources + views
- *
- *  Use @gutu/admin-shell-bridge to consume legacy contributions in a shell
- *  that renders via this package. Both APIs render in the same AdminRoot.
+ *  Plugins use the v2 contract (`definePlugin({ manifest, activate })`).
+ *  There is one supported API — the legacy contract has been fully
+ *  retired and the bridge package is no longer part of the runtime.
  */
 
 export * from "./builders";

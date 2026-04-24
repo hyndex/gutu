@@ -130,6 +130,14 @@ export interface DiscoveryResult {
   readonly npm: readonly AnyPlugin[];
   /** Merged list — later loaders override earlier by id. */
   readonly all: readonly AnyPlugin[];
+  /** Plugin id collisions detected across loaders — logged for operator
+   *  visibility. The precedence-winning plugin is in `all`; this list
+   *  records which other sources had the same id so the Plugin Inspector
+   *  can surface the conflict. */
+  readonly duplicates: readonly {
+    readonly id: string;
+    readonly sources: readonly ("explicit" | "filesystem" | "npm" | "builtin")[];
+  }[];
 }
 
 export async function discoverAllPlugins(args: {
@@ -159,16 +167,40 @@ export async function discoverAllPlugins(args: {
   }
   // Precedence: explicit > npm > filesystem > builtins. Builtins are the
   // last-resort default — any user plugin with the same id wins.
+  const sources = new Map<string, Set<"explicit" | "filesystem" | "npm" | "builtin">>();
+  const record = (src: "explicit" | "filesystem" | "npm" | "builtin", p: AnyPlugin) => {
+    const id = idOf(p);
+    const set = sources.get(id) ?? new Set();
+    set.add(src);
+    sources.set(id, set);
+  };
+  for (const p of builtins) record("builtin", p);
+  for (const p of filesystem) record("filesystem", p);
+  for (const p of npm) record("npm", p);
+  for (const p of explicit) record("explicit", p);
+
   const byId = new Map<string, AnyPlugin>();
   for (const p of builtins) byId.set(idOf(p), p);
   for (const p of filesystem) byId.set(idOf(p), p);
   for (const p of npm) byId.set(idOf(p), p);
   for (const p of explicit) byId.set(idOf(p), p);
+
+  const duplicates = Array.from(sources.entries())
+    .filter(([, s]) => s.size > 1)
+    .map(([id, s]) => ({ id, sources: Array.from(s) as readonly ("explicit" | "filesystem" | "npm" | "builtin")[] }));
+  for (const dup of duplicates) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[plugin-loader] duplicate plugin id "${dup.id}" from sources: ${dup.sources.join(", ")}. Precedence-winning source used.`,
+    );
+  }
+
   return {
     explicit,
     filesystem,
     npm,
     all: Array.from(byId.values()),
+    duplicates,
   };
 }
 
