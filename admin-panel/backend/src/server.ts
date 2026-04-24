@@ -6,6 +6,7 @@ import { resourceRoutes } from "./routes/resources";
 import { healthRoutes } from "./routes/health";
 import { auditRoutes } from "./routes/audit";
 import { filesRoutes } from "./routes/files";
+import { storageRoutes } from "./routes/storage";
 import { tenantRoutes } from "./routes/tenants";
 import { configRoutes } from "./routes/config";
 import { tenantMiddleware } from "./tenancy/middleware";
@@ -54,6 +55,7 @@ export function createApp() {
   app.route("/api/audit", auditRoutes);
   app.route("/api/resources", resourceRoutes);
   app.route("/api/files", filesRoutes);
+  app.route("/api/storage", storageRoutes);
 
   app.notFound((c) => c.json({ error: "not found" }, 404));
   app.onError((err, c) => {

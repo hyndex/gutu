@@ -5,6 +5,7 @@ import { registerSocket, unregisterSocket } from "./lib/ws";
 import { loadConfig } from "./config";
 import { migrateGlobal, migrateTenantSchema } from "./tenancy/migrations";
 import { ensureDefaultTenant, listTenants } from "./tenancy/provisioner";
+import { bootstrapStorage } from "./storage";
 
 const cfg = loadConfig();
 
@@ -36,6 +37,14 @@ if (cfg.multisite) {
     catch (err) { console.error(`[boot] tenant ${t.slug} migration failed`, err); }
   }
 }
+
+// Bootstrap the storage registry BEFORE creating the app so routes that
+// reach for the registry (uploads, presign, downloads) have adapters ready.
+bootstrapStorage({
+  filesRoot: cfg.filesRoot,
+  publicBaseUrl: process.env.PUBLIC_BASE_URL ?? `http://127.0.0.1:${cfg.port}`,
+  defaultTenantId: defaultTenant.id,
+});
 
 const app = createApp();
 await seedAll({ force: process.env.SEED_FORCE === "1" });
