@@ -61,7 +61,12 @@ Reference: audit of `ref/Business/ERPNext/erpnext/` summarised in this tracker. 
 **Connections**: Invoice → Payments, Customer, Order, Dunning; Customer → All Invoices
 **Automations**: Auto-generate journal on stock/payroll transactions · Bank import + matching · Subscription invoice generation · Dunning escalation · Currency revaluation · Period lock enforcement
 
-### ☐ P0 — Inventory (`inventory`)
+### ✅ P0 — Inventory (`inventory`) — shipped (this pass)
+**Delivered**: 15 new resources (ItemVariant, ItemPrice, Bin, StockEntry, MaterialRequest, DeliveryNote, PurchaseReceipt, LandedCost, Batch, SerialNumber, StockReconciliation, PickList, PackingSlip, DeliveryTrip, ItemSupplier) extending the existing Item + Warehouse with auto-generated list/form/rich-detail views via `buildDomainPlugin`. Idempotent backend seed (452 records across 15 resources; 486 total inventory records with factory base). Inventory Control Room dashboard (4 KPIs: Active SKUs / Inventory value / Below reorder / Stock moves MTD; 4 charts; 4 shortcuts; 2 quick lists). 9 reports via `buildReportLibrary` (Stock Balance, Stock Ledger, Stock Ageing, Stock Projected Qty, Warehouse-Wise Balance, Reorder Level, Batch Expiry, Item Shortage, Stock Valuation). Nav +3 entries (Control Room, Reports, Low-stock alerts), commands +8. Typecheck clean.
+
+**Deferred to next Inventory pass**: BOM tree + explosion (lives in Manufacturing plugin); Transfer wizard UI (data model exists via stock-entry kind=transfer); Batch/Serial traceability graph (needs RelationshipGraph primitive applied); FIFO queue audit report (needs valuation lot tracking); Landed-cost auto-allocation engine.
+
+### ☐ P0 — Inventory (`inventory`) — [ORIGINAL PLAN FOR REFERENCE]
 **ERPNext ref**: `stock/`, 50+ DocTypes, 50+ reports
 **Resources to add**: `inventory.item-variant`, `inventory.item-price`, `inventory.item-alternative`, `inventory.item-barcode`, `inventory.item-supplier`, `inventory.bin`, `inventory.batch`, `inventory.serial-no`, `inventory.stock-entry`, `inventory.stock-reconciliation`, `inventory.delivery-note`, `inventory.purchase-receipt`, `inventory.landed-cost`, `inventory.material-request`, `inventory.pick-list`, `inventory.packing-slip`, `inventory.delivery-trip`
 **Reports to ship**: Stock Balance · Stock Ledger · Stock Ageing · Stock Analytics · Stock Projected Qty · Reserved Stock · Warehouse-Wise Balance · Batch Expiry · Serial No Ledger · Landed Cost · Item Shortage · Delayed Order · BOM Search · FIFO Queue Check · Stock Variance · Requested Items · Reorder Level
