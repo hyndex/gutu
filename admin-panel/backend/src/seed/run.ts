@@ -4,6 +4,7 @@ import { seedUsers } from "./users";
 import { seedSalesCrm } from "./sales-crm";
 import { seedFactory } from "./factory";
 import { seedExtended } from "./extended";
+import { seedCrmExtended } from "./crm-extended";
 
 /** Idempotent: if the records table already has data, do nothing unless
  *  `force: true` is passed. Auth users are seeded when empty regardless. */
@@ -25,9 +26,22 @@ export async function seedAll(opts: { force?: boolean } = {}): Promise<void> {
       console.log(
         `[seed] backfilled ${Object.values(ext).reduce((a, b) => a + b, 0)} records across ${Object.keys(ext).length} extended resources`,
       );
-      return;
     }
-    console.log(`[seed] records: ${row.c} already present, skipping (pass --force to reseed)`);
+
+    // Always try to backfill CRM-extended resources — per-resource idempotent,
+    // so existing data is preserved and only missing resources get seeded.
+    const crmExt = seedCrmExtended();
+    const crmExtTotal = Object.values(crmExt).reduce((a, b) => a + b, 0);
+    if (crmExtTotal > 0) {
+      console.log(
+        `[seed] backfilled CRM-extended: ${crmExtTotal} records across ${
+          Object.entries(crmExt).filter(([, n]) => n > 0).length
+        } resources`,
+      );
+    }
+    if (hasExtended.c > 0 && crmExtTotal === 0) {
+      console.log(`[seed] records: ${row.c} already present, skipping (pass --force to reseed)`);
+    }
     return;
   }
   if (opts.force) {
@@ -39,7 +53,8 @@ export async function seedAll(opts: { force?: boolean } = {}): Promise<void> {
   const crm = seedSalesCrm();
   const factory = seedFactory();
   const extended = seedExtended();
-  const all = { ...crm, ...factory, ...extended };
+  const crmExt = seedCrmExtended();
+  const all = { ...crm, ...factory, ...extended, ...crmExt };
   const total = Object.values(all).reduce((a, b) => a + b, 0);
   console.log(
     `[seed] inserted ${total} records across ${Object.keys(all).length} resources in ${Date.now() - t0}ms`,

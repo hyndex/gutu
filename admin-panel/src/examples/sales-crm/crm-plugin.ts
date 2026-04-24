@@ -8,6 +8,9 @@ import {
   crmPipelineView,
   crmSegmentsView,
 } from "./crm-pages";
+import { CRM_EXTENDED_RESOURCES, CRM_EXTENDED_VIEWS } from "./crm-extended";
+import { crmControlRoomView } from "./crm-control-room";
+import { crmReportsIndexView, crmReportDetailView } from "./crm-reports";
 import { CONTACTS } from "./data";
 
 const ContactSchema = z.object({
@@ -51,12 +54,22 @@ export const crmPlugin = definePlugin({
     navSections: [{ id: "sales", label: "Sales & CRM", order: 10 }],
     nav: [
       { id: "crm.overview", label: "Overview", icon: "LayoutDashboard", path: "/contacts/overview", view: "crm.overview.view", section: "sales", order: 10 },
+      { id: "crm.control-room", label: "Control Room", icon: "Gauge", path: "/crm/control-room", view: "crm.control-room.view", section: "sales", order: 10.5 },
       { id: "crm.contacts", label: "Contacts", icon: "Users", path: "/contacts", view: "crm.contacts.view", section: "sales", order: 11 },
+      { id: "crm.leads", label: "Leads", icon: "UserRound", path: "/crm/leads", view: "crm.leads.list", section: "sales", order: 11.5 },
+      { id: "crm.opportunities", label: "Opportunities", icon: "Target", path: "/crm/opportunities", view: "crm.opportunities.list", section: "sales", order: 11.7 },
       { id: "crm.pipeline", label: "Pipeline", icon: "Layers", path: "/contacts/pipeline", view: "crm.pipeline.view", section: "sales", order: 12 },
+      { id: "crm.campaigns", label: "Campaigns", icon: "Megaphone", path: "/crm/campaigns", view: "crm.campaigns.list", section: "sales", order: 12.3 },
+      { id: "crm.appointments", label: "Appointments", icon: "Calendar", path: "/crm/appointments", view: "crm.appointments.list", section: "sales", order: 12.5 },
+      { id: "crm.contracts", label: "Contracts", icon: "FileText", path: "/crm/contracts", view: "crm.contracts.list", section: "sales", order: 12.7 },
       { id: "crm.activity", label: "Activity", icon: "Activity", path: "/contacts/activity", view: "crm.activity.view", section: "sales", order: 13 },
       { id: "crm.segments", label: "Segments", icon: "LayoutGrid", path: "/contacts/segments", view: "crm.segments.view", section: "sales", order: 14 },
+      { id: "crm.competitors", label: "Competitors", icon: "Swords", path: "/crm/competitors", view: "crm.competitors.list", section: "sales", order: 14.3 },
+      { id: "crm.market-segments", label: "Market Segments", icon: "Target", path: "/crm/market-segments", view: "crm.market-segments.list", section: "sales", order: 14.5 },
+      { id: "crm.sales-stages", label: "Sales Stages", icon: "Settings2", path: "/crm/sales-stages", view: "crm.sales-stages.list", section: "sales", order: 14.7 },
+      { id: "crm.reports", label: "Reports", icon: "BarChart3", path: "/crm/reports", view: "crm.reports.view", section: "sales", order: 14.9 },
     ],
-    resources: [contactResource],
+    resources: [contactResource, ...CRM_EXTENDED_RESOURCES],
     views: [
       crmOverviewView,
       crmContactsView,
@@ -64,10 +77,19 @@ export const crmPlugin = definePlugin({
       crmActivityView,
       crmSegmentsView,
       crmContactDetailView,
+      crmControlRoomView,
+      crmReportsIndexView,
+      crmReportDetailView,
+      ...CRM_EXTENDED_VIEWS,
     ],
     commands: [
       { id: "crm.go.overview", label: "CRM: Overview", icon: "LayoutDashboard", run: () => { window.location.hash = "/contacts/overview"; } },
+      { id: "crm.go.control-room", label: "CRM: Control Room", icon: "Gauge", run: () => { window.location.hash = "/crm/control-room"; } },
       { id: "crm.new", label: "New contact", icon: "UserPlus", shortcut: "N", run: () => { window.location.hash = "/contacts/new"; } },
+      { id: "crm.new-lead", label: "New lead", icon: "UserRound", run: () => { window.location.hash = "/crm/leads/new"; } },
+      { id: "crm.new-opportunity", label: "New opportunity", icon: "Target", run: () => { window.location.hash = "/crm/opportunities/new"; } },
+      { id: "crm.new-campaign", label: "New campaign", icon: "Megaphone", run: () => { window.location.hash = "/crm/campaigns/new"; } },
+      { id: "crm.go.reports", label: "CRM: Reports", icon: "BarChart3", run: () => { window.location.hash = "/crm/reports"; } },
     ],
   },
 });
