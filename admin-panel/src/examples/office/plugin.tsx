@@ -6,10 +6,14 @@
  *  `<EditorHost>` which lazy-loads the appropriate runtime adapter
  *  (Univer or BlockSuite) and binds a Y.Doc seeded from the backend's
  *  persisted Yjs snapshot. Auto-save flows back through `/api/editors/...`
- *  → `gutu-lib-storage`. */
+ *  → `gutu-lib-storage`.
+ *
+ *  Nav items live under the canonical `workspace` section so the office
+ *  surfaces sit alongside Files / Knowledge / etc. */
 
 import React from "react";
 import { definePlugin } from "@/contracts/plugin-v2";
+import { SECTIONS } from "@/examples/_factory/sections";
 import {
   SpreadsheetWorkspace,
   DocumentWorkspace,
@@ -17,13 +21,6 @@ import {
   PagesWorkspace,
   WhiteboardWorkspace,
 } from "@/editor-host";
-
-const officeNavSection = {
-  id: "office",
-  label: "Office",
-  icon: "Briefcase" as const,
-  order: 5,
-};
 
 const SPREADSHEET_VIEW = {
   id: "office.spreadsheets.view",
@@ -56,12 +53,14 @@ const WHITEBOARD_VIEW = {
   render: () => <WhiteboardWorkspace />,
 };
 
+const SECTION_ID = SECTIONS.workspace.id;
+
 const navItems = [
-  { id: "office.spreadsheets.nav", label: "Spreadsheets", icon: "Table" as const, path: "/spreadsheets", view: SPREADSHEET_VIEW.id, section: "office", order: 0 },
-  { id: "office.documents.nav", label: "Documents", icon: "FileText" as const, path: "/documents", view: DOCUMENT_VIEW.id, section: "office", order: 1 },
-  { id: "office.slides.nav", label: "Slides", icon: "Presentation" as const, path: "/slides", view: SLIDES_VIEW.id, section: "office", order: 2 },
-  { id: "office.pages.nav", label: "Pages", icon: "BookOpen" as const, path: "/pages", view: PAGES_VIEW.id, section: "office", order: 3 },
-  { id: "office.whiteboards.nav", label: "Whiteboards", icon: "PenTool" as const, path: "/whiteboards", view: WHITEBOARD_VIEW.id, section: "office", order: 4 },
+  { id: "office.spreadsheets.nav", label: "Spreadsheets", icon: "Table" as const, path: "/spreadsheets", view: SPREADSHEET_VIEW.id, section: SECTION_ID, order: 100 },
+  { id: "office.documents.nav", label: "Documents", icon: "FileText" as const, path: "/documents", view: DOCUMENT_VIEW.id, section: SECTION_ID, order: 101 },
+  { id: "office.slides.nav", label: "Slides", icon: "Presentation" as const, path: "/slides", view: SLIDES_VIEW.id, section: SECTION_ID, order: 102 },
+  { id: "office.pages.nav", label: "Pages", icon: "BookOpen" as const, path: "/pages", view: PAGES_VIEW.id, section: SECTION_ID, order: 103 },
+  { id: "office.whiteboards.nav", label: "Whiteboards", icon: "PenTool" as const, path: "/whiteboards", view: WHITEBOARD_VIEW.id, section: SECTION_ID, order: 104 },
 ];
 
 const commands = [
@@ -85,7 +84,6 @@ export const officePlugin = definePlugin({
   },
 
   async activate(ctx) {
-    ctx.contribute.navSections([officeNavSection]);
     ctx.contribute.nav(navItems);
     ctx.contribute.views([
       SPREADSHEET_VIEW,

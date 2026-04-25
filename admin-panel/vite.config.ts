@@ -30,6 +30,20 @@ export default defineConfig({
       "@gutu/admin-shell-next": path.resolve(__dirname, "./packages/admin-shell-next/src/index.ts"),
     },
   },
+  // Multi-page entry: the main shell + a separate /editor-frame.html that
+  // hosts each Univer / BlockSuite editor in its own React root (no
+  // StrictMode), insulating the host shell from upstream lifecycle bugs.
+  appType: "mpa",
+  build: {
+    sourcemap: true,
+    target: "es2022",
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, "./index.html"),
+        editorFrame: path.resolve(__dirname, "./editor-frame.html"),
+      },
+    },
+  },
   server: {
     port: Number(process.env.PORT ?? 5173),
     strictPort: true,
@@ -46,5 +60,4 @@ export default defineConfig({
       },
     },
   },
-  build: { sourcemap: true, target: "es2022" },
 });

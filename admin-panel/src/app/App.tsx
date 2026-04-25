@@ -58,6 +58,7 @@ import {
   runtimeBridgePlugin,
   executionWorkspacesPlugin,
   searchPlugin,
+  officePlugin,
 } from "@/examples";
 
 /** Consumer-level wiring. The shell, router, and every view is driven from
@@ -121,6 +122,7 @@ const plugins = [
   executionWorkspacesPlugin,
   searchPlugin,
   auditPlugin,
+  officePlugin, // owns /spreadsheets, /documents, /slides, /pages, /whiteboards
 ];
 
 export function App() {

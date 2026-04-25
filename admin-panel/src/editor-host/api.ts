@@ -4,8 +4,14 @@
  *    - `Idempotency-Key` on every create
  *    - `If-Match` on snapshot writes (optimistic locking)
  *    - cooperative cancel via AbortSignal
- *    - structured error parsing — server returns `{error, code, ...}` */
+ *    - structured error parsing — server returns `{error, code, ...}`
+ *
+ *  Auth + tenant headers are sourced from the shared `authStore` so the
+ *  editor flows participate in the same session lifecycle as every other
+ *  REST call (logout clears the token, tenant switching re-targets, 401
+ *  triggers session clear). */
 
+import { authStore } from "@/runtime/auth";
 import type { EditorKind, EditorRecord } from "./types";
 
 const RESOURCE_FOR: Record<EditorKind, string> = {
@@ -16,9 +22,11 @@ const RESOURCE_FOR: Record<EditorKind, string> = {
   whiteboard: "whiteboard",
 };
 
-function getAuthHeader(): Record<string, string> {
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem("auth-token") : null;
-  return token ? { Authorization: `Bearer ${token}` } : {};
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  if (authStore.token) headers.Authorization = `Bearer ${authStore.token}`;
+  if (authStore.activeTenant?.id) headers["x-tenant"] = authStore.activeTenant.id;
+  return headers;
 }
 
 function apiBase(): string {
@@ -51,7 +59,7 @@ export async function listEditorRecords(
   signal?: AbortSignal,
 ): Promise<EditorRecord[]> {
   const res = await fetch(`${apiBase()}/editors/${RESOURCE_FOR[kind]}`, {
-    headers: getAuthHeader(),
+    headers: getAuthHeaders(),
     credentials: "include",
     ...(signal && { signal }),
   });
@@ -70,7 +78,7 @@ export async function createEditorRecord(
     headers: {
       "Content-Type": "application/json",
       "Idempotency-Key": newIdempotencyKey(),
-      ...getAuthHeader(),
+      ...getAuthHeaders(),
     },
     credentials: "include",
     body: JSON.stringify(payload),
@@ -88,7 +96,7 @@ export async function updateEditorRecord(
 ): Promise<EditorRecord> {
   const res = await fetch(`${apiBase()}/editors/${RESOURCE_FOR[kind]}/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json", ...getAuthHeader() },
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
     credentials: "include",
     body: JSON.stringify(patch),
     ...(signal && { signal }),
@@ -104,7 +112,7 @@ export async function deleteEditorRecord(
 ): Promise<void> {
   const res = await fetch(`${apiBase()}/editors/${RESOURCE_FOR[kind]}/${id}`, {
     method: "DELETE",
-    headers: getAuthHeader(),
+    headers: getAuthHeaders(),
     credentials: "include",
     ...(signal && { signal }),
   });
@@ -117,7 +125,7 @@ export async function fetchEditorRecord(
   signal?: AbortSignal,
 ): Promise<EditorRecord> {
   const res = await fetch(`${apiBase()}/editors/${RESOURCE_FOR[kind]}/${id}`, {
-    headers: getAuthHeader(),
+    headers: getAuthHeaders(),
     credentials: "include",
     ...(signal && { signal }),
   });
@@ -134,7 +142,7 @@ export async function fetchSnapshot(
   const res = await fetch(
     `${apiBase()}/editors/${RESOURCE_FOR[kind]}/${id}/snapshot/${which}`,
     {
-      headers: getAuthHeader(),
+      headers: getAuthHeaders(),
       credentials: "include",
       ...(signal && { signal }),
     },
@@ -160,7 +168,7 @@ export async function postSnapshot(
   const headers: Record<string, string> = {
     "Content-Type": contentType,
     "Content-Length": String(bytes.byteLength),
-    ...getAuthHeader(),
+    ...getAuthHeaders(),
   };
   if (opts.ifMatch) headers["If-Match"] = opts.ifMatch;
   const res = await fetch(
