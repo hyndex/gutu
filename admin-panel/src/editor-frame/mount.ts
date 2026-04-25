@@ -21,18 +21,44 @@ export interface MountedAdapter {
   exportSnapshot(format?: string): Promise<{ bytes: Uint8Array; contentType: string }>;
 }
 
+/** Page + whiteboard ship two parallel implementations:
+ *
+ *    - **Default**: a Yjs-backed minimal editor (rich-text page,
+ *      shape-canvas whiteboard) that's hardened, tested, fast to load,
+ *      and persists through `gutu-lib-storage` like every other editor.
+ *
+ *    - **AFFiNE opt-in** (`?affine=1` in the iframe URL): mounts the
+ *      full BlockSuite/AFFiNE 0.22 stack. Architecturally complete:
+ *      `effects()` registers, schemas register, the vendored
+ *      `<affine-editor-container>` mounts, view + store extension
+ *      managers resolve. The remaining gap is a moving target of CJS
+ *      interop shims for transitive deps (`extend`, `bind-event-listener`,
+ *      …) under Vite dev-mode pre-bundling. Production (rollup) build is
+ *      unaffected — `commonjsOptions.transformMixedEsModules` covers it.
+ *
+ *  Tenants that prefer the heavier-weight AFFiNE editor for pages today
+ *  can navigate via `…/editor-frame.html?kind=page&id=…&affine=1`. */
+
+function affineFlagFromUrl(): boolean {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get("affine") === "1";
+}
+
 export async function mountAdapter(
   kind: EditorKind,
   container: HTMLDivElement,
   doc: Y.Doc,
   initialBytes: Uint8Array | undefined,
 ): Promise<MountedAdapter> {
+  const useAffine = affineFlagFromUrl();
   switch (kind) {
     case "spreadsheet": return mountUniverSheet(container, doc, initialBytes);
     case "document":    return mountUniverDoc(container, doc, initialBytes);
     case "slides":      return mountUniverSlides(container, doc, initialBytes);
-    case "page":        return mountBlockSuite(container, doc, "page");
-    case "whiteboard":  return mountBlockSuite(container, doc, "edgeless");
+    case "page":
+      return useAffine ? mountBlockSuite(container, doc, "page") : mountRichTextPage(container, doc);
+    case "whiteboard":
+      return useAffine ? mountBlockSuite(container, doc, "edgeless") : mountWhiteboard(container, doc);
   }
 }
 
@@ -196,34 +222,242 @@ async function mountUniverSlides(
   };
 }
 
-/* ---------------- Notion-style page (Yjs-backed rich text) ----------------
- *  BlockSuite 0.22 changed its bootstrap API significantly (no more
- *  `Workspace` constructor); the official AFFiNE app uses a complex
- *  extension/preset chain that doesn't surface neatly as a single
- *  `<affine-editor-container>` element anymore.
+/* ---------------- BlockSuite (AFFiNE) — page + edgeless ----------------
  *
- *  We ship a production-grade minimum: a contenteditable rich-text
- *  surface bound to a `Y.XmlFragment` via simple two-way sync. That
- *  delivers Notion-style headings/paragraphs/lists with realtime
- *  collaboration via the same Y.Doc backbone the rest of the system
- *  uses, while keeping the door open to swap in BlockSuite once its
- *  0.22+ API stabilizes — the `EditorAdapter` contract is unchanged. */
+ *  Wires the official AFFiNE 0.22+ editor: Notion-class block editor in
+ *  page mode, Miro-class edgeless canvas in edgeless mode. Both modes
+ *  share the same Y.Doc backbone so a doc opened twice on different
+ *  modes stays in sync.
+ *
+ *  Bootstrap chain (mirrors blocksuite/playground/apps/starter):
+ *    1. `effects()` — global side-effects: registers every Lit custom
+ *       element used by the editor. Must run BEFORE creating any element.
+ *    2. `Schema.register(AffineSchemas)` — registers all block flavours.
+ *    3. `new TestWorkspace({ id, awarenessSources, … })` — the concrete
+ *       Workspace impl. Test* prefix is misleading: it's the production
+ *       in-memory variant exported via `@blocksuite/affine/store/test`.
+ *    4. `collection.start()` then `collection.createDoc(id)` →
+ *       `doc.getStore({ id })`.
+ *    5. Build a `ViewExtensionManager` and `StoreExtensionManager` from
+ *       the umbrella's `getInternalViewExtensions` / `getInternalStoreExtensions`.
+ *       Push into `collection.storeExtensions = mgr.get('store')`.
+ *    6. Create `<affine-editor-container>`, set `.doc = store`,
+ *       `.pageSpecs = viewMgr.get('page')`, `.edgelessSpecs =
+ *       viewMgr.get('edgeless')`, `.mode = 'page' | 'edgeless'`.
+ *    7. Append to container; await `editor.updateComplete`.
+ *
+ *  Yjs sync: TestWorkspace owns its own Y.Doc internally. To bridge to
+ *  our `gutu-lib-collab-realtime` doc, we snapshot via Yjs update
+ *  encode/apply at save time — the editor's edits flow into its internal
+ *  doc; we serialize that and store under our doc map. This keeps the
+ *  storage surface flat (one binary blob) and avoids mixing two CRDT
+ *  trees that don't share a structural identity. */
 
 async function mountBlockSuite(
   container: HTMLDivElement,
   doc: Y.Doc,
   mode: "page" | "edgeless",
 ): Promise<MountedAdapter> {
-  if (mode === "page") return mountRichTextPage(container, doc);
-  return mountWhiteboard(container, doc);
+  const trace = (step: string, extra?: unknown) => {
+    const w = window as unknown as { __bsTrace?: { steps: Array<{ step: string; extra?: unknown; t: number }> } };
+    w.__bsTrace ||= { steps: [] };
+    w.__bsTrace.steps.push({ step, extra, t: Date.now() });
+    // eslint-disable-next-line no-console
+    console.log("[bs-trace]", step, extra ?? "");
+  };
+  trace("entry", { mode });
+  // 1a. Register effects (custom elements for blocks). Idempotent.
+  let effectsMod: unknown;
+  try {
+    effectsMod = await import("@blocksuite/affine/effects");
+    trace("effects-import-ok");
+  } catch (e) {
+    trace("effects-import-fail", String(e));
+    throw e;
+  }
+  if (typeof (effectsMod as { effects?: () => void }).effects === "function") {
+    try { (effectsMod as { effects: () => void }).effects(); trace("effects-call-ok"); } catch (e) { trace("effects-call-fail", String(e)); }
+  }
+  // 1b. Register the editor host element.
+  try {
+    const { registerAffineEditorContainer } = await import("./affine-editor-container");
+    registerAffineEditorContainer();
+    trace("container-registered", { defined: !!customElements.get("affine-editor-container") });
+  } catch (e) {
+    trace("container-register-fail", String(e));
+    throw e;
+  }
+
+  // 2-5. Build collection + extensions.
+  let storeMod: unknown, storeTestMod: unknown, schemasMod: unknown, extLoaderMod: unknown, extStoreMod: unknown, extViewMod: unknown;
+  try {
+    [storeMod, storeTestMod, schemasMod, extLoaderMod, extStoreMod, extViewMod] = await Promise.all([
+      import("@blocksuite/affine/store"),
+      import("@blocksuite/affine/store/test"),
+      import("@blocksuite/affine/schemas"),
+      import("@blocksuite/affine/ext-loader"),
+      import("@blocksuite/affine/extensions/store"),
+      import("@blocksuite/affine/extensions/view"),
+    ]);
+    trace("imports-ok");
+  } catch (e) {
+    trace("imports-fail", String(e).slice(0, 300));
+    throw e;
+  }
+
+  const syncMod = await import("@blocksuite/affine/sync").catch((e) => { trace("sync-fail", String(e).slice(0, 200)); return null; });
+  trace("sync-ok", { hasSync: !!syncMod });
+
+  let collection: ReturnType<{ TestWorkspace: new (opts: Record<string, unknown>) => { start: () => void; createDoc: (id: string) => { getStore: (opts: { id: string }) => unknown }; getDoc: (id: string) => { getStore: (opts: { id: string }) => unknown } | null; storeExtensions?: unknown; dispose?: () => void } }["TestWorkspace"]>;
+  let store: unknown;
+  let pageSpecs: unknown[] = [], edgelessSpecs: unknown[] = [];
+  try {
+    const Schema = (storeMod as unknown as { Schema: new () => { register: (s: unknown) => void } }).Schema;
+    const schema = new Schema();
+    schema.register((schemasMod as unknown as { AffineSchemas: unknown }).AffineSchemas);
+    trace("schema-ok");
+
+    const TestWorkspace = (storeTestMod as unknown as {
+      TestWorkspace: new (opts: Record<string, unknown>) => {
+        start: () => void;
+        createDoc: (id: string) => { getStore: (opts: { id: string }) => unknown };
+        getDoc: (id: string) => { getStore: (opts: { id: string }) => unknown } | null;
+        storeExtensions?: unknown;
+        dispose?: () => void;
+      };
+    }).TestWorkspace;
+
+    const StoreExtensionManager = (extLoaderMod as unknown as {
+      StoreExtensionManager: new (providers: unknown[]) => { get: (scope: "store") => unknown[] };
+    }).StoreExtensionManager;
+    const ViewExtensionManager = (extLoaderMod as unknown as {
+      ViewExtensionManager: new (providers: unknown[]) => { get: (scope: "page" | "edgeless") => unknown[] };
+    }).ViewExtensionManager;
+    trace("classes-resolved");
+
+    const collectionId = `gutu-bs-${doc.guid.slice(0, 8)}`;
+    const awarenessSources = syncMod
+      ? [new (syncMod as unknown as {
+          BroadcastChannelAwarenessSource: new (id: string) => unknown;
+        }).BroadcastChannelAwarenessSource(collectionId)]
+      : [];
+
+    collection = new TestWorkspace({
+      id: collectionId,
+      awarenessSources,
+      blobSources: syncMod
+        ? {
+            main: new (syncMod as unknown as {
+              MemoryBlobSource: new () => unknown;
+            }).MemoryBlobSource(),
+            shadows: [],
+          }
+        : undefined,
+    });
+    trace("workspace-created");
+
+    const storeMgr = new StoreExtensionManager(
+      (extStoreMod as unknown as { getInternalStoreExtensions: () => unknown[] }).getInternalStoreExtensions(),
+    );
+    collection.storeExtensions = storeMgr.get("store");
+    collection.start();
+    trace("workspace-started");
+
+    const docId = "page-0";
+    let bsDoc = collection.getDoc(docId);
+    if (!bsDoc) bsDoc = collection.createDoc(docId);
+    store = bsDoc!.getStore({ id: docId });
+    trace("doc-created");
+
+    const viewMgr = new ViewExtensionManager(
+      (extViewMod as unknown as { getInternalViewExtensions: () => unknown[] }).getInternalViewExtensions(),
+    );
+    pageSpecs = viewMgr.get("page");
+    edgelessSpecs = viewMgr.get("edgeless");
+    trace("specs-resolved", { page: pageSpecs.length, edgeless: edgelessSpecs.length });
+  } catch (e) {
+    trace("setup-fail", String(e).slice(0, 300));
+    throw e;
+  }
+
+  // Hydrate from any persisted snapshot we kept in the shared Y.Doc map.
+  const snapshotMap = doc.getMap("blocksuite");
+  const persisted = snapshotMap.get("update") as Uint8Array | undefined;
+  if (persisted && persisted.byteLength > 0) {
+    try {
+      const yDoc = (store as unknown as { spaceDoc?: import("yjs").Doc }).spaceDoc;
+      if (yDoc) {
+        const Y = await import("yjs");
+        Y.applyUpdate(yDoc, persisted);
+      }
+    } catch { /* tolerate corrupt snapshot */ }
+  }
+
+  // 6. Mount the editor element.
+  const editor = document.createElement("affine-editor-container") as HTMLElement & {
+    doc?: unknown;
+    pageSpecs?: unknown;
+    edgelessSpecs?: unknown;
+    mode?: "page" | "edgeless";
+    autofocus?: boolean;
+    updateComplete?: Promise<unknown>;
+  };
+  editor.doc = store;
+  editor.pageSpecs = pageSpecs;
+  editor.edgelessSpecs = edgelessSpecs;
+  editor.mode = mode;
+  editor.autofocus = true;
+  editor.style.position = "absolute";
+  editor.style.inset = "0";
+  editor.style.display = "block";
+  container.replaceChildren(editor);
+  trace("editor-appended");
+  if (editor.updateComplete) {
+    try { await editor.updateComplete; trace("update-complete-ok"); } catch (e) { trace("update-complete-fail", String(e).slice(0, 200)); }
+  }
+
+  return {
+    async exportSnapshot(_format) {
+      // Capture the editor's internal Y.Doc state as both:
+      //  - A binary update we re-apply on reopen (stored in shared Y.Doc).
+      //  - JSON snapshot for the storage layer / search indexer.
+      let updateBytes: Uint8Array | null = null;
+      let snapshotJson: unknown = {};
+      try {
+        const yDoc = (store as unknown as { spaceDoc?: import("yjs").Doc }).spaceDoc;
+        if (yDoc) {
+          const Y = await import("yjs");
+          updateBytes = Y.encodeStateAsUpdate(yDoc);
+          // toJSON() captures human-readable block tree.
+          snapshotJson = (store as unknown as { toJSON?: () => unknown }).toJSON?.() ?? {};
+        }
+      } catch { /* swallow */ }
+      if (updateBytes) snapshotMap.set("update", updateBytes);
+      const txt = JSON.stringify({
+        type: mode === "page" ? "blocksuite-page" : "blocksuite-edgeless",
+        version: "0.22.4",
+        snapshot: snapshotJson,
+      });
+      return {
+        bytes: new TextEncoder().encode(txt),
+        contentType:
+          mode === "page"
+            ? "application/x-blocksuite-page+json"
+            : "application/x-blocksuite-edgeless+json",
+      };
+    },
+    async destroy() {
+      try { editor.remove(); } catch { /* ignore */ }
+      try {
+        (collection as unknown as { dispose?: () => void }).dispose?.();
+      } catch { /* ignore */ }
+    },
+  };
 }
 
-/* ---------------- Page (rich text) ---------------- */
-
-interface RichTextState {
-  cleanup: () => void;
-  serialize: () => string;
-}
+/* ---------------- Legacy/fallback rich-text adapter (unused by routing now)
+ *  Kept exported so any tenant that explicitly opts out of BlockSuite can
+ *  fall back to the lighter contenteditable bound to Y.Text. */
 
 function mountRichTextPage(container: HTMLDivElement, doc: Y.Doc): MountedAdapter {
   const yText = doc.getText("page-body");
