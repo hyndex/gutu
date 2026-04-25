@@ -14,6 +14,8 @@ import { useRecord } from "@/runtime/hooks";
 import { FieldInput } from "./FieldInput";
 import { navigateTo } from "./useRoute";
 import { cn } from "@/lib/cn";
+import { CustomFieldsSection } from "@/admin-primitives/CustomFieldsSection";
+import { useFieldMetadata } from "@/runtime/useFieldMetadata";
 
 export interface FormViewRendererProps {
   view: FormViewDef;
@@ -174,6 +176,14 @@ export function FormViewRenderer({
         }
       />
 
+      {/* Custom fields rendered AFTER the Zod-derived sections so they
+          appear at the bottom of the form. Auto-fetched per resource;
+          empty render when no custom fields exist for this resource. */}
+      <CustomFieldsBlock
+        resource={view.resource}
+        values={values}
+        onChange={setField}
+      />
       {view.sections.map((section) => {
         const ctx = predicateCtx(values);
         if (section.visibleWhen && !section.visibleWhen({ record: values, user: ctx.user })) {
@@ -380,4 +390,42 @@ function humanize(field: string): string {
     .replace(/^./, (c) => c.toUpperCase())
     .replace(/_/g, " ")
     .trim();
+}
+
+/** Wraps the platform's CustomFieldsSection in the form's Card
+ *  visual language so it lines up with the Zod-derived sections.
+ *  Only renders when the resource has at least one custom field —
+ *  the inner component returns null otherwise, so this card adds
+ *  nothing to the DOM for resources without custom fields. */
+function CustomFieldsBlock({
+  resource,
+  values,
+  onChange,
+}: {
+  resource: string;
+  values: Record<string, unknown>;
+  onChange: (key: string, value: unknown) => void;
+}) {
+  const { fields } = useFieldMetadata(resource);
+  // Only render the Card when there are custom fields. Avoids an
+  // empty "Custom fields" header on resources with none.
+  if (fields.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Custom fields</CardTitle>
+        <CardDescription>
+          Workspace-defined fields. Manage these in Settings → Custom fields.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <CustomFieldsSection
+          resource={resource}
+          values={values}
+          onChange={onChange}
+          title=""
+        />
+      </CardContent>
+    </Card>
+  );
 }

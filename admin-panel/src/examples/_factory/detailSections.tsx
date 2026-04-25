@@ -9,7 +9,10 @@ import {
 } from "@/admin-primitives/Card";
 import { Badge } from "@/primitives/Badge";
 import { Sparkline } from "@/admin-primitives/charts/Sparkline";
+import { TimelineFeed } from "@/admin-primitives/TimelineFeed";
+import { CustomFieldsSection } from "@/admin-primitives/CustomFieldsSection";
 import { useAggregation } from "@/runtime/useAggregation";
+import { useFieldMetadata } from "@/runtime/useFieldMetadata";
 import type { AdminRegistry } from "@/shell/registry";
 import type { DomainFieldConfig } from "./buildDomainPlugin";
 import { renderValue } from "./renderValue";
@@ -674,6 +677,150 @@ export function RelatedRailCard({
           {loading && !data ? "…" : data?.count ?? 0}
         </div>
         <Icons.ChevronRight className="h-3 w-3 text-text-muted" />
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ========================================================================== */
+/* Activity tab + rail (TimelineFeed)                                          */
+/* ========================================================================== */
+
+/** Full per-record activity timeline (used as the "Activity" tab body).
+ *
+ *  Wraps `<TimelineFeed />` — which reads `/api/timeline/<resource>/<id>` —
+ *  in the standard Card chrome so it lines up visually with the other tab
+ *  panels. */
+export function ActivityTabPanel({
+  resource,
+  recordId,
+}: {
+  resource: string;
+  recordId: string;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Activity</CardTitle>
+        <CardDescription>
+          Every mutation, workflow transition, and comment on this record.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-3">
+        <TimelineFeed resource={resource} recordId={recordId} />
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Compact 10-event timeline shown in the right rail so users see recent
+ *  activity without switching tabs. */
+export function RecentActivityRailCard({
+  resource,
+  recordId,
+}: {
+  resource: string;
+  recordId: string;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Recent activity</CardTitle>
+      </CardHeader>
+      <CardContent className="p-2">
+        <TimelineFeed resource={resource} recordId={recordId} compact />
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ========================================================================== */
+/* Custom-fields rail (inline-editable)                                        */
+/* ========================================================================== */
+
+/** Right-rail card showing the workspace's custom fields for the resource,
+ *  inline-editable with optimistic write-through. PATCH the record via
+ *  `runtime.resources.update` on every change; on failure roll back to the
+ *  previous value and toast the error.
+ *
+ *  Returns null when the resource has zero custom fields so the card never
+ *  shows up empty. */
+export function CustomFieldsRailCard({
+  resource,
+  recordId,
+  record,
+  editable,
+}: {
+  resource: string;
+  recordId: string;
+  record: Record<string, unknown>;
+  editable: boolean;
+}) {
+  const runtime = useRuntime();
+  const { fields, loading } = useFieldMetadata(resource);
+
+  // Local override map — lets us optimistically reflect a pending write
+  // even before the underlying record refetches. Cleared per record.
+  const [overrides, setOverrides] = React.useState<Record<string, unknown>>({});
+  React.useEffect(() => {
+    setOverrides({});
+  }, [recordId, resource]);
+
+  if (loading) return null;
+  if (fields.length === 0) return null;
+
+  const values: Record<string, unknown> = { ...record, ...overrides };
+
+  const onChange = async (key: string, next: unknown): Promise<void> => {
+    if (!editable) return;
+    const prev = (record as Record<string, unknown>)[key];
+    // Optimistic: surface the new value immediately.
+    setOverrides((o) => ({ ...o, [key]: next }));
+    try {
+      await runtime.resources.update(resource, recordId, { [key]: next });
+      // Cache invalidation inside ResourceClient.update will trigger a
+      // refetch of the record; once that completes we can drop our
+      // override (the canonical value lives on `record` again).
+      setOverrides((o) => {
+        const { [key]: _drop, ...rest } = o;
+        return rest;
+      });
+    } catch (err) {
+      // Rollback to the previous value.
+      setOverrides((o) => ({ ...o, [key]: prev }));
+      // Then drop the override one tick later so the next render reads
+      // straight from the canonical record again.
+      queueMicrotask(() => {
+        setOverrides((o) => {
+          const { [key]: _drop, ...rest } = o;
+          return rest;
+        });
+      });
+      runtime.actions.toast({
+        title: "Couldn't save",
+        description: err instanceof Error ? err.message : String(err),
+        intent: "danger",
+      });
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Custom fields</CardTitle>
+        <CardDescription>
+          Workspace-defined fields. Manage them in Settings → Custom fields.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <CustomFieldsSection
+          resource={resource}
+          values={values}
+          onChange={onChange}
+          title=""
+          readOnly={!editable}
+          compact
+        />
       </CardContent>
     </Card>
   );

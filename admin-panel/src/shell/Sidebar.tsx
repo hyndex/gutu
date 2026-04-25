@@ -1,10 +1,11 @@
 import * as React from "react";
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown, Search, Star } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { NavIcon } from "./NavIcon";
 import type { AdminRegistry } from "./registry";
 import type { NavItem, NavSection } from "@/contracts/nav";
 import { navigateTo } from "@/views/useRoute";
+import { useFavorites, type Favorite } from "@/runtime/useFavorites";
 
 export interface SidebarProps {
   registry: AdminRegistry;
@@ -67,6 +68,14 @@ export function Sidebar({ registry, currentPath }: SidebarProps) {
       </div>
 
       <nav className="p-2 flex flex-col gap-3 overflow-y-auto">
+        {/* Favorites — fetched separately from /api/favorites; renders
+         *  nothing when the user has none.                              */}
+        <FavoritesSection
+          registry={registry}
+          currentPath={currentPath}
+          filter={needle}
+        />
+
         {filteredGroups.length === 0 ? (
           <div className="px-2 py-3 text-xs text-text-muted">
             No matches for “{filter}”.
@@ -84,6 +93,242 @@ export function Sidebar({ registry, currentPath }: SidebarProps) {
         )}
       </nav>
     </aside>
+  );
+}
+
+/* ----------------------------------------------------------- */
+/* Favorites — backed by /api/favorites (useFavorites hook).    */
+/* drag-reorder is post-v1                                       */
+/* ----------------------------------------------------------- */
+
+function FavoritesSection({
+  registry,
+  currentPath,
+  filter,
+}: {
+  registry: AdminRegistry;
+  currentPath: string;
+  filter: string;
+}) {
+  const fav = useFavorites();
+  const rows = fav.list();
+
+  // Build resource → base path map once per render — used to translate
+  // record/view favorites into hash routes.
+  const basePathMap = React.useMemo(
+    () => buildBasePathMap(registry),
+    [registry],
+  );
+
+  const resolved = React.useMemo(
+    () =>
+      rows
+        .map((f) => resolveFavorite(f, basePathMap))
+        .filter((x): x is ResolvedFavorite => !!x),
+    [rows, basePathMap],
+  );
+
+  const filtered = filter
+    ? resolved.filter(
+        (r) =>
+          r.label.toLowerCase().includes(filter) ||
+          r.path.toLowerCase().includes(filter),
+      )
+    : resolved;
+
+  // Empty: do not render the section header at all (per spec).
+  if (filtered.length === 0) return null;
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div
+        className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-text-muted uppercase tracking-wider"
+        aria-label="Favorites"
+      >
+        <Star className="h-3 w-3" aria-hidden />
+        Favorites
+      </div>
+      {filtered.map((f) => (
+        <FavoriteEntry
+          key={`${f.kind}:${f.targetId}`}
+          fav={f}
+          currentPath={currentPath}
+        />
+      ))}
+    </div>
+  );
+}
+
+interface ResolvedFavorite {
+  kind: Favorite["kind"];
+  targetId: string;
+  label: string;
+  icon: string | null;
+  /** For internal routes — the hash path to navigate to. */
+  path: string;
+  /** True when the link is an absolute URL (kind=link); the entry uses
+   *  a real anchor with target=_blank. */
+  external: boolean;
+}
+
+function resolveFavorite(
+  f: Favorite,
+  basePathMap: Record<string, string>,
+): ResolvedFavorite | null {
+  const fallbackLabel = f.label ?? labelFromTarget(f);
+
+  if (f.kind === "link") {
+    return {
+      kind: "link",
+      targetId: f.targetId,
+      label: fallbackLabel,
+      icon: f.icon,
+      path: f.targetId,
+      external: true,
+    };
+  }
+  if (f.kind === "page") {
+    return {
+      kind: "page",
+      targetId: f.targetId,
+      label: fallbackLabel,
+      icon: f.icon,
+      path: `/page/${f.targetId}`,
+      external: false,
+    };
+  }
+  if (f.kind === "record") {
+    // targetId convention: "<resource>:<recordId>"
+    const idx = f.targetId.indexOf(":");
+    if (idx === -1) return null;
+    const resource = f.targetId.slice(0, idx);
+    const recordId = f.targetId.slice(idx + 1);
+    const base = basePathMap[resource];
+    if (!base) return null; // resource not contributed by any plugin in this build
+    return {
+      kind: "record",
+      targetId: f.targetId,
+      label: fallbackLabel,
+      icon: f.icon,
+      path: `${base}/${recordId}`,
+      external: false,
+    };
+  }
+  if (f.kind === "view") {
+    // Saved view: navigate to the resource's list with ?view=<id>. We
+    // need to know which resource the view belongs to — look it up via
+    // the savedViews store synchronously cached on registry isn't
+    // possible here; fall back to the view id by scanning the saved
+    // views in localStorage. Cheap and read-only.
+    const viewId = f.targetId;
+    const resource = lookupViewResource(viewId);
+    const base = resource ? basePathMap[resource] : undefined;
+    if (!base) return null;
+    return {
+      kind: "view",
+      targetId: f.targetId,
+      label: fallbackLabel,
+      icon: f.icon,
+      path: `${base}?view=${encodeURIComponent(viewId)}`,
+      external: false,
+    };
+  }
+  return null;
+}
+
+function labelFromTarget(f: Favorite): string {
+  if (f.kind === "record") {
+    const idx = f.targetId.indexOf(":");
+    return idx === -1 ? f.targetId : f.targetId.slice(idx + 1);
+  }
+  return f.targetId;
+}
+
+/** Read-through against the saved-views localStorage cache to find the
+ *  resource that a view id belongs to. Avoids dragging the runtime
+ *  context into the Sidebar.                                            */
+function lookupViewResource(viewId: string): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const raw = window.localStorage.getItem("gutu-admin-saved-views");
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw) as {
+      views?: Record<string, { resource?: string }>;
+    };
+    return parsed.views?.[viewId]?.resource;
+  } catch {
+    return undefined;
+  }
+}
+
+function buildBasePathMap(registry: AdminRegistry): Record<string, string> {
+  const out: Record<string, string> = {};
+  const walk = (items: readonly NavItem[]) => {
+    for (const n of items) {
+      if (n.view && n.path) {
+        const v = registry.views[n.view];
+        if (
+          v &&
+          "resource" in v &&
+          typeof v.resource === "string" &&
+          v.type === "list"
+        ) {
+          out[v.resource] = n.path;
+        }
+      }
+      if (n.children) walk(n.children);
+    }
+  };
+  walk(registry.nav);
+  return out;
+}
+
+function FavoriteEntry({
+  fav,
+  currentPath,
+}: {
+  fav: ResolvedFavorite;
+  currentPath: string;
+}) {
+  const active =
+    !fav.external &&
+    (currentPath === fav.path ||
+      currentPath.startsWith(fav.path.split("?")[0] + "/"));
+
+  if (fav.external) {
+    return (
+      <a
+        href={fav.path}
+        target="_blank"
+        rel="noreferrer noopener"
+        className={cn(
+          "group flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+          "text-text-secondary hover:text-text-primary hover:bg-surface-2",
+        )}
+      >
+        <NavIcon name={fav.icon ?? "Star"} className="h-4 w-4 shrink-0" />
+        <span className="flex-1 min-w-0 truncate">{fav.label}</span>
+      </a>
+    );
+  }
+  return (
+    <a
+      href={`#${fav.path}`}
+      onClick={(e) => {
+        e.preventDefault();
+        navigateTo(fav.path);
+      }}
+      className={cn(
+        "group flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+        active
+          ? "bg-accent-subtle text-accent font-medium"
+          : "text-text-secondary hover:text-text-primary hover:bg-surface-2",
+      )}
+      aria-current={active ? "page" : undefined}
+    >
+      <NavIcon name={fav.icon ?? "Star"} className="h-4 w-4 shrink-0" />
+      <span className="flex-1 min-w-0 truncate">{fav.label}</span>
+    </a>
   );
 }
 

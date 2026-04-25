@@ -33,7 +33,14 @@ function start(
   return child;
 }
 
-const api = start("api", "bun", ["run", "dev"], path.join(root, "backend"), "35");
+// Use the plain `start` script (no `--hot`) instead of `dev` because
+// bun's hot mode auto-spawns a watcher daemon that respawns on file
+// changes — convenient for normal dev, but it conflicts with the
+// Claude_Preview launcher which requires a single deterministic
+// process. Set DEV_BACKEND_HOT=1 to opt back in for local interactive
+// dev outside the preview tool.
+const apiScript = process.env.DEV_BACKEND_HOT === "1" ? "dev" : "start";
+const api = start("api", "bun", ["run", apiScript], path.join(root, "backend"), "35");
 const ui = start("ui", "bun", ["x", "vite"], root, "36");
 
 function shutdown() {

@@ -15,6 +15,17 @@ export class RestAdapter implements ResourceAdapter {
     if (query.search) p.set("search", query.search);
     for (const [k, v] of Object.entries(query.filters ?? {})) {
       if (v === undefined || v === null || v === "") continue;
+      // Special control flags — promote to top-level query params
+      // rather than `filter[__x]` so the backend reads them as
+      // ?includeDeleted=1 / ?deletedOnly=1.
+      if (k === "__includeDeleted" && (v === "1" || v === true)) {
+        p.set("includeDeleted", "1");
+        continue;
+      }
+      if (k === "__deletedOnly" && (v === "1" || v === true)) {
+        p.set("deletedOnly", "1");
+        continue;
+      }
       if (Array.isArray(v)) {
         if (v.length === 0) continue;
         p.set(`filter[${k}]`, String(v[0])); // first value — backend supports single-value filters

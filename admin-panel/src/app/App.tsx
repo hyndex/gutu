@@ -60,6 +60,7 @@ import {
   searchPlugin,
   officePlugin,
   mailPlugin,
+  adminToolsPlugin,
 } from "@/examples";
 
 /** Consumer-level wiring. The shell, router, and every view is driven from
@@ -123,8 +124,9 @@ const plugins = [
   executionWorkspacesPlugin,
   searchPlugin,
   auditPlugin,
-  officePlugin, // owns /spreadsheets, /documents, /slides, /pages, /whiteboards
-  mailPlugin,   // owns /mail/* — Gutu Mail
+  officePlugin,     // /spreadsheets, /documents, /slides, /pages, /whiteboards
+  mailPlugin,       // /mail/* — Gutu Mail
+  adminToolsPlugin, // /settings/webhooks, /settings/api-tokens
 ];
 
 export function App() {

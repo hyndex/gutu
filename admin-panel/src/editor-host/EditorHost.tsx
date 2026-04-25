@@ -14,6 +14,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { EditorKind, EditorRecord } from "./types";
 import { EditorErrorBoundary } from "./EditorErrorBoundary";
+import { PresenceAvatars, type PresencePeer } from "./PresenceAvatars";
+import { ShareDialog } from "./ShareDialog";
 
 interface EditorHostProps {
   kind: EditorKind;
@@ -22,6 +24,7 @@ interface EditorHostProps {
 }
 
 type SaveStatus = "loading" | "ready" | "saving" | "saved" | "retrying" | "error";
+type WsStatus = "connecting" | "connected" | "disconnected";
 
 interface FrameMessage {
   type?: string;
@@ -29,12 +32,16 @@ interface FrameMessage {
   id?: string;
   status?: SaveStatus;
   error?: string;
+  peers?: PresencePeer[];
 }
 
 function EditorHostInner({ kind, record, onClose }: EditorHostProps): React.JSX.Element {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [status, setStatus] = useState<SaveStatus>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [peers, setPeers] = useState<PresencePeer[]>([]);
+  const [wsStatus, setWsStatus] = useState<WsStatus>("connecting");
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     const handler = (e: MessageEvent<FrameMessage>) => {
@@ -50,6 +57,12 @@ function EditorHostInner({ kind, record, onClose }: EditorHostProps): React.JSX.
           if (data.status) setStatus(data.status);
           if (data.status === "error" && data.error) setErrorMsg(data.error);
           if (data.status === "saved") setErrorMsg(null);
+          break;
+        case "editor-frame-presence":
+          if (Array.isArray(data.peers)) setPeers(data.peers);
+          if (data.status === "connecting" || data.status === "connected" || data.status === "disconnected") {
+            setWsStatus(data.status);
+          }
           break;
       }
     };
@@ -80,6 +93,7 @@ function EditorHostInner({ kind, record, onClose }: EditorHostProps): React.JSX.
         }}
       >
         <strong style={{ flex: 1 }}>{record.title}</strong>
+        <PresenceAvatars peers={peers} status={wsStatus} />
         <span
           aria-live="polite"
           role="status"
@@ -87,6 +101,23 @@ function EditorHostInner({ kind, record, onClose }: EditorHostProps): React.JSX.
         >
           {statusLabel(status)}
         </span>
+        <button
+          type="button"
+          onClick={() => setShareOpen(true)}
+          style={{
+            marginRight: 8,
+            padding: "4px 12px",
+            fontSize: 13,
+            background: "#2563eb",
+            color: "#fff",
+            border: 0,
+            borderRadius: 4,
+            cursor: "pointer",
+            fontWeight: 500,
+          }}
+        >
+          Share
+        </button>
         <button
           type="button"
           onClick={triggerSave}
@@ -101,6 +132,13 @@ function EditorHostInner({ kind, record, onClose }: EditorHostProps): React.JSX.
           </button>
         )}
       </header>
+      <ShareDialog
+        kind={kind}
+        id={record.id}
+        title={record.title}
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+      />
       <iframe
         ref={iframeRef}
         title={`${kind} editor`}

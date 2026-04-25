@@ -3,6 +3,8 @@ import { Layers, Plus, RefreshCw } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { ListView as ListViewDef, ColumnDescriptor } from "@/contracts/views";
 import type { FilterTree, SavedView } from "@/contracts/saved-views";
+import { useUrlParam, useUrlJsonParam } from "@/runtime/useUrlState";
+import { useFieldMetadata } from "@/runtime/useFieldMetadata";
 import { PageHeader } from "@/admin-primitives/PageHeader";
 import { Toolbar, ToolbarSeparator } from "@/admin-primitives/Toolbar";
 import { FilterBar } from "@/admin-primitives/FilterBar";
@@ -62,45 +64,153 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
   const runtime = useRuntime();
   const registries = useRegistries();
 
-  /* ---------------- saved view state ---------------- */
+  /* ---------------- saved view state (URL-synced) ----------------
+   *
+   *  The active saved-view id lives in `?view=<id>` so a user can paste
+   *  the URL into Slack and have a colleague land on the SAME filtered
+   *  view. Falls back to the user's default if no `?view` param is
+   *  present. Updates flow back to the URL via `useUrlParam` so future
+   *  state changes (selecting a different saved view) update the URL.
+   *  Same pattern Twenty / Linear use for shareable views. */
+  const [urlViewId, setUrlViewId] = useUrlParam("view");
   const defaultView = runtime.savedViews.getDefault(view.resource);
-  const [activeSavedViewId, setActiveSavedViewId] = React.useState<string | null>(
-    defaultView?.id ?? null,
+  const initialViewId = urlViewId ?? defaultView?.id ?? null;
+  const [activeSavedViewId, setActiveSavedViewIdState] = React.useState<string | null>(initialViewId);
+  // When the user selects a different saved view, mirror it to the URL.
+  const setActiveSavedViewId = React.useCallback(
+    (id: string | null) => {
+      setActiveSavedViewIdState(id);
+      setUrlViewId(id);
+    },
+    [setUrlViewId],
   );
+  // When the URL ?view= changes externally (back/forward, paste-link),
+  // re-apply it.
+  React.useEffect(() => {
+    if (urlViewId !== activeSavedViewId) {
+      setActiveSavedViewIdState(urlViewId ?? null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlViewId]);
   const activeSavedView = activeSavedViewId
     ? runtime.savedViews.get(activeSavedViewId)
     : null;
 
-  /* ---------------- query state (bootstrapped from saved view) ---------------- */
+  /* ---------------- query state ----------------
+   *
+   *  We sync THE FOLLOWING to the URL hash query string so a user can
+   *  paste a URL into Slack and a colleague lands on the same view:
+   *    ?view=<savedViewId>          (already wired above)
+   *    ?q=<text>                    free-text search
+   *    ?sort=<json>                 sort spec
+   *    ?filter=<json>               filter tree
+   *    ?showDeleted=1               include soft-deleted rows
+   *  Falls back to saved-view defaults when params absent.
+   *
+   *  Twenty / Linear / GitHub all do this; the previous code kept the
+   *  filter in React state which made shareable filtered views
+   *  impossible. */
+  const [urlSearch, setUrlSearch] = useUrlParam("q");
+  const [urlSort, setUrlSort] = useUrlJsonParam<{ field: string; dir: "asc" | "desc" }>("sort");
+  const [urlFilter, setUrlFilter] = useUrlJsonParam<FilterTree>("filter");
+  const [urlShowDeleted, setUrlShowDeleted] = useUrlParam("deleted");
+
   const [page, setPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(
     activeSavedView?.pageSize ?? view.pageSize ?? 25,
   );
-  const [sort, setSort] = React.useState(
-    activeSavedView?.sort?.[0] ?? view.defaultSort ?? null,
+  const [sort, setSortState] = React.useState(
+    urlSort ?? activeSavedView?.sort?.[0] ?? view.defaultSort ?? null,
   );
-  const [search, setSearch] = React.useState("");
+  const setSort: typeof setSortState = (v) => {
+    const next = typeof v === "function" ? v(sort) : v;
+    setSortState(next);
+    setUrlSort(next ?? null);
+  };
+  const [search, setSearchState] = React.useState(urlSearch ?? "");
+  const setSearch: typeof setSearchState = (v) => {
+    const next = typeof v === "function" ? v(search) : v;
+    setSearchState(next);
+    setUrlSearch(next || null);
+  };
   const [filters, setFilters] = React.useState<Record<string, unknown>>({});
-  const [filterTree, setFilterTree] = React.useState<FilterTree | undefined>(
-    activeSavedView?.filter,
+  const [filterTree, setFilterTreeState] = React.useState<FilterTree | undefined>(
+    urlFilter ?? activeSavedView?.filter,
   );
+  const setFilterTree: typeof setFilterTreeState = (v) => {
+    const next = typeof v === "function" ? v(filterTree) : v;
+    setFilterTreeState(next);
+    setUrlFilter(next ?? null);
+  };
   const [groupBy, setGroupBy] = React.useState<string | null>(
     activeSavedView?.grouping ?? null,
   );
   const [density, setDensity] = React.useState<"comfortable" | "compact" | "dense">(
     activeSavedView?.density ?? "compact",
   );
+  const [showDeleted, setShowDeletedState] = React.useState<boolean>(urlShowDeleted === "1");
+  const setShowDeleted = (v: boolean) => {
+    setShowDeletedState(v);
+    setUrlShowDeleted(v ? "1" : null);
+  };
   const [selection, setSelection] = React.useState<Set<string>>(new Set());
 
-  /* ---------------- column state ---------------- */
+  // When the URL changes externally (paste-link, back/forward), re-apply.
+  React.useEffect(() => {
+    if (urlSort && JSON.stringify(urlSort) !== JSON.stringify(sort)) setSortState(urlSort);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlSort]);
+  React.useEffect(() => {
+    if (urlFilter && JSON.stringify(urlFilter) !== JSON.stringify(filterTree)) setFilterTreeState(urlFilter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlFilter]);
+  React.useEffect(() => {
+    if ((urlSearch ?? "") !== search) setSearchState(urlSearch ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlSearch]);
+
+  /* ---------------- column state ----------------
+   *
+   *  Effective column set = view.columns (Zod-derived, code-defined)
+   *  + custom fields declared for this resource via the Settings UI.
+   *  Custom fields are tagged with __custom: true so the cell renderer
+   *  knows to look up the field by key in the row body. */
+  const { fields: customFields } = useFieldMetadata(view.resource);
+  const customColumns: ColumnDescriptor[] = React.useMemo(
+    () =>
+      customFields.map((f) => ({
+        field: f.key,
+        label: f.label,
+        // Map the field-metadata kind onto the platform's smaller
+        // ColumnDescriptor.kind enum (FieldDescriptor["kind"]).
+        // Custom-field types we don't have a direct match for fall
+        // back to "text" — the cell renderer is permissive.
+        kind: ((["text","email","phone","url","long-text","rich-text"].includes(f.kind) ? "text"
+              : f.kind === "currency" ? "currency"
+              : f.kind === "datetime" || f.kind === "date" ? "datetime"
+              : f.kind === "boolean" ? "boolean"
+              : f.kind === "number" ? "number"
+              : f.kind === "select" ? "enum"
+              : f.kind === "multiselect" ? "multi-enum"
+              : f.kind === "relation" ? "reference"
+              : "text") as ColumnDescriptor["kind"]),
+        options: f.options.options as ColumnDescriptor["options"],
+      })),
+    [customFields],
+  );
+  const effectiveColumns: ColumnDescriptor[] = React.useMemo(
+    () => [...view.columns, ...customColumns],
+    [view.columns, customColumns],
+  );
+
   const allColumnOptions: ColumnOption[] = React.useMemo(
     () =>
-      view.columns.map((c) => ({
+      effectiveColumns.map((c) => ({
         field: c.field,
         label: c.label ?? humanize(c.field),
         pinnable: true,
       })),
-    [view.columns],
+    [effectiveColumns],
   );
   const [columnConfig, setColumnConfig] = React.useState<ColumnConfig[]>(() =>
     allColumnOptions.map((c) => ({ field: c.field, visible: true, pinned: null })),
@@ -131,9 +241,9 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
       pageSize,
       sort: sort ?? undefined,
       search: search || undefined,
-      filters,
+      filters: { ...filters, ...(showDeleted ? { __includeDeleted: "1" } : {}) },
     }),
-    [page, pageSize, sort, search, filters],
+    [page, pageSize, sort, search, filters, showDeleted],
   );
   const { data, loading, error, refetch } = useList(view.resource, query);
 
@@ -145,13 +255,13 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
   /* ---------------- advanced filter + groupby (client-side) ---------------- */
   const qbFields: QBField[] = React.useMemo(
     () =>
-      view.columns.map((c) => ({
+      effectiveColumns.map((c) => ({
         field: c.field,
         label: c.label ?? humanize(c.field),
         kind: ((c.kind ?? "text") as QBField["kind"]),
         options: c.options,
       })),
-    [view.columns],
+    [effectiveColumns],
   );
 
   const filteredRows = React.useMemo(() => {
@@ -189,7 +299,7 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
     );
     const ordered = columnConfig
       .filter((c) => visibleFields.has(c.field))
-      .map((c) => view.columns.find((vc) => vc.field === c.field)!)
+      .map((c) => effectiveColumns.find((vc) => vc.field === c.field)!)
       .filter(Boolean);
 
     const cols: ColumnDef<Record<string, unknown>, unknown>[] = [];
@@ -429,6 +539,19 @@ export function ListViewRenderer({ view, basePath }: ListViewRendererProps) {
           fileName={view.resource.replace(/\./g, "-")}
           formats={["csv", "json", "xlsx"]}
         />
+        <ToolbarSeparator />
+        {/*  Soft-delete visibility toggle. Backend sends only active
+             rows by default (status='deleted' filtered out); flipping
+             this on adds ?includeDeleted=1 to the list query. The URL
+             carries the flag so the toggled state is shareable. */}
+        <Button
+          variant={showDeleted ? "secondary" : "ghost"}
+          size="sm"
+          onClick={() => setShowDeleted(!showDeleted)}
+          title={showDeleted ? "Hide deleted" : "Show deleted records"}
+        >
+          {showDeleted ? "Hide deleted" : "Show deleted"}
+        </Button>
       </Toolbar>
 
       {error ? (

@@ -184,3 +184,100 @@ export async function postSnapshot(
   if (!res.ok) throw await readErr(res);
   return (await res.json()) as { size: number; etag: string };
 }
+
+/* ---------------- ACL / sharing ---------------- */
+
+export type AclSubjectKind = "user" | "tenant" | "public-link" | "public";
+export type AclRole = "owner" | "editor" | "viewer";
+
+export interface AclEntry {
+  resource: string;
+  recordId: string;
+  subjectKind: AclSubjectKind;
+  subjectId: string;
+  role: AclRole;
+  grantedBy: string;
+  grantedAt: string;
+  /** Server-resolved display info (only present for `user` subjects). */
+  displayName?: string;
+  email?: string | null;
+}
+
+export interface AclResponse {
+  rows: AclEntry[];
+  /** The current user's role on this doc — for hiding mutate UI. */
+  selfRole: AclRole;
+}
+
+export async function listAcl(kind: EditorKind, id: string, signal?: AbortSignal): Promise<AclResponse> {
+  const res = await fetch(`${apiBase()}/editors/${RESOURCE_FOR[kind]}/${id}/acl`, {
+    headers: getAuthHeaders(),
+    credentials: "include",
+    ...(signal && { signal }),
+  });
+  if (!res.ok) throw await readErr(res);
+  return (await res.json()) as AclResponse;
+}
+
+export async function shareByEmail(
+  kind: EditorKind,
+  id: string,
+  emails: string[],
+  role: AclRole,
+  signal?: AbortSignal,
+): Promise<{
+  granted: Array<{ email: string; userId: string; role: AclRole }>;
+  notFound: string[];
+}> {
+  const res = await fetch(`${apiBase()}/editors/${RESOURCE_FOR[kind]}/${id}/share`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    credentials: "include",
+    body: JSON.stringify({ emails, role }),
+    ...(signal && { signal }),
+  });
+  if (!res.ok) throw await readErr(res);
+  return (await res.json()) as {
+    granted: Array<{ email: string; userId: string; role: AclRole }>;
+    notFound: string[];
+  };
+}
+
+export async function revokeAclEntry(
+  kind: EditorKind,
+  id: string,
+  subjectKind: AclSubjectKind,
+  subjectId: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  const res = await fetch(
+    `${apiBase()}/editors/${RESOURCE_FOR[kind]}/${id}/acl/${subjectKind}/${encodeURIComponent(subjectId)}`,
+    {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+      credentials: "include",
+      ...(signal && { signal }),
+    },
+  );
+  if (!res.ok) throw await readErr(res);
+}
+
+export async function createPublicLink(
+  kind: EditorKind,
+  id: string,
+  role: AclRole = "viewer",
+  signal?: AbortSignal,
+): Promise<{ token: string; role: AclRole }> {
+  const res = await fetch(
+    `${apiBase()}/editors/${RESOURCE_FOR[kind]}/${id}/public-link`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      credentials: "include",
+      body: JSON.stringify({ role }),
+      ...(signal && { signal }),
+    },
+  );
+  if (!res.ok) throw await readErr(res);
+  return (await res.json()) as { token: string; role: AclRole };
+}

@@ -18,6 +18,7 @@ import { ErrorRecoveryFramework } from "./ErrorRecoveryFramework";
 import { FreshnessIndicator } from "./FreshnessIndicator";
 import { cn } from "@/lib/cn";
 import { Breadcrumbs } from "./Breadcrumbs";
+import { StarRecordButton } from "./StarRecordButton";
 import type { Intent } from "@/primitives/Badge";
 import type { ReactNode } from "react";
 
@@ -130,6 +131,12 @@ export interface RichDetailPageProps {
   /** Extra content between the hero and the tabs (e.g. alerts). */
   beforeTabs?: ReactNode;
 
+  /** When set, the hero renders a Star toggle next to the title that
+   *  bookmarks this record into the user's sidebar Favorites section.
+   *  `resource` is the fully-qualified id (e.g. "crm.contact"); the
+   *  favorite is stored as `(record, "<resource>:<recordId>")`. */
+  favoriteTarget?: { resource: string; recordId: string; label?: string };
+
   className?: string;
 }
 
@@ -153,6 +160,7 @@ export function RichDetailPage({
   defaultTabId,
   rail,
   beforeTabs,
+  favoriteTarget,
   className,
 }: RichDetailPageProps) {
   const visibleTabs = React.useMemo(() => tabs.filter((t) => !t.hidden), [tabs]);
@@ -205,6 +213,18 @@ export function RichDetailPage({
                     <h1 className="text-xl font-semibold text-text-primary truncate">
                       {title}
                     </h1>
+                    {favoriteTarget && (
+                      <StarRecordButton
+                        resource={favoriteTarget.resource}
+                        recordId={favoriteTarget.recordId}
+                        label={
+                          favoriteTarget.label ??
+                          (typeof title === "string" ? title : undefined)
+                        }
+                        size="xs"
+                        className="shrink-0"
+                      />
+                    )}
                     {status && (
                       <Badge intent={status.intent}>{status.label}</Badge>
                     )}

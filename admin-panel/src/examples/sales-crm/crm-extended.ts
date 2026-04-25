@@ -840,6 +840,193 @@ export const salesStageListView = defineListView({
 /* Exports                                                           */
 /* ================================================================ */
 
+/** Tasks — first-class CRM resource for actionable to-dos.
+ *
+ *  Polymorphic via `aboutResource` + `aboutId` so a task can attach
+ *  to any record type (contact, lead, opportunity, deal, …) — same
+ *  pattern Twenty uses with `taskTarget`. The frontend universal
+ *  record-picker (Wave 6) consumes this.
+ *
+ *  Status workflow: open → in-progress → done | cancelled. Owners
+ *  see all their tasks under /crm/tasks; record detail pages render
+ *  the `aboutResource:aboutId`-filtered subset in their Activity tab. */
+const TaskSchema = z.object({
+  id: z.string(),
+  code: z.string().optional(),
+  title: z.string(),
+  description: z.string().optional(),
+  status: z.enum(["open", "in-progress", "done", "cancelled"]),
+  priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
+  dueAt: z.string().optional(),
+  completedAt: z.string().optional(),
+  owner: z.string(),
+  assignee: z.string().optional(),
+  // Polymorphic relation: which record this task is "about".
+  aboutResource: z.string().optional(),
+  aboutId: z.string().optional(),
+  aboutLabel: z.string().optional(),
+  tags: z.array(z.string()).default([]),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+const taskResource = tagSeed(
+  defineResource({
+    id: "crm.task",
+    singular: "Task",
+    plural: "Tasks",
+    schema: TaskSchema,
+    displayField: "title",
+    searchable: ["title", "description", "owner", "assignee", "aboutLabel"],
+    icon: "CheckSquare",
+  }),
+  (function seedTasks(n: number): Record<string, unknown>[] {
+    const owners = ["chinmoy@gutu.dev", "ada@gutu.dev", "marcus@gutu.dev", "priya@gutu.dev"];
+    const titles = [
+      "Follow up on demo feedback",
+      "Send NDA for review",
+      "Schedule pricing call",
+      "Draft proposal v2",
+      "Confirm POC timeline",
+      "Forward case study",
+      "Loop in security team",
+      "Confirm renewal date",
+    ];
+    const statuses = ["open", "in-progress", "done", "cancelled"] as const;
+    const priorities = ["low", "medium", "high", "urgent"] as const;
+    const out: Record<string, unknown>[] = [];
+    for (let i = 0; i < n; i++) {
+      const t = new Date(Date.now() - i * 86400_000 * 0.6);
+      const due = new Date(Date.now() + (i % 7) * 86400_000);
+      out.push({
+        id: `task_${1000 + i}`,
+        code: `TSK-${String(1000 + i).padStart(5, "0")}`,
+        title: titles[i % titles.length],
+        description: i % 3 === 0 ? "" : "Capture the action items from yesterday's call and assign owners.",
+        status: statuses[i % statuses.length],
+        priority: priorities[i % priorities.length],
+        dueAt: due.toISOString(),
+        completedAt: statuses[i % statuses.length] === "done" ? t.toISOString() : undefined,
+        owner: owners[i % owners.length],
+        assignee: owners[(i + 1) % owners.length],
+        aboutResource: i % 2 === 0 ? "crm.contact" : "crm.opportunity",
+        aboutId: i % 2 === 0 ? `c_${(i % 30) + 1}` : `opp_${1000 + (i % 12)}`,
+        aboutLabel: i % 2 === 0 ? `Contact #${(i % 30) + 1}` : `Opportunity ${1000 + (i % 12)}`,
+        tags: i % 3 === 0 ? ["follow-up"] : i % 4 === 0 ? ["urgent", "vip"] : [],
+        createdAt: t.toISOString(),
+        updatedAt: t.toISOString(),
+      });
+    }
+    return out;
+  })(20),
+);
+
+/** Calls — first-class CRM resource for phone/video activity.
+ *
+ *  Captures who, when, with whom, outcome, recording link, duration.
+ *  Same polymorphic relation as tasks (aboutResource + aboutId) so a
+ *  call can be logged against any record. */
+const CallSchema = z.object({
+  id: z.string(),
+  code: z.string().optional(),
+  subject: z.string(),
+  direction: z.enum(["inbound", "outbound"]),
+  status: z.enum(["scheduled", "completed", "missed", "voicemail", "cancelled"]),
+  occurredAt: z.string(),
+  durationSec: z.number().min(0).default(0),
+  fromUser: z.string(),
+  withContact: z.string().optional(),
+  withContactId: z.string().optional(),
+  outcome: z.enum(["positive", "neutral", "negative"]).optional(),
+  recordingUrl: z.string().url().optional(),
+  notes: z.string().optional(),
+  aboutResource: z.string().optional(),
+  aboutId: z.string().optional(),
+  aboutLabel: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+const callResource = tagSeed(
+  defineResource({
+    id: "crm.call",
+    singular: "Call",
+    plural: "Calls",
+    schema: CallSchema,
+    displayField: "subject",
+    searchable: ["subject", "withContact", "fromUser", "notes"],
+    icon: "Phone",
+  }),
+  (function seedCalls(n: number): Record<string, unknown>[] {
+    const owners = ["chinmoy@gutu.dev", "ada@gutu.dev", "marcus@gutu.dev"];
+    const subjects = [
+      "Discovery call",
+      "Pricing follow-up",
+      "Renewal check-in",
+      "Quarterly review",
+      "Stakeholder intro",
+      "Technical deep-dive",
+    ];
+    const out: Record<string, unknown>[] = [];
+    for (let i = 0; i < n; i++) {
+      const t = new Date(Date.now() - i * 86400_000 * 0.4);
+      const dir = i % 2 === 0 ? "outbound" : "inbound";
+      out.push({
+        id: `call_${2000 + i}`,
+        code: `CL-${String(2000 + i).padStart(5, "0")}`,
+        subject: subjects[i % subjects.length],
+        direction: dir,
+        status: i % 7 === 0 ? "missed" : "completed",
+        occurredAt: t.toISOString(),
+        durationSec: 120 + (i % 50) * 30,
+        fromUser: owners[i % owners.length],
+        withContact: ["Sarah Lin", "Marcus Kahn", "Priya Singh", "Tom Reilly"][i % 4],
+        withContactId: `c_${(i % 30) + 1}`,
+        outcome: ["positive", "neutral", "negative"][i % 3] as "positive" | "neutral" | "negative",
+        notes: i % 4 === 0 ? "" : "Logged action items in CRM. Sent follow-up email with deck.",
+        aboutResource: "crm.contact",
+        aboutId: `c_${(i % 30) + 1}`,
+        aboutLabel: `Contact #${(i % 30) + 1}`,
+        createdAt: t.toISOString(),
+        updatedAt: t.toISOString(),
+      });
+    }
+    return out;
+  })(15),
+);
+
+const taskListView = defineListView({
+  id: "crm.tasks.list",
+  title: "Tasks",
+  resource: "crm.task",
+  columns: [
+    { label: "Task", field: "title" },
+    { label: "Status", field: "status", kind: "enum" },
+    { label: "Priority", field: "priority", kind: "enum" },
+    { label: "Assignee", field: "assignee" },
+    { label: "Due", field: "dueAt", kind: "datetime" },
+    { label: "Linked to", field: "aboutLabel" },
+  ],
+  pageSize: 25,
+  defaultSort: { field: "dueAt", dir: "asc" },
+});
+
+const callListView = defineListView({
+  id: "crm.calls.list",
+  title: "Calls",
+  resource: "crm.call",
+  columns: [
+    { label: "Subject", field: "subject" },
+    { label: "Direction", field: "direction", kind: "enum" },
+    { label: "Status", field: "status", kind: "enum" },
+    { label: "With", field: "withContact" },
+    { label: "When", field: "occurredAt", kind: "datetime" },
+    { label: "Duration", field: "durationSec", kind: "number" },
+  ],
+  pageSize: 25,
+  defaultSort: { field: "occurredAt", dir: "desc" },
+});
+
 export const CRM_EXTENDED_RESOURCES: readonly ResourceDefinition[] = [
   leadResource,
   opportunityResource,
@@ -849,6 +1036,8 @@ export const CRM_EXTENDED_RESOURCES: readonly ResourceDefinition[] = [
   competitorResource,
   marketSegmentResource,
   salesStageResource,
+  taskResource,
+  callResource,
 ];
 
 /* ================================================================ */
@@ -989,6 +1178,34 @@ const salesStageDetailView = detailViewFromZod({
   pluginLabel: "CRM", path: "/crm/sales-stages", icon: "Settings2",
   schema: SalesStageSchema, displayField: "label",
 });
+const taskFormView = formViewFromZod({
+  id: "crm.task.form",
+  title: "Task",
+  resource: "crm.task",
+  schema: TaskSchema,
+  exclude: ["id", "code", "createdAt", "updatedAt", "completedAt"],
+  defaults: { status: "open", priority: "medium", tags: [] },
+  columns: 2,
+});
+const taskDetailView = detailViewFromZod({
+  resource: "crm.task", singular: "Task", plural: "Tasks",
+  pluginLabel: "CRM", path: "/crm/tasks", icon: "CheckSquare",
+  schema: TaskSchema, displayField: "title",
+});
+const callFormView = formViewFromZod({
+  id: "crm.call.form",
+  title: "Call",
+  resource: "crm.call",
+  schema: CallSchema,
+  exclude: ["id", "code", "createdAt", "updatedAt"],
+  defaults: { direction: "outbound", status: "completed", durationSec: 0 },
+  columns: 2,
+});
+const callDetailView = detailViewFromZod({
+  resource: "crm.call", singular: "Call", plural: "Calls",
+  pluginLabel: "CRM", path: "/crm/calls", icon: "Phone",
+  schema: CallSchema, displayField: "subject",
+});
 
 export const CRM_EXTENDED_VIEWS: readonly View[] = [
   leadListView,
@@ -1015,4 +1232,10 @@ export const CRM_EXTENDED_VIEWS: readonly View[] = [
   salesStageListView,
   salesStageFormView,
   salesStageDetailView,
+  taskListView,
+  taskFormView,
+  taskDetailView,
+  callListView,
+  callFormView,
+  callDetailView,
 ];

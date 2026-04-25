@@ -2,6 +2,7 @@
 export { bookingPlugin } from "./booking/plugin";
 export { auditPlugin } from "./audit/plugin";
 export { platformCorePlugin } from "./platform-core/plugin";
+export { adminToolsPlugin } from "./admin-tools/plugin";
 
 // Sales & CRM category — rewritten with rich, production-grade pages.
 export {

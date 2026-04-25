@@ -14,7 +14,6 @@ import {
   CardTitle,
 } from "@/admin-primitives";
 import { Badge, type Intent } from "@/primitives/Badge";
-import { Timeline } from "@/admin-primitives/Timeline";
 import { useRecord } from "@/runtime/hooks";
 import { useLiveAudit } from "@/runtime/audit";
 import { useHash, navigateTo } from "@/views/useRoute";
@@ -28,6 +27,9 @@ import {
   BIPanel,
   AutoConnectionsPanel,
   ActionsPanel,
+  ActivityTabPanel,
+  RecentActivityRailCard,
+  CustomFieldsRailCard,
 } from "./detailSections";
 import { useRegistry, type AdminRegistry } from "@/shell/registry";
 import type { NavItem } from "@/contracts/nav";
@@ -285,33 +287,14 @@ function RichZodDetailPage({ args }: { args: DetailFromZodArgs }) {
         {
           id: "activity",
           label: "Activity",
-          count: events.length,
-          render: () =>
-            events.length === 0 ? (
-              <TabEmpty
-                title="No activity yet"
-                description="Every mutation to this record will appear here."
-              />
-            ) : (
-              <Card>
-                <CardContent className="p-3">
-                  <Timeline
-                    items={events.slice(0, 30).map((e) => ({
-                      id: e.id,
-                      title: e.action,
-                      description: e.actor,
-                      occurredAt: new Date(e.occurredAt),
-                      intent:
-                        e.level === "error"
-                          ? "danger"
-                          : e.level === "warn"
-                            ? "warning"
-                            : "info",
-                    }))}
-                  />
-                </CardContent>
-              </Card>
-            ),
+          // Per-record activity feed — backed by `/api/timeline/<resource>/<id>`.
+          // The audit-events count is the closest live signal we have for
+          // "is there anything here", so we surface it as the badge while
+          // the actual feed loads its own data.
+          count: events.length || undefined,
+          render: () => (
+            <ActivityTabPanel resource={args.resource} recordId={id} />
+          ),
         },
         {
           id: "audit",
@@ -405,6 +388,35 @@ function RichZodDetailPage({ args }: { args: DetailFromZodArgs }) {
                   value: (rec.owner as string) ?? "—",
                 },
               ]}
+            />
+          ),
+        },
+        // Custom fields rail — auto-renders only when the resource has
+        // fields registered in field_metadata. Inline-editable with
+        // optimistic write-through; rolls back + toasts on failure.
+        // The component itself returns null when fields.length === 0.
+        {
+          id: "custom-fields",
+          priority: 80,
+          render: () => (
+            <CustomFieldsRailCard
+              resource={args.resource}
+              recordId={id}
+              record={rec}
+              editable={!args.readOnly}
+            />
+          ),
+        },
+        // Recent-activity rail — last 10 events from the per-record
+        // timeline so users can see what changed without switching to
+        // the Activity tab.
+        {
+          id: "recent-activity",
+          priority: 50,
+          render: () => (
+            <RecentActivityRailCard
+              resource={args.resource}
+              recordId={id}
             />
           ),
         },

@@ -11,6 +11,7 @@ import {
 } from "@/primitives/DropdownMenu";
 import { cn } from "@/lib/cn";
 import { useRuntime } from "@/runtime/context";
+import { useFavorites } from "@/runtime/useFavorites";
 import type { SavedView } from "@/contracts/saved-views";
 
 export interface SavedViewManagerProps {
@@ -42,6 +43,7 @@ export function SavedViewManager({
   className,
 }: SavedViewManagerProps) {
   const { savedViews, analytics } = useRuntime();
+  const favorites = useFavorites();
   const [, rerender] = React.useReducer((n) => n + 1, 0);
   const [creating, setCreating] = React.useState(false);
   const [label, setLabel] = React.useState("");
@@ -133,7 +135,9 @@ export function SavedViewManager({
                 <span className={cn(active && "ml-[22px]")}>All records (default)</span>
               </button>
             </li>
-            {views.map((v) => (
+            {views.map((v) => {
+              const starred = favorites.isFavorite("view", v.id);
+              return (
               <li key={v.id} className="group">
                 <div className="flex items-center gap-1 pr-1 hover:bg-surface-1">
                   <button
@@ -157,6 +161,46 @@ export function SavedViewManager({
                         {v.scope}
                       </span>
                     )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (starred) {
+                        void favorites.remove("view", v.id);
+                      } else {
+                        void favorites.add({
+                          kind: "view",
+                          targetId: v.id,
+                          label: v.label,
+                        });
+                      }
+                    }}
+                    aria-pressed={starred}
+                    aria-label={
+                      starred
+                        ? `Unstar ${v.label}`
+                        : `Star ${v.label}`
+                    }
+                    title={
+                      starred
+                        ? "Remove from sidebar Favorites"
+                        : "Add to sidebar Favorites"
+                    }
+                    className={cn(
+                      "h-7 w-7 flex items-center justify-center rounded transition-colors",
+                      starred
+                        ? "text-amber-500 opacity-100"
+                        : "text-text-muted opacity-0 group-hover:opacity-100 hover:text-text-primary",
+                    )}
+                  >
+                    <Star
+                      className={cn(
+                        "h-3.5 w-3.5",
+                        starred && "fill-current",
+                      )}
+                      aria-hidden
+                    />
                   </button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -196,7 +240,8 @@ export function SavedViewManager({
                   </DropdownMenu>
                 </div>
               </li>
-            ))}
+              );
+            })}
             {views.length === 0 && !creating && (
               <li className="px-3 py-4 text-xs text-text-muted text-center">
                 No saved views yet

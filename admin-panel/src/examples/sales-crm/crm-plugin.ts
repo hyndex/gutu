@@ -54,6 +54,8 @@ const crmNav = [
   { id: "crm.opportunities", label: "Opportunities", icon: "Target", path: "/crm/opportunities", view: "crm.opportunities.list", section: "sales", order: 11.7 },
   { id: "crm.pipeline", label: "Pipeline", icon: "Layers", path: "/contacts/pipeline", view: "crm.pipeline.view", section: "sales", order: 12 },
   { id: "crm.campaigns", label: "Campaigns", icon: "Megaphone", path: "/crm/campaigns", view: "crm.campaigns.list", section: "sales", order: 12.3 },
+  { id: "crm.tasks", label: "Tasks", icon: "CheckSquare", path: "/crm/tasks", view: "crm.tasks.list", section: "sales", order: 12.4 },
+  { id: "crm.calls", label: "Calls", icon: "Phone", path: "/crm/calls", view: "crm.calls.list", section: "sales", order: 12.45 },
   { id: "crm.appointments", label: "Appointments", icon: "Calendar", path: "/crm/appointments", view: "crm.appointments.list", section: "sales", order: 12.5 },
   { id: "crm.contracts", label: "Contracts", icon: "FileText", path: "/crm/contracts", view: "crm.contracts.list", section: "sales", order: 12.7 },
   { id: "crm.activity", label: "Activity", icon: "Activity", path: "/contacts/activity", view: "crm.activity.view", section: "sales", order: 13 },
