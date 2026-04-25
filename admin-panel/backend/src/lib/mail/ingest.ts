@@ -18,6 +18,7 @@ import { buildImageProxyUrl } from "./image-proxy-url";
 import { parseAuthResults, phishHeuristics } from "./verification";
 import { parseIcal, type IcalEvent } from "./ical";
 import { enqueuePush } from "../../jobs/mail-push";
+import { categorize } from "./categorize";
 
 export interface RawMessage {
   id: string;
@@ -183,6 +184,13 @@ export function ingestMessage(msg: RawMessage, knownContactEmails: Set<string>):
     phishReasons: phish.reasons,
     icsEventId,
     indexedAt: null,
+    categoryAuto: categorize({
+      fromEmail: msg.from?.email,
+      fromName: msg.from?.name,
+      subject: msg.subject,
+      bodyText: bodyText,
+      headers: msg.headers,
+    }),
     createdAt: now,
     updatedAt: now,
   };

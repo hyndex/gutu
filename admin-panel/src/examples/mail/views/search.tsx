@@ -4,6 +4,7 @@ import { Input } from "@/primitives/Input";
 import { Button } from "@/primitives/Button";
 import { Spinner } from "@/primitives/Spinner";
 import { mailApi } from "../lib/api";
+import { SearchOperatorHelp } from "../components/dialogs/SearchOperatorHelp";
 
 export function MailSearchPage(): React.ReactElement {
   const initial = new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("q") ?? "";
@@ -33,6 +34,7 @@ export function MailSearchPage(): React.ReactElement {
           onKeyDown={(e) => { if (e.key === "Enter") void run(); }}
           placeholder="Search mail (try `from:alice has:attachment`)"
         />
+        <SearchOperatorHelp />
         <Button onClick={() => void run()} disabled={busy}>{busy ? <Spinner size={12} /> : "Search"}</Button>
       </div>
       <div className="space-y-2">

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Reply, ReplyAll, Forward, Archive, Trash2, MoreHorizontal, Sparkles, Star, Tag } from "lucide-react";
+import { Reply, ReplyAll, Forward, Archive, Trash2, MoreHorizontal, Sparkles, Star, Tag, Printer, Ban, Download } from "lucide-react";
 import { Button } from "@/primitives/Button";
 import { Spinner } from "@/primitives/Spinner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/primitives/Tabs";
@@ -13,6 +13,7 @@ import { AttachmentList } from "../attachments/AttachmentList";
 import { ICalRsvpBar } from "./ICalRsvpBar";
 import { useThread } from "../../hooks/use-thread";
 import { mailApi, type MailMessage } from "../../lib/api";
+import { mailApiExtras } from "../../lib/api-extras";
 import { formatAddress, formatRelativeTime } from "../../lib/format";
 import { openComposer } from "../../store";
 
@@ -52,6 +53,28 @@ export function ThreadView(props: ThreadViewProps): React.ReactElement {
   }
   if (!thread) return <div className="grid h-full place-items-center text-sm text-text-muted">Select a conversation.</div>;
 
+  function printThread(subject: string): void {
+    const w = window.open("", "_blank", "width=900,height=720");
+    if (!w) return;
+    const safeSubject = subject.replace(/[<>&]/g, "");
+    const parts = messages.map((m) => `
+      <article style="border-top:1px solid #ccc;padding:12px 0">
+        <header style="font-size:12px;color:#555">From: ${escapeHtml(m.from?.email ?? "")} · ${escapeHtml(m.receivedAt)}</header>
+        <h3 style="margin:6px 0;font-size:14px">${escapeHtml(m.subject ?? "")}</h3>
+        <div>${m.bodyHtml ?? `<pre>${escapeHtml(m.bodyText ?? "")}</pre>`}</div>
+      </article>
+    `).join("");
+    w.document.write(`<!doctype html><html><head><title>${safeSubject}</title></head><body style="font-family:system-ui;max-width:760px;margin:24px auto;padding:0 16px">${parts}<script>setTimeout(()=>window.print(),300)</script></body></html>`);
+    w.document.close();
+  }
+
+  function downloadMbox(threadId: string): void {
+    window.open(mailApiExtras.exportThreadMbox(threadId), "_blank");
+  }
+  function escapeHtml(s: string): string {
+    return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] ?? c));
+  }
+
   return (
     <div className="flex h-full flex-col">
       <header className="flex items-center justify-between gap-2 border-b border-border bg-surface-0 px-4 py-3">
@@ -82,6 +105,39 @@ export function ThreadView(props: ThreadViewProps): React.ReactElement {
           <Button size="sm" variant="ghost" onClick={() => onAction("spam")} aria-label="Mark spam (!)">
             <MoreHorizontal size={16} />
           </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => printThread(thread.subject)}
+            aria-label="Print thread"
+            title="Print"
+          >
+            <Printer size={16} />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => downloadMbox(thread.id)}
+            aria-label="Export thread"
+            title="Export thread (.mbox)"
+          >
+            <Download size={16} />
+          </Button>
+          {thread.fromEmail && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={async () => {
+                if (!confirm(`Block ${thread.fromEmail}? Future messages will go to spam.`)) return;
+                await mailApiExtras.blockSender(thread.fromEmail!);
+                props.onCloseRequest?.();
+              }}
+              aria-label="Block sender"
+              title="Block sender"
+            >
+              <Ban size={16} />
+            </Button>
+          )}
         </div>
       </header>
 

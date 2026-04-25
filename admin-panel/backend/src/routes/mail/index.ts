@@ -23,6 +23,9 @@ import { googleWebhookRoutes } from "./webhooks/google";
 import { microsoftWebhookRoutes } from "./webhooks/microsoft";
 import { attachmentsRoutes } from "./attachments";
 import { pushRoutes } from "./push";
+import { exportImportRoutes } from "./export-import";
+import { blockRoutes } from "./block";
+import { receiptsRoutes } from "./receipts";
 
 export const mailRoutes = new Hono();
 
@@ -44,6 +47,9 @@ mailRoutes.route("/unsubscribe", unsubscribeRoutes);
 mailRoutes.route("/ical", icalRoutes);
 mailRoutes.route("/image-proxy", imageProxyRoutes);
 mailRoutes.route("/push", pushRoutes);
+mailRoutes.route("/export", exportImportRoutes);
+mailRoutes.route("/block", blockRoutes);
+mailRoutes.route("/receipts", receiptsRoutes);
 mailRoutes.route("/webhooks/google", googleWebhookRoutes);
 mailRoutes.route("/webhooks/microsoft", microsoftWebhookRoutes);
 

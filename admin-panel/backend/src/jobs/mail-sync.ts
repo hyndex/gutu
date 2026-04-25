@@ -13,6 +13,7 @@ import { evaluate } from "../routes/mail/rules";
 import { ingestMessage, loadKnownContacts, type RawMessage } from "../lib/mail/ingest";
 import type { DriverMessage, DriverThreadSummary, MailDriver } from "../lib/mail/driver/types";
 import { recordContactSeen } from "../lib/mail/contact-touch";
+import { categorize } from "../lib/mail/categorize";
 
 const TICK_MS = parseInt(process.env.MAIL_SYNC_TICK_MS ?? "30000", 10);
 const MAX_PER_FOLDER = parseInt(process.env.MAIL_SYNC_MAX_PER_FOLDER ?? "50", 10);
@@ -136,6 +137,7 @@ function upsertThreadSummary(
     preview: t.preview,
     lastMessageAt: t.lastMessageAt,
     starred: t.starred,
+    categoryAuto: t.folder === "inbox" ? categorize({ fromEmail: t.from?.email, fromName: t.from?.name, subject: t.subject }) : undefined,
     updatedAt: now,
   };
   if (!merged.createdAt) merged.createdAt = now;

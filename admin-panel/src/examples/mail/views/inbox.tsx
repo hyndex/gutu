@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Inbox, Send as SendIcon, FileText, Archive, Trash2, AlertOctagon, Star, Clock, Tag, Plus, Sparkles, Zap } from "lucide-react";
+import { Inbox, Send as SendIcon, FileText, Archive, Trash2, AlertOctagon, Star, Clock, Tag, Plus, Sparkles, Zap, Keyboard } from "lucide-react";
 import { Badge } from "@/primitives/Badge";
 import { Button } from "@/primitives/Button";
 import { Spinner } from "@/primitives/Spinner";
@@ -7,6 +7,9 @@ import { ThreadList } from "../components/mail-list/ThreadList";
 import { ThreadView } from "../components/thread-view/ThreadView";
 import { ComposerHost } from "../components/composer/ComposerHost";
 import { UndoToastHost } from "../components/composer/UndoToastHost";
+import { CategoryTabs, type CategoryKey } from "../components/mail-list/CategoryTabs";
+import { SnoozeDialog } from "../components/dialogs/SnoozeDialog";
+import { KeyboardHelpOverlay } from "../components/dialogs/KeyboardHelpOverlay";
 import { useThreads } from "../hooks/use-threads";
 import { useConnections } from "../hooks/use-connections";
 import { useLabels } from "../hooks/use-labels";
@@ -36,13 +39,53 @@ export function MailInboxPage(): React.ReactElement {
   const route = useHashRoute();
   const { connections, defaultConnection, loading: connsLoading } = useConnections();
   const { labels } = useLabels();
+  const [snoozeOpen, setSnoozeOpen] = React.useState(false);
+  const [helpOpen, setHelpOpen] = React.useState(false);
+  const [activeCategory, setActiveCategory] = React.useState<CategoryKey>("primary");
 
   const folder = route.folder;
   const labelId = route.labelId;
   const connectionId = route.connectionId ?? defaultConnection?.id;
   const activeThreadId = route.threadId ?? null;
 
-  const { rows, loading, hasMore, loadMore, reload } = useThreads({ folder, label: labelId, connectionId });
+  const { rows: rawRows, loading, hasMore, loadMore, reload } = useThreads({ folder, label: labelId, connectionId });
+  const rows = React.useMemo(() => {
+    if (folder !== "inbox" || labelId) return rawRows;
+    return rawRows.filter((r) => (r.categoryAuto ?? "primary") === activeCategory);
+  }, [rawRows, folder, labelId, activeCategory]);
+
+  const counts = React.useMemo(() => {
+    if (folder !== "inbox" || labelId) return undefined;
+    const out: Record<CategoryKey, number> = { primary: 0, promotions: 0, social: 0, updates: 0, forums: 0 };
+    for (const r of rawRows) {
+      const k = (r.categoryAuto ?? "primary") as CategoryKey;
+      if (k in out) out[k] = (out[k] ?? 0) + (r.unreadCount > 0 ? 1 : 0);
+    }
+    return out;
+  }, [rawRows, folder, labelId]);
+
+  // Auto-advance: when the user archives/trashes the active thread the
+  // ThreadView calls onCloseRequest; we advance to the next visible row.
+  const advanceFromActive = React.useCallback(() => {
+    if (!activeThreadId) return;
+    const idx = rows.findIndex((r) => r.id === activeThreadId);
+    const next = rows[idx + 1] ?? rows[idx - 1];
+    if (next) setHash(buildHash({ ...route, threadId: next.id }));
+    else setHash(buildHash({ ...route, threadId: undefined }));
+  }, [activeThreadId, rows, route]);
+
+  // Keyboard `?` opens help overlay. Skip when typing in an input.
+  React.useEffect(() => {
+    const handler = (e: KeyboardEvent): void => {
+      if (e.key !== "?") return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      e.preventDefault();
+      setHelpOpen(true);
+    };
+    window.addEventListener("keydown", handler);
+    return (): void => window.removeEventListener("keydown", handler);
+  }, []);
 
   const onActivate = React.useCallback((threadId: string) => {
     setHash(buildHash({ ...route, threadId }));
@@ -120,7 +163,10 @@ export function MailInboxPage(): React.ReactElement {
 
       {/* Pane B — thread list */}
       <section className="flex flex-col border-r border-border bg-surface-0">
-        <ListToolbar folder={folder} reload={reload} />
+        <ListToolbar folder={folder} reload={reload} onSnoozeClick={() => setSnoozeOpen(true)} />
+        {folder === "inbox" && !labelId && (
+          <CategoryTabs active={activeCategory} onChange={setActiveCategory} counts={counts} />
+        )}
         <ThreadList
           rows={rows}
           loading={loading}
@@ -138,13 +184,13 @@ export function MailInboxPage(): React.ReactElement {
           <ThreadView
             threadId={activeThreadId}
             imageProxy="always"
-            onCloseRequest={() => navigate({ threadId: undefined })}
+            onCloseRequest={advanceFromActive}
           />
         ) : (
           <div className="grid h-full place-items-center text-sm text-text-muted">
             <div className="space-y-1 text-center">
               <div className="text-base">Select a conversation</div>
-              <div className="text-xs">Press <kbd className="rounded bg-surface-2 px-1">c</kbd> to compose · <kbd className="rounded bg-surface-2 px-1">/</kbd> to search</div>
+              <div className="text-xs">Press <kbd className="rounded bg-surface-2 px-1">c</kbd> to compose · <kbd className="rounded bg-surface-2 px-1">/</kbd> to search · <kbd className="rounded bg-surface-2 px-1">?</kbd> for help</div>
             </div>
           </div>
         )}
@@ -152,11 +198,35 @@ export function MailInboxPage(): React.ReactElement {
 
       <ComposerHost />
       <UndoToastHost />
+      <SnoozeDialog
+        open={snoozeOpen}
+        onClose={() => setSnoozeOpen(false)}
+        onChoose={async (wakeAt, reason) => {
+          const selectedIds = (window as { __mailSelected?: string[] }).__mailSelected ?? [];
+          const ids = selectedIds.length > 0 ? selectedIds : activeThreadId ? [activeThreadId] : [];
+          if (ids.length === 0) return;
+          await mailApi.snooze(ids, wakeAt, reason);
+          setSelectedThreads([]);
+          reload();
+        }}
+      />
+      <KeyboardHelpOverlay open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <SelectionMirror />
     </div>
   );
 }
 
-function ListToolbar({ folder, reload }: { folder: string; reload: () => void }): React.ReactElement {
+/** Mirrors the in-memory selection to a window global so dialogs can
+ *  read it without prop-drilling through the store. */
+function SelectionMirror(): null {
+  const selected = useMailStore((s) => s.selectedThreadIds);
+  React.useEffect(() => {
+    (window as { __mailSelected?: string[] }).__mailSelected = selected;
+  }, [selected]);
+  return null;
+}
+
+function ListToolbar({ folder, reload, onSnoozeClick }: { folder: string; reload: () => void; onSnoozeClick: () => void }): React.ReactElement {
   const selected = useMailStore((s) => s.selectedThreadIds);
   const has = selected.length > 0;
   return (
@@ -166,18 +236,27 @@ function ListToolbar({ folder, reload }: { folder: string; reload: () => void })
       <div className="ml-auto flex items-center gap-1">
         {has && (
           <>
-            <Button size="sm" variant="ghost" onClick={async () => { await mailApi.archive(selected); setSelectedThreads([]); reload(); }}>
+            <Button size="sm" variant="ghost" onClick={async () => { await mailApi.archive(selected); setSelectedThreads([]); reload(); }} aria-label="Archive (e)" title="Archive (e)">
               <Archive size={14} />
             </Button>
-            <Button size="sm" variant="ghost" onClick={async () => { await mailApi.trash(selected); setSelectedThreads([]); reload(); }}>
+            <Button size="sm" variant="ghost" onClick={async () => { await mailApi.trash(selected); setSelectedThreads([]); reload(); }} aria-label="Trash (#)" title="Trash">
               <Trash2 size={14} />
             </Button>
-            <Button size="sm" variant="ghost" onClick={async () => { await mailApi.markRead(selected, true); setSelectedThreads([]); reload(); }}>
+            <Button size="sm" variant="ghost" onClick={onSnoozeClick} aria-label="Snooze (b)" title="Snooze">
+              <Clock size={14} />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={async () => { await mailApi.markRead(selected, true); setSelectedThreads([]); reload(); }} title="Mark read">
               Read
+            </Button>
+            <Button size="sm" variant="ghost" onClick={async () => { await mailApi.markRead(selected, false); setSelectedThreads([]); reload(); }} title="Mark unread">
+              Unread
             </Button>
           </>
         )}
-        <Button size="sm" variant="ghost" onClick={reload} aria-label="Refresh">↻</Button>
+        <Button size="sm" variant="ghost" onClick={reload} aria-label="Refresh" title="Refresh">↻</Button>
+        <Button size="sm" variant="ghost" onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "?" }))} aria-label="Keyboard help" title="Shortcuts (?)">
+          <Keyboard size={14} />
+        </Button>
       </div>
     </div>
   );
