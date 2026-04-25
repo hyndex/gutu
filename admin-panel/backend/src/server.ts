@@ -10,6 +10,7 @@ import { storageRoutes } from "./routes/storage";
 import { editorRoutes } from "./routes/editors";
 import { tenantRoutes } from "./routes/tenants";
 import { configRoutes } from "./routes/config";
+import { mailRoutes } from "./routes/mail";
 import { tenantMiddleware } from "./tenancy/middleware";
 import { loadConfig } from "./config";
 
@@ -58,6 +59,7 @@ export function createApp() {
   app.route("/api/files", filesRoutes);
   app.route("/api/storage", storageRoutes);
   app.route("/api/editors", editorRoutes);
+  app.route("/api/mail", mailRoutes);
 
   app.notFound((c) => c.json({ error: "not found" }, 404));
   app.onError((err, c) => {

@@ -6,6 +6,9 @@ import { loadConfig } from "./config";
 import { migrateGlobal, migrateTenantSchema } from "./tenancy/migrations";
 import { ensureDefaultTenant, listTenants } from "./tenancy/provisioner";
 import { bootstrapStorage } from "./storage";
+import { migrateMail } from "./lib/mail/migrations";
+import { ensureProviders } from "./lib/mail/oauth";
+import { bootstrapMailJobs } from "./jobs";
 
 const cfg = loadConfig();
 
@@ -45,6 +48,13 @@ bootstrapStorage({
   publicBaseUrl: process.env.PUBLIC_BASE_URL ?? `http://127.0.0.1:${cfg.port}`,
   defaultTenantId: defaultTenant.id,
 });
+
+// Mail plugin bootstrapping: schema migrations, OAuth provider registry,
+// and background job scheduler. These all gracefully no-op when the mail
+// plugin isn't enabled — the migrations are idempotent.
+migrateMail();
+ensureProviders();
+if (process.env.MAIL_DISABLE_JOBS !== "1") bootstrapMailJobs();
 
 const app = createApp();
 await seedAll({ force: process.env.SEED_FORCE === "1" });

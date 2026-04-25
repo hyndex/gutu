@@ -63,3 +63,4 @@ export { userDirectoryPlugin } from "./user-directory";
 export { workflowPlugin } from "./workflow";
 export { analyticsBiPlugin } from "./analytics-bi";
 export { officePlugin } from "./office/plugin";
+export { mailPlugin } from "./mail/plugin";
