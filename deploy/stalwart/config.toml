@@ -1,0 +1,103 @@
+# Stalwart Mail Server — config tuned for the Gutu deployment.
+#
+# Storage:
+#   - Relational metadata (accounts, mailboxes, message index) → Postgres
+#   - Blob storage (raw RFC822 bytes, attachments)            → S3-compatible
+#   - In-memory cache + lookup tables                          → Redis-less
+#                                                                (Stalwart's
+#                                                                built-in cache)
+#
+# Anything not specified here uses Stalwart's defaults. Refer to
+# https://stalw.art/docs/configuration/overview for the full reference.
+
+[server]
+hostname = "mail.example.com"
+
+[server.listener.smtp]
+bind = ["0.0.0.0:25"]
+protocol = "smtp"
+
+[server.listener.submission]
+bind = ["0.0.0.0:587"]
+protocol = "smtp"
+tls.implicit = false
+
+[server.listener.submissions]
+bind = ["0.0.0.0:465"]
+protocol = "smtp"
+tls.implicit = true
+
+[server.listener.imap]
+bind = ["0.0.0.0:993"]
+protocol = "imap"
+tls.implicit = true
+
+[server.listener.http]
+bind = ["0.0.0.0:8080"]
+protocol = "http"
+
+# ----- Storage backends ------------------------------------------------
+
+[storage]
+data        = "postgres"
+fts         = "postgres"
+blob        = "s3"
+lookup      = "postgres"
+directory   = "internal"
+
+[store.postgres]
+type     = "postgres"
+host     = "postgres"
+port     = 5432
+database = "stalwart"
+user     = "stalwart"
+password = "%{env:POSTGRES_PASSWORD}%"
+tls.enable = false
+
+[store.s3]
+type        = "s3"
+bucket      = "mail-blobs"
+region      = "us-east-1"
+endpoint    = "http://minio:9000"
+access-key  = "%{env:MINIO_ROOT_USER}%"
+secret-key  = "%{env:MINIO_ROOT_PASSWORD}%"
+# MinIO uses path-style URLs, not virtual-hosted-style.
+path-style  = true
+
+# ----- Internal directory ----------------------------------------------
+# Authentication store for accounts. Default tenant has one admin
+# account; create per-user accounts via the management API.
+
+[directory.internal]
+type = "internal"
+store = "postgres"
+
+# ----- Authentication for the management API --------------------------
+
+[authentication.fallback-admin]
+user      = "admin"
+secret    = "%{env:STALWART_ADMIN_PASSWORD}%"
+
+# ----- Acceptance / queue tuning --------------------------------------
+
+[server.message]
+max-size = 26_214_400  # 25 MiB
+
+[queue.outbound]
+hostname = "%{server.hostname}%"
+# Retry an outbound mail every 2 minutes for the first hour, then every
+# 30 minutes for the next 24 hours. After 25 hours of failure, bounce.
+schedule = ["2m", "5m", "15m", "30m", "1h", "2h", "6h", "12h", "1d"]
+expires  = "25h"
+
+# ----- Spam filter (built-in) -----------------------------------------
+# Stalwart ships with a Bayesian + heuristic anti-spam stack. Override
+# behaviour if you want to bolt Rspamd on the side; otherwise this is
+# enough for self-hosters.
+
+[spam-filter]
+enable = true
+# Score thresholds: messages above `spam-threshold` go to the Junk
+# mailbox; messages above `discard-threshold` are silently dropped.
+spam-threshold    = 5.0
+discard-threshold = 15.0

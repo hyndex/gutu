@@ -26,6 +26,7 @@ import { pushRoutes } from "./push";
 import { exportImportRoutes } from "./export-import";
 import { blockRoutes } from "./block";
 import { receiptsRoutes } from "./receipts";
+import { selfHostedRoutes } from "./selfhosted";
 
 export const mailRoutes = new Hono();
 
@@ -50,6 +51,7 @@ mailRoutes.route("/push", pushRoutes);
 mailRoutes.route("/export", exportImportRoutes);
 mailRoutes.route("/block", blockRoutes);
 mailRoutes.route("/receipts", receiptsRoutes);
+mailRoutes.route("/self-hosted", selfHostedRoutes);
 mailRoutes.route("/webhooks/google", googleWebhookRoutes);
 mailRoutes.route("/webhooks/microsoft", microsoftWebhookRoutes);
 

@@ -40,4 +40,13 @@ export const MAIL_NAV_ITEMS: NavItem[] = [
     section: MAIL_NAV_SECTION.id,
     order: 63,
   },
+  {
+    id: "mail.settings.nav",
+    label: "Mail settings",
+    icon: "Settings",
+    path: "/mail/settings",
+    view: "mail.settings.view",
+    section: MAIL_NAV_SECTION.id,
+    order: 64,
+  },
 ];

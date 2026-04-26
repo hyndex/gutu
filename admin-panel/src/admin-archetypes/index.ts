@@ -103,6 +103,7 @@ export * from "./i18n/I18nContext";
 export * from "./cross-plugin/useRecordLinks";
 export * from "./cross-plugin/useTimelineEvents";
 export * from "./cross-plugin/useYjsRoom";
+export * from "./cross-plugin/useServiceProvisioner";
 export * from "./widgets/KanbanDndBoard";
 export * from "./widgets/ForceGraphCanvas";
 export * from "./hooks/useArchetypeToast";

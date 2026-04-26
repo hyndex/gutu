@@ -8,6 +8,7 @@ import type { ConnectionRecord, MailDriver } from "./types";
 import { GoogleDriver } from "./google";
 import { MicrosoftDriver } from "./microsoft";
 import { ImapDriver } from "./imap";
+import { JmapDriver } from "./jmap";
 
 export interface ResolveArgs {
   connectionId: string;
@@ -21,6 +22,7 @@ export async function driverFor(args: ResolveArgs): Promise<MailDriver> {
     case "google": return new GoogleDriver(conn, args.tenantId);
     case "microsoft": return new MicrosoftDriver(conn, args.tenantId);
     case "imap": return new ImapDriver(conn, args.tenantId);
+    case "jmap": return new JmapDriver(conn, args.tenantId);
     default: throw new Error(`unsupported provider ${conn.provider}`);
   }
 }

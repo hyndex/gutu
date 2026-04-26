@@ -18,6 +18,7 @@ import { AISettingsTab } from "./tabs/AI";
 import { SharedInboxTab } from "./tabs/SharedInbox";
 import { TenantPolicyTab } from "./tabs/TenantPolicy";
 import { DangerZoneTab } from "./tabs/DangerZone";
+import { SelfHostedTab } from "./tabs/SelfHosted";
 
 export function MailSettingsPage(): React.ReactElement {
   const [s, setS] = React.useState<MailSettings | null>(null);
@@ -43,6 +44,7 @@ export function MailSettingsPage(): React.ReactElement {
         <TabsList className="flex-wrap">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="connections">Accounts</TabsTrigger>
+          <TabsTrigger value="self-hosted">Self-hosted</TabsTrigger>
           <TabsTrigger value="identities">Identities</TabsTrigger>
           <TabsTrigger value="signatures">Signatures</TabsTrigger>
           <TabsTrigger value="vacation">Vacation</TabsTrigger>
@@ -60,6 +62,7 @@ export function MailSettingsPage(): React.ReactElement {
         </TabsList>
         <TabsContent value="general"><GeneralTab settings={s} save={save} /></TabsContent>
         <TabsContent value="connections"><ConnectionsTab /></TabsContent>
+        <TabsContent value="self-hosted"><SelfHostedTab /></TabsContent>
         <TabsContent value="identities"><IdentitiesTab /></TabsContent>
         <TabsContent value="signatures"><SignaturesTab /></TabsContent>
         <TabsContent value="vacation"><VacationTab settings={s} save={save} /></TabsContent>
