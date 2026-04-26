@@ -12,6 +12,10 @@ import {
   useUrlState,
   useArchetypeKeyboard,
   useSwr,
+  KanbanDndBoard,
+  type KanbanCard,
+  type KanbanColumn,
+  useArchetypeToast,
 } from "@/admin-archetypes";
 import { cn } from "@/lib/cn";
 
@@ -72,11 +76,76 @@ export function SalesArchetypePipeline() {
   const [params, setParams] = useUrlState(["color"] as const);
   const colorMode = (params.color as "priority" | "owner" | undefined) ?? "priority";
   const data = useSwr<Deal[]>("sales.deals", fetchDeals);
-  const deals = data.data ?? [];
+  const [localDeals, setLocalDeals] = React.useState<Deal[]>([]);
+  const toast = useArchetypeToast();
+  React.useEffect(() => {
+    if (data.data) setLocalDeals(data.data);
+  }, [data.data]);
+  const deals = localDeals;
 
   useArchetypeKeyboard([
     { label: "Refresh", combo: "r", run: () => { void data.refetch(); } },
   ]);
+
+  const dndColumns = React.useMemo<readonly KanbanColumn[]>(
+    () =>
+      STAGES.map((s) => ({
+        id: s.id,
+        label: s.label,
+        tone:
+          s.id === "won"
+            ? ("success" as const)
+            : s.id === "lost"
+              ? ("neutral" as const)
+              : s.id === "negotiate" || s.id === "proposal"
+                ? ("warning" as const)
+                : ("info" as const),
+        wipLimit: s.id === "negotiate" ? 6 : undefined,
+        footer: (cards) => {
+          const total = cards.reduce(
+            (sum, c) => sum + (c.data as unknown as Deal).amount,
+            0,
+          );
+          return fmtCurrency(total);
+        },
+        locked: s.id === "won",
+      })),
+    [],
+  );
+
+  const dndCards = React.useMemo<readonly KanbanCard<Deal>[]>(
+    () =>
+      deals.map((d, i) => ({
+        id: d.id,
+        columnId: d.stage,
+        order: i,
+        agingDays: d.ageDays,
+        data: d,
+      })),
+    [deals],
+  );
+
+  const handleMove = React.useCallback(
+    async (cardId: string, next: { columnId: string; order: number }) => {
+      setLocalDeals((prev) => {
+        const map = new Map(prev.map((d) => [d.id, d]));
+        const target = map.get(cardId);
+        if (!target) return prev;
+        map.set(cardId, {
+          ...target,
+          stage: next.columnId as Deal["stage"],
+          ageDays: next.columnId === target.stage ? target.ageDays : 0,
+        });
+        return Array.from(map.values());
+      });
+      toast({
+        title: `Moved to ${next.columnId}`,
+        intent: "success",
+        durationMs: 2200,
+      });
+    },
+    [toast],
+  );
 
   return (
     <KanbanArchetype
@@ -108,67 +177,46 @@ export function SalesArchetypePipeline() {
       }
     >
       <WidgetShell label="Pipeline" state={data.state} skeleton="kpi" onRetry={data.refetch}>
-        <div className="grid gap-3 grid-cols-6 min-w-[1100px]">
-          {STAGES.map((stage) => {
-            const stageDeals = deals.filter((d) => d.stage === stage.id);
-            const total = stageDeals.reduce((s, d) => s + d.amount, 0);
+        <KanbanDndBoard<Deal>
+          columns={dndColumns}
+          cards={dndCards}
+          onMove={handleMove}
+          canMove={(card, _from, to) =>
+            to.id === "won" && card.data.amount < 1000
+              ? "Won deals must be ≥ $1,000"
+              : true
+          }
+          warnAgingDays={7}
+          dangerAgingDays={14}
+          renderCard={(card) => {
+            const d = card.data;
             return (
-              <section
-                key={stage.id}
-                aria-label={stage.label}
-                className="rounded-lg border border-border bg-surface-1/50 flex flex-col min-h-[60vh]"
-              >
-                <header className="px-2.5 py-2 flex items-center justify-between border-b border-border">
-                  <div className="flex items-center gap-2">
-                    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide", stage.tone)}>
-                      {stage.label}
-                    </span>
-                    <span className="text-xs text-text-muted tabular-nums">{stageDeals.length}</span>
-                  </div>
-                  <span className="text-xs text-text-muted tabular-nums">{fmtCurrency(total)}</span>
-                </header>
-                <div className="flex-1 p-2 space-y-2 overflow-auto">
-                  {stageDeals.length === 0 ? (
-                    <div className="text-xs text-text-muted text-center py-6 border border-dashed border-border-subtle rounded-md">
-                      No deals
-                    </div>
-                  ) : (
-                    stageDeals.map((d) => (
-                      <article
-                        key={d.id}
-                        tabIndex={0}
-                        className="rounded-md border border-border bg-surface-0 p-2 hover:bg-surface-1 cursor-pointer focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                        onClick={() => { window.location.hash = `/sales/deals/${d.id}`; }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") window.location.hash = `/sales/deals/${d.id}`;
-                        }}
-                      >
-                        <div className="flex items-start justify-between gap-1.5">
-                          <div className="text-sm font-medium text-text-primary truncate">{d.name}</div>
-                          {colorMode === "priority" && (
-                            <span className={cn("h-2 w-2 rounded-full mt-1 shrink-0", PRIORITY_DOT[d.priority])} aria-hidden />
-                          )}
-                        </div>
-                        <div className="text-xs text-text-muted truncate">{d.customer}</div>
-                        <div className="flex items-center justify-between mt-1.5 text-xs">
-                          <span className="font-semibold tabular-nums">{fmtCurrency(d.amount)}</span>
-                          <span
-                            className={cn(
-                              "tabular-nums",
-                              d.ageDays > 14 ? "text-danger" : d.ageDays > 7 ? "text-warning" : "text-text-muted",
-                            )}
-                          >
-                            {d.ageDays}d
-                          </span>
-                        </div>
-                      </article>
-                    ))
+              <>
+                <div className="flex items-start justify-between gap-1.5">
+                  <div className="text-sm font-medium text-text-primary truncate">{d.name}</div>
+                  {colorMode === "priority" && (
+                    <span
+                      className={cn("h-2 w-2 rounded-full mt-1 shrink-0", PRIORITY_DOT[d.priority])}
+                      aria-hidden
+                    />
                   )}
                 </div>
-              </section>
+                <div className="text-xs text-text-muted truncate">{d.customer}</div>
+                <div className="flex items-center justify-between mt-1.5 text-xs">
+                  <span className="font-semibold tabular-nums">{fmtCurrency(d.amount)}</span>
+                  <span
+                    className={cn(
+                      "tabular-nums",
+                      d.ageDays > 14 ? "text-danger" : d.ageDays > 7 ? "text-warning" : "text-text-muted",
+                    )}
+                  >
+                    {d.ageDays}d
+                  </span>
+                </div>
+              </>
             );
-          })}
-        </div>
+          }}
+        />
       </WidgetShell>
     </KanbanArchetype>
   );

@@ -20,6 +20,7 @@ import {
   useSwr,
 } from "@/admin-archetypes";
 import { cn } from "@/lib/cn";
+import { ForceGraphCanvas } from "@/admin-archetypes";
 
 type EntityType = "company" | "person" | "deal" | "ticket" | "contract";
 
@@ -255,70 +256,20 @@ export function CrmArchetypeRelations() {
       }
     >
       <WidgetShell label="Relations graph" state={data.state} skeleton="chart" onRetry={data.refetch}>
-        <div className="rounded-lg border border-border bg-surface-1 overflow-hidden">
-          <svg
-            viewBox="0 0 100 100"
-            preserveAspectRatio="xMidYMid meet"
-            className="w-full h-[60vh]"
-            role="img"
-            aria-label="CRM entity relations graph"
-          >
-            <g style={{ transformOrigin: "50% 50%", transform: `scale(${zoom})` }}>
-              {edges.map((e, i) => {
-                const a = byId.get(e.source);
-                const b = byId.get(e.target);
-                if (!a || !b) return null;
-                const isSelected =
-                  selectedId === e.source || selectedId === e.target;
-                return (
-                  <line
-                    key={i}
-                    x1={a.x}
-                    y1={a.y}
-                    x2={b.x}
-                    y2={b.y}
-                    stroke={isSelected ? "#1F2937" : "#9CA3AF"}
-                    strokeWidth={Math.max(0.2, (e.weight ?? 0.4) * 0.6)}
-                    opacity={isSelected ? 0.9 : selectedId ? 0.2 : 0.5}
-                  />
-                );
-              })}
-              {positioned.map((n) => {
-                const isSelected = selectedId === n.id;
-                const isNeighbour = !!neighbours.find((nb) => nb.id === n.id);
-                const dim = !!selectedId && !isSelected && !isNeighbour;
-                const r = isSelected ? 3 : 2;
-                return (
-                  <g
-                    key={n.id}
-                    role="button"
-                    aria-label={`${n.type} ${n.label}`}
-                    onClick={() => setParams({ sel: n.id })}
-                    style={{ cursor: "pointer", opacity: dim ? 0.25 : 1 }}
-                  >
-                    <circle
-                      cx={n.x}
-                      cy={n.y}
-                      r={r}
-                      fill={TYPE_COLOR[n.type].fill}
-                      stroke={TYPE_COLOR[n.type].stroke}
-                      strokeWidth={isSelected ? 0.6 : 0.3}
-                    />
-                    <text
-                      x={n.x + r + 1.2}
-                      y={n.y + 1}
-                      className={cn(
-                        "fill-text-primary font-medium",
-                        "[font-size:2.4px]",
-                      )}
-                    >
-                      {n.label}
-                    </text>
-                  </g>
-                );
-              })}
-            </g>
-          </svg>
+        <div
+          className="rounded-lg border border-border bg-surface-1 overflow-hidden h-[60vh] w-full"
+          style={{ transformOrigin: "50% 50%", transform: `scale(${zoom})` }}
+        >
+          <ForceGraphCanvas
+            nodes={nodes.map((n) => ({ id: n.id, label: n.label, type: n.type }))}
+            edges={edges.map((e) => ({ source: e.source, target: e.target, weight: e.weight }))}
+            selectedId={selectedId ?? undefined}
+            onSelect={(id) => setParams({ sel: id })}
+            typeColor={(type) => TYPE_COLOR[type as EntityType]?.fill ?? "#9CA3AF"}
+            description="CRM entity relations graph (force-directed)"
+            width={100}
+            height={100}
+          />
         </div>
       </WidgetShell>
     </GraphNetwork>

@@ -95,3 +95,12 @@ export * from "./archetypes/TimelineLog";
 export * from "./archetypes/MapGeo";
 export * from "./archetypes/EditorCanvas";
 export * from "./archetypes/DetailRichArchetype";
+
+// Round 5 additions
+export * from "./observability/perfBudget";
+export * from "./i18n/I18nContext";
+export * from "./cross-plugin/useRecordLinks";
+export * from "./cross-plugin/useTimelineEvents";
+export * from "./widgets/KanbanDndBoard";
+export * from "./widgets/ForceGraphCanvas";
+export * from "./hooks/useArchetypeToast";
