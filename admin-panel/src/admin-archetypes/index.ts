@@ -40,6 +40,12 @@ export * from "./hooks/useArchetypeTelemetry";
 export { inferArchetype } from "./inferArchetype";
 export type { InferableView, InferredArchetype } from "./inferArchetype";
 
+// State surfaces (cont.)
+export * from "./state/KeyboardHelpOverlay";
+
+// Widgets (cont.)
+export * from "./widgets/SavedViewSwitcher";
+
 // Widgets
 export * from "./widgets/Sparkline";
 export * from "./widgets/KpiTile";

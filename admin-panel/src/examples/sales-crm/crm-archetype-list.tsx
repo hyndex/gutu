@@ -23,6 +23,10 @@ import {
   useUrlState,
   useSwr,
   type BulkAction,
+  SavedViewSwitcher,
+  type SavedView,
+  KeyboardHelpOverlay,
+  useKeyboardHelp,
 } from "@/admin-archetypes";
 import { CONTACTS } from "./data";
 
@@ -51,6 +55,13 @@ export default function CrmArchetypeList() {
 
   const { chips, add, remove, clear } = useFilterChips();
   const selection = useSelection<string>();
+  const [helpOpen, setHelpOpen] = useKeyboardHelp();
+  const [savedViews, setSavedViews] = React.useState<SavedView[]>(() => [
+    { id: "all", label: "All", pinned: true, description: "Every contact." },
+    { id: "vip", label: "VIPs", pinned: true, description: "High-LTV customers." },
+    { id: "no-touch", label: "No-touch >30d", description: "Stale relationships." },
+    { id: "new", label: "New (7d)", description: "Recently added." },
+  ]);
 
   const data = useSwr<Person[]>(
     `crm.people?q=${q}&filters=${chips.length}`,
@@ -83,15 +94,17 @@ export default function CrmArchetypeList() {
   const rows = data.data ?? [];
   const totalSelected = selection.size;
 
-  useArchetypeKeyboard([
+  const bindings = useArchetypeKeyboard([
     {
       label: "Search",
       combo: "/",
+      group: "Navigation",
       run: () => document.getElementById("crm-list-search")?.focus(),
     },
     {
       label: "Select all visible",
       combo: "cmd+a",
+      group: "Selection",
       run: () => {
         if (selection.size === rows.length) selection.clear();
         else selection.setAll(rows.map((r) => r.id));
@@ -100,6 +113,7 @@ export default function CrmArchetypeList() {
     {
       label: "Clear selection",
       combo: "esc",
+      group: "Selection",
       run: () => {
         if (selection.size > 0) selection.clear();
       },
@@ -149,6 +163,7 @@ export default function CrmArchetypeList() {
   ];
 
   return (
+    <>
     <SmartList
       id="crm.people.list"
       title="People"
@@ -163,6 +178,24 @@ export default function CrmArchetypeList() {
       }
       toolbarStart={
         <>
+          <SavedViewSwitcher
+            views={savedViews}
+            onCreate={(label) =>
+              setSavedViews((prev) => [
+                ...prev,
+                { id: label.toLowerCase().replace(/\s+/g, "-"), label },
+              ])
+            }
+            onTogglePin={(id) =>
+              setSavedViews((prev) =>
+                prev.map((v) => (v.id === id ? { ...v, pinned: !v.pinned } : v)),
+              )
+            }
+            onDelete={(id) =>
+              setSavedViews((prev) => prev.filter((v) => v.id !== id))
+            }
+          />
+          <span className="h-4 w-px bg-border" aria-hidden />
           <FilterChipBar
             chips={chips}
             onRemove={remove}
@@ -198,7 +231,7 @@ export default function CrmArchetypeList() {
           hints={[
             { keys: "/", label: "Search" },
             { keys: "⌘A", label: "Select all" },
-            { keys: "Esc", label: "Clear" },
+            { keys: "?", label: "Help" },
           ]}
         />
       }
@@ -275,5 +308,11 @@ export default function CrmArchetypeList() {
         </div>
       </WidgetShell>
     </SmartList>
+    <KeyboardHelpOverlay
+      open={helpOpen}
+      onClose={() => setHelpOpen(false)}
+      bindings={bindings}
+    />
+    </>
   );
 }

@@ -29,22 +29,38 @@ export function BodyLayout({
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
+
+    // Visual-viewport breakpoint: independent of container width, so the
+    // rail collapses on mobile even when an outer max-width container
+    // remains larger than the viewport.
+    const mq = window.matchMedia(`(max-width: ${collapseAt - 1}px)`);
+
+    const evaluate = (containerWidth?: number) => {
+      const tooNarrowByContainer =
+        containerWidth !== undefined && containerWidth < collapseAt;
+      setCollapsed(mq.matches || tooNarrowByContainer);
+    };
+
+    evaluate();
+
+    const onMq = () => evaluate();
+    mq.addEventListener?.("change", onMq);
+
+    let observer: ResizeObserver | undefined;
     const el = containerRef.current;
-    if (!el || typeof ResizeObserver === "undefined") {
-      // Fall back to a media query when ResizeObserver is unavailable.
-      const mq = window.matchMedia(`(max-width: ${collapseAt - 1}px)`);
-      const sync = () => setCollapsed(mq.matches);
-      sync();
-      mq.addEventListener?.("change", sync);
-      return () => mq.removeEventListener?.("change", sync);
+    if (el && typeof ResizeObserver !== "undefined") {
+      observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          evaluate(entry.contentRect.width);
+        }
+      });
+      observer.observe(el);
     }
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setCollapsed(entry.contentRect.width < collapseAt);
-      }
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
+
+    return () => {
+      mq.removeEventListener?.("change", onMq);
+      observer?.disconnect();
+    };
   }, [collapseAt]);
 
   if (!rail || collapsed) {

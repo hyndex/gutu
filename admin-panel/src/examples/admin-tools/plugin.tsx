@@ -30,6 +30,7 @@ import {
   startPluginUi,
 } from "@/host/plugin-ui-loader";
 import { archetypesCatalogView } from "./archetypes-catalog";
+import { archetypeEventsView } from "./archetype-events";
 
 // Decentralized discovery: Vite's `import.meta.glob` (eager) walks
 // every `host-plugin/ui/index.ts` under `plugins/gutu-plugin-*` at
@@ -264,6 +265,15 @@ const builtInNav = [
     section: "settings",
     order: 6,
   },
+  {
+    id: "admin-tools.nav.archetype-events",
+    label: "Archetype events",
+    icon: "Activity",
+    path: "/settings/archetype-events",
+    view: "admin-tools.archetype-events.view",
+    section: "settings",
+    order: 7,
+  },
 ];
 
 /* -- The plugin surface itself ------------------------------------------- */
@@ -287,7 +297,7 @@ export const adminToolsPlugin = definePlugin({
     ctx.contribute.navSections([{ id: "settings", label: "Settings", order: 200 }]);
     ctx.contribute.nav([...builtInNav, ...adminToolsNav]);
     ctx.contribute.resources([pluginsConsoleResource, archetypesCatalogResource, ...pluginResources]);
-    ctx.contribute.views([pluginsConsoleView, archetypesCatalogView, ...pluginViews]);
+    ctx.contribute.views([pluginsConsoleView, archetypesCatalogView, archetypeEventsView, ...pluginViews]);
     if (adminToolsCommands.length > 0) ctx.contribute.commands(adminToolsCommands);
   },
 });
