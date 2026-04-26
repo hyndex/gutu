@@ -17,8 +17,9 @@ import {
   CommandHints,
   useArchetypeKeyboard,
   useUrlState,
-  useSwr,
+  useRecordLinks,
 } from "@/admin-archetypes";
+import { useAllRecords } from "@/runtime/hooks";
 import { Badge } from "@/primitives/Badge";
 
 interface CompanyHubData {
@@ -53,20 +54,42 @@ const SAMPLE: CompanyHubData = {
   contracts: 6,
 };
 
-async function fetchCompany(id: string): Promise<CompanyHubData> {
-  try {
-    const res = await fetch(`/api/crm/companies/${encodeURIComponent(id)}`);
-    if (res.ok) return (await res.json()) as CompanyHubData;
-  } catch {/* fall through */}
-  return SAMPLE;
-}
-
 export function CrmArchetypeCompanyHub() {
   const [params, setParams] = useUrlState(["tab", "id"] as const);
   const tab = params.tab ?? "overview";
   const id = params.id ?? "co-acme";
-  const data = useSwr(`crm.company.${id}`, () => fetchCompany(id), { ttlMs: 30_000 });
-  const co = data.data;
+  // Real backend reads — pull every contact + deal scoped to the
+  // company name. Falls back to SAMPLE when the resource is empty so
+  // the demo path keeps working.
+  const contacts = useAllRecords<{ id: string; company?: string; lifetimeValue?: number }>("crm.contact");
+  const deals = useAllRecords<{ id: string; company?: string; amount?: number; stage?: string; status?: string }>("sales.deal");
+  const co = React.useMemo<CompanyHubData>(() => {
+    const companyName = SAMPLE.name;
+    const contactsForCo = contacts.data.filter(
+      (c) => (c.company ?? "").toLowerCase() === companyName.toLowerCase(),
+    );
+    const dealsForCo = deals.data.filter(
+      (d) => (d.company ?? "").toLowerCase() === companyName.toLowerCase(),
+    );
+    if (contactsForCo.length === 0 && dealsForCo.length === 0) return SAMPLE;
+    const arr = contactsForCo.reduce(
+      (s, c) => s + (c.lifetimeValue ?? 0),
+      0,
+    );
+    const openDeals = dealsForCo.filter(
+      (d) => d.stage !== "won" && d.stage !== "lost" && d.status !== "closed",
+    );
+    return {
+      ...SAMPLE,
+      arr,
+      openDeals: {
+        count: openDeals.length,
+        value: openDeals.reduce((s, d) => s + (d.amount ?? 0), 0),
+      },
+      contactsCount: contactsForCo.length,
+    };
+  }, [contacts.data, deals.data]);
+  const { groups: linkGroups } = useRecordLinks({ type: "crm.contact", id });
 
   useArchetypeKeyboard([
     { label: "Edit", combo: "e", run: () => alert("Edit company (mock)") },
@@ -128,24 +151,24 @@ export function CrmArchetypeCompanyHub() {
       }
       kpis={
         <>
-          <WidgetShell label="ARR" state={data.state} skeleton="kpi" onRetry={data.refetch}>
+          <WidgetShell label="ARR" state={(contacts.error || deals.error) ? { status: "error" as const, error: contacts.error ?? deals.error } : (contacts.loading && deals.loading) ? { status: "loading" as const } : { status: "ready" as const }} skeleton="kpi" onRetry={() => { contacts.refetch(); deals.refetch(); }}>
             <KpiTile label="ARR" value={co ? fmtCurrency(co.arr) : "—"} />
           </WidgetShell>
-          <WidgetShell label="Open deals" state={data.state} skeleton="kpi" onRetry={data.refetch}>
+          <WidgetShell label="Open deals" state={(contacts.error || deals.error) ? { status: "error" as const, error: contacts.error ?? deals.error } : (contacts.loading && deals.loading) ? { status: "loading" as const } : { status: "ready" as const }} skeleton="kpi" onRetry={() => { contacts.refetch(); deals.refetch(); }}>
             <KpiTile label="Open deals" value={co ? `${co.openDeals.count} · ${fmtCurrency(co.openDeals.value)}` : "—"}
               drillTo={{ kind: "hash", hash: "/crm/deals?filter=company:eq:Acme" }} />
           </WidgetShell>
-          <WidgetShell label="Tickets" state={data.state} skeleton="kpi" onRetry={data.refetch}>
+          <WidgetShell label="Tickets" state={(contacts.error || deals.error) ? { status: "error" as const, error: contacts.error ?? deals.error } : (contacts.loading && deals.loading) ? { status: "loading" as const } : { status: "ready" as const }} skeleton="kpi" onRetry={() => { contacts.refetch(); deals.refetch(); }}>
             <KpiTile label="Tickets" value={co ? `${co.tickets.open} open / ${co.tickets.closed}` : "—"} />
           </WidgetShell>
-          <WidgetShell label="CSAT" state={data.state} skeleton="kpi" onRetry={data.refetch}>
+          <WidgetShell label="CSAT" state={(contacts.error || deals.error) ? { status: "error" as const, error: contacts.error ?? deals.error } : (contacts.loading && deals.loading) ? { status: "loading" as const } : { status: "ready" as const }} skeleton="kpi" onRetry={() => { contacts.refetch(); deals.refetch(); }}>
             <KpiRing label="CSAT" current={co?.csat ?? 0} target={5} format={(n) => `${n.toFixed(1)}/5`} />
           </WidgetShell>
         </>
       }
       main={
         tab === "overview" ? (
-          <WidgetShell label="Overview" state={data.state} skeleton="list" onRetry={data.refetch}>
+          <WidgetShell label="Overview" state={(contacts.error || deals.error) ? { status: "error" as const, error: contacts.error ?? deals.error } : (contacts.loading && deals.loading) ? { status: "loading" as const } : { status: "ready" as const }} skeleton="list" onRetry={() => { contacts.refetch(); deals.refetch(); }}>
             <div className="rounded-lg border border-border bg-surface-0 p-4 grid grid-cols-2 gap-3 text-sm">
               <div><span className="text-text-muted">Industry: </span>{co?.industry}</div>
               <div><span className="text-text-muted">Tier: </span>{co?.tier}</div>
@@ -192,12 +215,23 @@ export function CrmArchetypeCompanyHub() {
         <>
           <RailRecordHealth score={{ score: co?.health.score ?? 0, tier: co?.health.tier ?? "info" }} />
           <RailRelatedEntities
-            groups={[
-              { label: "Contacts", count: co?.contactsCount ?? 0, summary: co?.contactsCount, icon: "Users", drillTo: { kind: "hash", hash: "/crm/people?filter=company:eq:Acme" } },
-              { label: "Open deals", count: co?.openDeals.count ?? 0, summary: fmtCurrency(co?.openDeals.value ?? 0), icon: "Target", drillTo: { kind: "hash", hash: "/crm/deals?filter=company:eq:Acme" } },
-              { label: "Tickets", count: co?.tickets.open ?? 0, summary: `${co?.tickets.open} open`, icon: "MessageSquare", severity: "warning" },
-              { label: "Contracts", count: co?.contracts ?? 0, summary: co?.contracts, icon: "FileText" },
-            ]}
+            groups={
+              linkGroups.length > 0
+                ? linkGroups.map((g) => ({
+                    label: g.label,
+                    count: g.count,
+                    summary: g.summary,
+                    icon: g.icon,
+                    severity: g.severity,
+                    drillTo: g.href ? { kind: "url", url: g.href } : undefined,
+                  }))
+                : [
+                    { label: "Contacts", count: co?.contactsCount ?? 0, summary: co?.contactsCount, icon: "Users", drillTo: { kind: "hash", hash: "/crm/people?filter=company:eq:Acme" } },
+                    { label: "Open deals", count: co?.openDeals.count ?? 0, summary: fmtCurrency(co?.openDeals.value ?? 0), icon: "Target", drillTo: { kind: "hash", hash: "/crm/deals?filter=company:eq:Acme" } },
+                    { label: "Tickets", count: co?.tickets.open ?? 0, summary: `${co?.tickets.open} open`, icon: "MessageSquare", severity: "warning" },
+                    { label: "Contracts", count: co?.contracts ?? 0, summary: co?.contracts, icon: "FileText" },
+                  ]
+            }
           />
           <RailNextActions actions={[
             { id: "review", label: "Send Q3 business review", source: "ai", rationale: "Renewal in 5 months" },

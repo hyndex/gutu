@@ -17,8 +17,9 @@ import {
   RailEntityCard,
   useArchetypeKeyboard,
   useUrlState,
-  useSwr,
+  type LoadState,
 } from "@/admin-archetypes";
+import { useAllRecords } from "@/runtime/hooks";
 import { cn } from "@/lib/cn";
 import { ForceGraphCanvas } from "@/admin-archetypes";
 
@@ -115,19 +116,81 @@ function layoutNodes(nodes: Node[]): PositionedNode[] {
   return nodes.map((n) => positioned.get(n.id)!);
 }
 
-async function fetchGraph(): Promise<{ nodes: Node[]; edges: Edge[] }> {
-  try {
-    const res = await fetch("/api/crm/relations");
-    if (res.ok) return (await res.json()) as { nodes: Node[]; edges: Edge[] };
-  } catch {/* fall through */}
-  return { nodes: NODES, edges: EDGES };
-}
-
 export function CrmArchetypeRelations() {
   const [params, setParams] = useUrlState(["sel", "zoom"] as const);
-  const data = useSwr("crm.relations", fetchGraph, { ttlMs: 60_000 });
-  const nodes = data.data?.nodes ?? NODES;
-  const edges = data.data?.edges ?? EDGES;
+  // Real backend reads — derive nodes + edges from real CRM contacts +
+  // sales deals. Each contact and company becomes a node; deals link
+  // contacts to companies; same-company contacts share an edge.
+  const liveContacts = useAllRecords<{
+    id: string;
+    name?: string;
+    company?: string;
+  }>("crm.contact");
+  const liveDeals = useAllRecords<{
+    id: string;
+    contactId?: string;
+    company?: string;
+    name?: string;
+    amount?: number;
+  }>("sales.deal");
+
+  const built = React.useMemo<{ nodes: Node[]; edges: Edge[] }>(() => {
+    if (liveContacts.data.length === 0 && liveDeals.data.length === 0) {
+      return { nodes: NODES, edges: EDGES };
+    }
+    const nodes: Node[] = [];
+    const seen = new Set<string>();
+    const addNode = (n: Node) => {
+      if (seen.has(n.id)) return;
+      seen.add(n.id);
+      nodes.push(n);
+    };
+    // Companies (deduplicated).
+    const companies = new Set<string>();
+    for (const c of liveContacts.data) {
+      if (c.company) companies.add(c.company);
+    }
+    for (const co of companies) {
+      addNode({ id: `co-${co}`, label: co, type: "company" });
+    }
+    // Contacts.
+    for (const c of liveContacts.data.slice(0, 60)) {
+      addNode({ id: `p-${c.id}`, label: c.name ?? c.id, type: "person" });
+    }
+    // Deals.
+    for (const d of liveDeals.data.slice(0, 60)) {
+      addNode({ id: `d-${d.id}`, label: d.name ?? d.id, type: "deal" });
+    }
+    // Edges.
+    const edges: Edge[] = [];
+    for (const c of liveContacts.data.slice(0, 60)) {
+      if (c.company)
+        edges.push({ source: `p-${c.id}`, target: `co-${c.company}`, kind: "works_for", weight: 0.7 });
+    }
+    for (const d of liveDeals.data.slice(0, 60)) {
+      if (d.company)
+        edges.push({ source: `co-${d.company}`, target: `d-${d.id}`, kind: "linked", weight: Math.min(1, (d.amount ?? 0) / 100_000) });
+      if (d.contactId)
+        edges.push({ source: `p-${d.contactId}`, target: `d-${d.id}`, kind: "follows", weight: 0.5 });
+    }
+    return { nodes, edges };
+  }, [liveContacts.data, liveDeals.data]);
+
+  const dataState: LoadState = (liveContacts.error || liveDeals.error)
+    ? { status: "error", error: liveContacts.error ?? liveDeals.error }
+    : (liveContacts.loading && liveDeals.loading && liveContacts.data.length === 0)
+      ? { status: "loading" }
+      : { status: "ready" };
+  const data = {
+    state: dataState,
+    refetch: () => {
+      liveContacts.refetch();
+      liveDeals.refetch();
+    },
+  };
+
+  const nodes = built.nodes;
+  const edges = built.edges;
   const positioned = React.useMemo(() => layoutNodes(nodes), [nodes]);
   const byId = React.useMemo(
     () => new Map(positioned.map((n) => [n.id, n])),

@@ -18,9 +18,10 @@ import {
   WidgetShell,
   useArchetypeKeyboard,
   useUrlState,
-  useSwr,
   type DriftPoint,
+  type LoadState,
 } from "@/admin-archetypes";
+import { useAllRecords } from "@/runtime/hooks";
 
 interface AiKpis {
   tokens: { value: number; deltaPct: number; series: DriftPoint[] };
@@ -38,11 +39,7 @@ function mockSeries(base: number, amp: number, n: number): DriftPoint[] {
   }));
 }
 
-async function fetchKpis(): Promise<AiKpis> {
-  try {
-    const res = await fetch("/api/ai/dashboard/kpis");
-    if (res.ok) return (await res.json()) as AiKpis;
-  } catch {/* fall through */}
+function mockKpis(): AiKpis {
   return {
     tokens: { value: 4_280_000, deltaPct: 14.2, series: mockSeries(3_900_000, 220_000, 14) },
     cost: { value: 412, deltaPct: 8.4 },
@@ -53,12 +50,63 @@ async function fetchKpis(): Promise<AiKpis> {
   };
 }
 
+interface AiThreadRow {
+  id: string;
+  status?: "running" | "succeeded" | "failed" | string;
+  tokensUsed?: number;
+  costUsd?: number;
+  latencyMs?: number;
+  createdAt?: string;
+  acceptedActions?: number;
+  proposedActions?: number;
+}
+
 export function AiAssistArchetypeDashboard() {
   const [params, setParams] = useUrlState(["period"] as const);
   const period = (params.period as PeriodKey | undefined) ?? "30d";
-  const data = useSwr<AiKpis>(`ai.kpis?period=${period}`, fetchKpis, { ttlMs: 30_000 });
+  // Real backend read.
+  const live = useAllRecords<AiThreadRow>("ai-assist.thread");
 
-  useArchetypeKeyboard([{ label: "Refresh", combo: "r", run: () => { void data.refetch(); } }]);
+  const dataState: LoadState = live.error
+    ? { status: "error", error: live.error }
+    : live.loading && live.data.length === 0
+      ? { status: "loading" }
+      : { status: "ready" };
+
+  const kpis = React.useMemo<AiKpis>(() => {
+    if (!live.data.length) return mockKpis();
+    const periodDays = period === "7d" ? 7 : period === "30d" ? 30 : period === "qtd" ? 90 : 365;
+    const since = Date.now() - periodDays * 86_400_000;
+    const inPeriod = live.data.filter((t) =>
+      t.createdAt ? Date.parse(t.createdAt) >= since : true,
+    );
+    const tokens = inPeriod.reduce((s, t) => s + (t.tokensUsed ?? 0), 0);
+    const cost = inPeriod.reduce((s, t) => s + (t.costUsd ?? 0), 0);
+    const latencies = inPeriod
+      .map((t) => t.latencyMs ?? 0)
+      .filter((n) => n > 0)
+      .sort((a, b) => a - b);
+    const p50 = latencies[Math.floor(latencies.length / 2)] ?? 0;
+    const succeeded = inPeriod.filter((t) => t.status === "succeeded").length;
+    const failed = inPeriod.filter((t) => t.status === "failed").length;
+    const eligible = succeeded + failed;
+    const passRate = eligible === 0 ? 0 : succeeded / eligible;
+    const accepted = inPeriod.reduce((s, t) => s + (t.acceptedActions ?? 0), 0);
+    const proposed = inPeriod.reduce((s, t) => s + (t.proposedActions ?? 0), 0);
+    const acceptanceRate = proposed === 0 ? 0 : accepted / proposed;
+    const fallback = mockKpis();
+    return {
+      tokens: { value: tokens, deltaPct: 0, series: fallback.tokens.series },
+      cost: { value: Math.round(cost), deltaPct: 0 },
+      p50LatencyMs: { value: p50, deltaPct: 0 },
+      evalPassRate: { current: passRate, target: 0.95 },
+      failedRuns: { value: failed },
+      acceptanceRate: { value: acceptanceRate },
+    };
+  }, [live.data, period]);
+  const data = { data: kpis, state: dataState, refetch: live.refetch };
+
+  useArchetypeKeyboard([{ label: "Refresh", combo: "r", run: () => data.refetch() }]);
 
   const fmtCurrency = (n: number) =>
     new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(n);

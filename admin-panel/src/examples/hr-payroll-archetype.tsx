@@ -18,9 +18,10 @@ import {
   WidgetShell,
   useArchetypeKeyboard,
   useUrlState,
-  useSwr,
   type DriftPoint,
+  type LoadState,
 } from "@/admin-archetypes";
+import { useAllRecords } from "@/runtime/hooks";
 
 interface HrKpis {
   headcount: { value: number; deltaPct: number; series: DriftPoint[] };
@@ -38,11 +39,7 @@ function mockSeries(base: number, amp: number, n: number): DriftPoint[] {
   }));
 }
 
-async function fetchKpis(): Promise<HrKpis> {
-  try {
-    const res = await fetch("/api/hr-payroll/dashboard/kpis");
-    if (res.ok) return (await res.json()) as HrKpis;
-  } catch {/* fall through */}
+function mockKpis(): HrKpis {
   return {
     headcount: { value: 248, deltaPct: 2.1, series: mockSeries(240, 6, 14) },
     openReqs: 14,
@@ -53,12 +50,65 @@ async function fetchKpis(): Promise<HrKpis> {
   };
 }
 
+interface EmployeeRow {
+  id: string;
+  status?: "active" | "leave" | "terminated";
+  startDate?: string;
+  hireDate?: string;
+  endDate?: string;
+  flightRisk?: boolean;
+  engagementScore?: number;
+}
+
 export function HrPayrollArchetypeDashboard() {
   const [params, setParams] = useUrlState(["period"] as const);
   const period = (params.period as PeriodKey | undefined) ?? "30d";
-  const data = useSwr<HrKpis>(`hr.kpis?period=${period}`, fetchKpis, { ttlMs: 60_000 });
+  // Real backend read.
+  const live = useAllRecords<EmployeeRow>("hr-payroll.employee");
 
-  useArchetypeKeyboard([{ label: "Refresh", combo: "r", run: () => { void data.refetch(); } }]);
+  const dataState: LoadState = live.error
+    ? { status: "error", error: live.error }
+    : live.loading && live.data.length === 0
+      ? { status: "loading" }
+      : { status: "ready" };
+
+  const kpis = React.useMemo<HrKpis>(() => {
+    if (!live.data.length) return mockKpis();
+    const active = live.data.filter((e) => e.status !== "terminated");
+    const headcount = active.length;
+    const now = Date.now();
+    const ninety = 90 * 86_400_000;
+    const turnoverNumerator = live.data.filter(
+      (e) =>
+        e.status === "terminated" &&
+        e.endDate &&
+        now - Date.parse(e.endDate) <= ninety,
+    ).length;
+    const turnoverDenom = active.length || 1;
+    const tenureSum = active.reduce((s, e) => {
+      const start = e.startDate ?? e.hireDate;
+      if (!start) return s;
+      const months = (now - Date.parse(start)) / (30 * 86_400_000);
+      return s + Math.max(0, months);
+    }, 0);
+    const engagementSum = active.reduce(
+      (s, e) => s + (e.engagementScore ?? 0),
+      0,
+    );
+    const engagementCount = active.filter((e) => typeof e.engagementScore === "number").length;
+    const fallback = mockKpis();
+    return {
+      headcount: { value: headcount, deltaPct: 0, series: fallback.headcount.series },
+      openReqs: fallback.openReqs,
+      turnover90: { current: turnoverNumerator / turnoverDenom, target: 0.08 },
+      avgTenureMonths: Math.round(tenureSum / Math.max(1, active.length)),
+      engagement: { value: engagementCount === 0 ? 0 : engagementSum / engagementCount },
+      flightRiskCount: live.data.filter((e) => e.flightRisk).length,
+    };
+  }, [live.data]);
+  const data = { data: kpis, state: dataState, refetch: live.refetch };
+
+  useArchetypeKeyboard([{ label: "Refresh", combo: "r", run: () => data.refetch() }]);
 
   return (
     <IntelligentDashboard

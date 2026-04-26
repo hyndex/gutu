@@ -17,8 +17,9 @@ import {
   CommandHints,
   useArchetypeKeyboard,
   useUrlState,
-  useSwr,
+  useRecordLinks,
 } from "@/admin-archetypes";
+import { useRecord } from "@/runtime/hooks";
 
 interface PersonHub {
   id: string;
@@ -59,19 +60,53 @@ const STAGE_TONE: Record<PersonHub["stage"], "success" | "info" | "warning" | "n
   churned: "neutral",
 };
 
-async function fetchPerson(id: string): Promise<PersonHub> {
-  try {
-    const res = await fetch(`/api/crm/people/${encodeURIComponent(id)}`);
-    if (res.ok) return (await res.json()) as PersonHub;
-  } catch {/* fall through */}
-  return SAMPLE;
+function liveOrSample(rec: Record<string, unknown> | null | undefined, fallback: PersonHub): PersonHub {
+  if (!rec) return fallback;
+  // Best-effort projection of the framework record into our local
+  // PersonHub shape. Missing fields fall back to the sample so the
+  // page UX is never blank.
+  const r = rec as Partial<PersonHub> & { name?: string; firstName?: string; lastName?: string };
+  return {
+    id: String(r.id ?? fallback.id),
+    name:
+      r.name ??
+      ([r.firstName, r.lastName].filter(Boolean).join(" ") || fallback.name),
+    email: r.email ?? fallback.email,
+    phone: r.phone ?? fallback.phone,
+    title: r.title ?? fallback.title,
+    company: r.company ?? fallback.company,
+    stage: (r.stage as PersonHub["stage"]) ?? fallback.stage,
+    ltv: typeof r.ltv === "number" ? r.ltv : (rec as { lifetimeValue?: number }).lifetimeValue ?? fallback.ltv,
+    lastTouchDays: typeof r.lastTouchDays === "number" ? r.lastTouchDays : fallback.lastTouchDays,
+    openDeals: typeof r.openDeals === "number" ? r.openDeals : fallback.openDeals,
+    openTickets: typeof r.openTickets === "number" ? r.openTickets : fallback.openTickets,
+    health: r.health ?? fallback.health,
+    preferences: r.preferences ?? fallback.preferences,
+  };
 }
 
 export function CrmArchetypePersonHub() {
   const [params, setParams] = useUrlState(["tab", "id"] as const);
   const tab = params.tab ?? "overview";
   const id = params.id ?? "p-ada";
-  const data = useSwr(`crm.person.${id}`, () => fetchPerson(id), { ttlMs: 30_000 });
+  // Real backend read for the focused entity. Falls back to sample
+  // when the id isn't found (e.g., demo path).
+  const live = useRecord("crm.contact", id);
+  const data = {
+    data: liveOrSample(live.data, SAMPLE),
+    state: live.error
+      ? ({ status: "error" as const, error: live.error })
+      : live.loading && !live.data
+        ? ({ status: "loading" as const })
+        : ({ status: "ready" as const }),
+    refetch: () => {
+      /* useRecord already auto-refreshes on resource change. */
+    },
+  };
+  // Surface real cross-plugin links via the framework adapter.
+  const { groups: linkGroups } = useRecordLinks(
+    live.data ? { type: "crm.contact", id: String(live.data.id) } : null,
+  );
   const p = data.data;
 
   useArchetypeKeyboard([
@@ -214,11 +249,22 @@ export function CrmArchetypePersonHub() {
         <>
           <RailRecordHealth score={{ score: p?.health.score ?? 0, tier: p?.health.tier ?? "info" }} />
           <RailRelatedEntities
-            groups={[
-              { label: "Open deals", count: p?.openDeals ?? 0, summary: p?.openDeals, icon: "Target", drillTo: { kind: "hash", hash: `/crm/deals?filter=person:eq:${id}` } },
-              { label: "Open tickets", count: p?.openTickets ?? 0, summary: p?.openTickets, icon: "MessageSquare" },
-              { label: "Files", count: 4, summary: 4, icon: "FileText" },
-            ]}
+            groups={
+              linkGroups.length > 0
+                ? linkGroups.map((g) => ({
+                    label: g.label,
+                    count: g.count,
+                    summary: g.summary,
+                    icon: g.icon,
+                    severity: g.severity,
+                    drillTo: g.href ? { kind: "url", url: g.href } : undefined,
+                  }))
+                : [
+                    { label: "Open deals", count: p?.openDeals ?? 0, summary: p?.openDeals, icon: "Target", drillTo: { kind: "hash", hash: `/crm/deals?filter=person:eq:${id}` } },
+                    { label: "Open tickets", count: p?.openTickets ?? 0, summary: p?.openTickets, icon: "MessageSquare" },
+                    { label: "Files", count: 4, summary: 4, icon: "FileText" },
+                  ]
+            }
           />
           <RailNextActions
             actions={[

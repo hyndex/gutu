@@ -12,8 +12,9 @@ import {
   CommandHints,
   useArchetypeKeyboard,
   useUrlState,
-  useSwr,
+  type LoadState,
 } from "@/admin-archetypes";
+import { useAllRecords } from "@/runtime/hooks";
 import { cn } from "@/lib/cn";
 
 interface Job {
@@ -53,14 +54,61 @@ async function fetchJobs(): Promise<Job[]> {
   return JOBS;
 }
 
+interface JobRow {
+  id: string;
+  customer?: string;
+  status?: "scheduled" | "in_progress" | "stalled" | "completed" | string;
+  technician?: string;
+  technicianName?: string;
+  /** Optional pre-resolved canvas coords. Otherwise we hash the id. */
+  x?: number;
+  y?: number;
+  eta?: string;
+  scheduledStart?: string;
+}
+
+function hashCoord(id: string, axis: "x" | "y"): number {
+  let h = axis === "x" ? 17 : 31;
+  for (let i = 0; i < id.length; i++) h = (h * 33 + id.charCodeAt(i)) | 0;
+  return ((Math.abs(h) % 80) + 8); // 8..88 inside the 100x100 canvas
+}
+
 export function FieldServiceArchetypeMap() {
   const [params, setParams] = useUrlState(["sel"] as const);
   const selectedId = params.sel;
-  const data = useSwr<Job[]>("field-service.jobs", fetchJobs, { ttlMs: 15_000 });
-  const jobs = data.data ?? [];
+  // Real backend read.
+  const live = useAllRecords<JobRow>("field-service.job");
+  const jobs = React.useMemo<Job[]>(() => {
+    if (live.data.length === 0) return JOBS;
+    return live.data.map<Job>((j) => {
+      const status = (
+        j.status === "scheduled" ||
+        j.status === "in_progress" ||
+        j.status === "stalled" ||
+        j.status === "completed"
+          ? j.status
+          : "scheduled"
+      );
+      return {
+        id: j.id,
+        customer: j.customer ?? "—",
+        status,
+        tech: j.technicianName ?? j.technician ?? "—",
+        x: j.x ?? hashCoord(j.id, "x"),
+        y: j.y ?? hashCoord(j.id, "y"),
+        eta: j.eta ?? (j.scheduledStart ? new Date(j.scheduledStart).toISOString().slice(11, 16) : "—"),
+      };
+    });
+  }, [live.data]);
+  const dataState: LoadState = live.error
+    ? { status: "error", error: live.error }
+    : live.loading && live.data.length === 0
+      ? { status: "loading" }
+      : { status: "ready" };
+  const data = { state: dataState, refetch: live.refetch };
 
   useArchetypeKeyboard([
-    { label: "Refresh", combo: "r", run: () => { void data.refetch(); } },
+    { label: "Refresh", combo: "r", run: () => data.refetch() },
     {
       label: "Clear selection",
       combo: "esc",

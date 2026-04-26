@@ -10,8 +10,9 @@ import {
   CommandHints,
   useArchetypeKeyboard,
   useUrlState,
-  useSwr,
+  type LoadState,
 } from "@/admin-archetypes";
+import { useAllRecords } from "@/runtime/hooks";
 import { cn } from "@/lib/cn";
 
 interface WorkOrder {
@@ -73,11 +74,55 @@ export function MaintenanceArchetypeCalendar() {
   const startStr = params.start ?? startOfWeek(new Date()).toISOString().slice(0, 10);
   const start = React.useMemo(() => new Date(startStr), [startStr]);
 
-  const data = useSwr<WorkOrder[]>(
-    `maintenance.calendar?start=${startStr}`,
-    async () => generateOrders(start),
-  );
-  const orders = data.data ?? [];
+  // Real backend read.
+  const live = useAllRecords<{
+    id: string;
+    asset?: string;
+    assetName?: string;
+    technician?: string;
+    technicianName?: string;
+    scheduledStart?: string;
+    durationHours?: number;
+    status?: "scheduled" | "in_progress" | "done" | string;
+    priority?: "low" | "med" | "high" | string;
+  }>("maintenance-cmms.work-order");
+
+  const orders = React.useMemo<WorkOrder[]>(() => {
+    if (live.data.length === 0) return generateOrders(start);
+    const fromTs = start.getTime();
+    const toTs = fromTs + 5 * 86_400_000;
+    return live.data
+      .filter((wo) => {
+        const t = wo.scheduledStart ? Date.parse(wo.scheduledStart) : NaN;
+        return Number.isFinite(t) && t >= fromTs && t < toTs;
+      })
+      .map<WorkOrder>((wo) => {
+        const d = new Date(wo.scheduledStart!);
+        return {
+          id: wo.id,
+          asset: wo.assetName ?? wo.asset ?? "—",
+          tech: wo.technicianName ?? wo.technician ?? "—",
+          date: d.toISOString().slice(0, 10),
+          hour: d.getHours(),
+          durationHours: wo.durationHours ?? 1,
+          status:
+            wo.status === "scheduled" || wo.status === "in_progress" || wo.status === "done"
+              ? wo.status
+              : "scheduled",
+          priority:
+            wo.priority === "low" || wo.priority === "med" || wo.priority === "high"
+              ? wo.priority
+              : "med",
+        };
+      });
+  }, [live.data, start]);
+
+  const dataState: LoadState = live.error
+    ? { status: "error", error: live.error }
+    : live.loading && live.data.length === 0
+      ? { status: "loading" }
+      : { status: "ready" };
+  const data = { state: dataState, refetch: live.refetch };
 
   const days: Date[] = Array.from({ length: 5 }, (_, i) => {
     const d = new Date(start);
