@@ -125,12 +125,19 @@ export async function handleRequest(req: JsonRpcRequest, ctx: ServerContext): Pr
       // for it (the underlying tool call IS recorded though), so
       // pass an empty callId — recordUndo() is never reached on
       // read paths.
-      const result = await tool.call({
-        agent: ctx.agent,
-        tenantId: ctx.tenantId,
-        args: id ? { id } : { pageSize: 25 },
-        callId: "",
-      });
+      const ctrl = track(req.id);
+      let result;
+      try {
+        result = await tool.call({
+          agent: ctx.agent,
+          tenantId: ctx.tenantId,
+          args: id ? { id } : { pageSize: 25 },
+          callId: "",
+          signal: ctrl.signal,
+        });
+      } finally {
+        untrack(req.id);
+      }
       const block = result.content.find((c) => c.type === "resource") ?? result.content[0];
       const out: ResourcesReadResult = {
         contents: [
@@ -386,8 +393,19 @@ async function handleToolsCall(
     return err(req, code, limited.error, { retryAfterMs: limited.retryAfterMs });
   }
 
+  // Track the request so `notifications/cancelled` can abort the
+  // tool mid-call. The cancellation module wires the AbortController
+  // by request id; the handler observes `signal.aborted` between
+  // operations and throws.
+  const ctrl = track(req.id);
   try {
-    const out = await tool.call({ agent: ctx.agent, tenantId: ctx.tenantId, args, callId });
+    const out = await tool.call({
+      agent: ctx.agent,
+      tenantId: ctx.tenantId,
+      args,
+      callId,
+      signal: ctrl.signal,
+    });
     const result: ToolsCallResult = { content: out.content, isError: false };
     if (idempotencyKey) {
       idemStore({
@@ -432,6 +450,8 @@ async function handleToolsCall(
     // Note: tools/call wraps execution errors as `isError: true`
     // inside a successful JSON-RPC envelope per MCP spec.
     return ok<ToolsCallResult>(req, errResult);
+  } finally {
+    untrack(req.id);
   }
 }
 

@@ -53,20 +53,14 @@ import { hashArgs } from "../lib/mcp/idempotency";
 import {
   approvePlan as approvePlanFn,
   cancelPlan as cancelPlanFn,
-  completeStep,
   getPlan as getPlanFn,
   listPlans as listPlansFn,
-  markDone,
-  markFailed,
-  markRunning,
   rejectPlan,
-  skipRemainingSteps,
-  startStep,
 } from "../lib/mcp/plans";
-import { getTool } from "../lib/mcp/tools";
 import { listUndoableForAgent, undo as undoEntry } from "../lib/mcp/undo";
 import { cancel as cancelRequest } from "../lib/mcp/cancellation";
 import { registerBuiltInPrompts } from "../lib/mcp/prompts";
+import { enqueueExecute } from "../lib/mcp/plan-executor";
 
 // Register the framework's prompt packs at first import.
 registerBuiltInPrompts();
@@ -392,59 +386,21 @@ adminRoutes.post("/plans/:id/cancel", (c) => {
  *      operator approval of the PLAN does NOT auto-grant dual-keys */
 adminRoutes.post("/plans/:id/execute", async (c) => {
   const tenantId = getTenantContext()?.tenantId ?? "default";
+  const user = currentUser(c);
   const plan = getPlanFn(c.req.param("id"));
   if (!plan || plan.tenantId !== tenantId) return c.json({ error: "not found" }, 404);
-  if (plan.status !== "approved") {
-    return c.json({ error: `plan must be approved (current: ${plan.status})` }, 400);
-  }
-  const agent = getAgent(plan.agentId);
-  if (!agent) return c.json({ error: "agent revoked" }, 400);
-
-  markRunning(plan.id);
-  let failureSeen = false;
-  for (const step of plan.steps) {
-    if (failureSeen) break;
-    startStep(step.id);
-    const tool = getTool(step.toolName);
-    if (!tool) {
-      completeStep({ stepId: step.id, ok: false, errorMessage: `unknown tool ${step.toolName}` });
-      failureSeen = true;
-      break;
-    }
-    const callId = logCallStart({
-      agentId: agent.id,
-      tenantId,
-      method: "plans/execute-step",
-      toolName: tool.definition.name,
-      resource: tool.resource,
-      action: tool.scopeAction,
-      risk: tool.risk,
-      arguments: step.arguments,
-    });
-    const t0 = Date.now();
-    try {
-      const out = await tool.call({
-        agent,
-        tenantId,
-        args: step.arguments,
-        callId,
-      });
-      logCallEnd(callId, { ok: true, resultSummary: out.resultSummary, latencyMs: Date.now() - t0 });
-      completeStep({ stepId: step.id, ok: true, callLogId: callId });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      logCallEnd(callId, { ok: false, errorMessage: msg, latencyMs: Date.now() - t0 });
-      completeStep({ stepId: step.id, ok: false, errorMessage: msg, callLogId: callId });
-      failureSeen = true;
-    }
-  }
-  if (failureSeen) {
-    skipRemainingSteps(plan.id);
-    markFailed(plan.id, "step failed");
-  } else {
-    markDone(plan.id);
-  }
-  return c.json({ plan: getPlanFn(plan.id) });
+  const body = (await c.req.json().catch(() => ({}))) as { autoRollback?: boolean };
+  // Async path: kick the executor onto setImmediate, return 202 +
+  // current plan snapshot. The operator polls GET /admin/plans/:id
+  // for status. This way a 50-step plan with slow tools doesn't
+  // wedge a single HTTP request for minutes.
+  const queued = enqueueExecute({
+    planId: plan.id,
+    byUserId: user.id,
+    options: { autoRollback: !!body.autoRollback },
+  });
+  if (!queued.ok) return c.json({ error: queued.error }, 400);
+  return c.json({ plan: getPlanFn(plan.id), queued: true }, 202);
 });
 
 /* -- undo log ----------------------------------------------------- */

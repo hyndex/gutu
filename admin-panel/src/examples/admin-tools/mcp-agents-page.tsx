@@ -87,7 +87,10 @@ const RISK_LABEL: Record<Agent["riskCeiling"], string> = {
   "high-mutation": "High mutation",
 };
 
+type Tab = "agents" | "plans" | "undo" | "dual-key";
+
 export function McpAgentsPage(): React.ReactElement {
+  const [tab, setTab] = React.useState<Tab>("agents");
   const [agents, setAgents] = React.useState<Agent[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | undefined>();
@@ -155,8 +158,33 @@ export function McpAgentsPage(): React.ReactElement {
             dual-key token.
           </p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>New agent</Button>
+        {tab === "agents" && <Button onClick={() => setShowCreate(true)}>New agent</Button>}
       </header>
+
+      <nav role="tablist" className="border-b border-border flex items-center gap-1 -mb-px overflow-x-auto scrollbar-thin">
+        {([
+          { id: "agents", label: "Agents" },
+          { id: "plans", label: "Plans" },
+          { id: "undo", label: "Undo log" },
+          { id: "dual-key", label: "Dual-key tokens" },
+        ] as const).map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+            className={cn(
+              "px-3 py-1.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
+              tab === t.id
+                ? "border-accent text-text-primary"
+                : "border-transparent text-text-muted hover:text-text-primary",
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
 
       {error && (
         <div role="alert" className="rounded-md border border-danger-strong/30 bg-danger-soft p-2 text-xs text-danger-strong">
@@ -193,73 +221,80 @@ export function McpAgentsPage(): React.ReactElement {
         </div>
       )}
 
-      {/* AGENTS LIST */}
-      <div className="rounded-lg border border-border bg-surface-0 shadow-sm">
-        <div className="px-4 py-3 border-b border-border-subtle text-sm font-semibold">
-          Agents ({agents.length})
-        </div>
-        {loading ? (
-          <div className="px-4 py-8 text-center text-sm text-text-muted">Loading…</div>
-        ) : agents.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-text-muted">
-            No agents yet. Create one to grant an AI agent scoped MCP access.
-          </div>
-        ) : (
-          <ul className="divide-y divide-border-subtle">
-            {agents.map((a) => (
-              <li
-                key={a.id}
-                className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-surface-1 transition-colors"
-                onClick={() => setSelected(a)}
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline gap-2">
-                    <div className="text-sm font-semibold text-text-primary truncate">
-                      {a.name}
+      {/* AGENTS TAB */}
+      {tab === "agents" && (
+        <>
+          <div className="rounded-lg border border-border bg-surface-0 shadow-sm">
+            <div className="px-4 py-3 border-b border-border-subtle text-sm font-semibold">
+              Agents ({agents.length})
+            </div>
+            {loading ? (
+              <div className="px-4 py-8 text-center text-sm text-text-muted">Loading…</div>
+            ) : agents.length === 0 ? (
+              <div className="px-4 py-8 text-center text-sm text-text-muted">
+                No agents yet. Create one to grant an AI agent scoped MCP access.
+              </div>
+            ) : (
+              <ul className="divide-y divide-border-subtle">
+                {agents.map((a) => (
+                  <li
+                    key={a.id}
+                    className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-surface-1 transition-colors"
+                    onClick={() => setSelected(a)}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-2">
+                        <div className="text-sm font-semibold text-text-primary truncate">
+                          {a.name}
+                        </div>
+                        <Badge intent={STATUS_INTENT[a.status]}>{a.status}</Badge>
+                        <span className="text-[11px] text-text-muted">
+                          {RISK_LABEL[a.riskCeiling]}
+                        </span>
+                      </div>
+                      {a.description && (
+                        <div className="text-xs text-text-muted truncate">{a.description}</div>
+                      )}
+                      <div className="text-[11px] text-text-muted mt-0.5 flex items-center gap-3">
+                        <span>{Object.keys(a.scopes).length} scoped resource{Object.keys(a.scopes).length === 1 ? "" : "s"}</span>
+                        <span>·</span>
+                        <span>{a.lastUsedAt ? `last used ${new Date(a.lastUsedAt).toLocaleString()}` : "never used"}</span>
+                      </div>
                     </div>
-                    <Badge intent={STATUS_INTENT[a.status]}>{a.status}</Badge>
-                    <span className="text-[11px] text-text-muted">
-                      {RISK_LABEL[a.riskCeiling]}
-                    </span>
-                  </div>
-                  {a.description && (
-                    <div className="text-xs text-text-muted truncate">{a.description}</div>
-                  )}
-                  <div className="text-[11px] text-text-muted mt-0.5 flex items-center gap-3">
-                    <span>{Object.keys(a.scopes).length} scoped resource{Object.keys(a.scopes).length === 1 ? "" : "s"}</span>
-                    <span>·</span>
-                    <span>{a.lastUsedAt ? `last used ${new Date(a.lastUsedAt).toLocaleString()}` : "never used"}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                  {a.status === "active" && (
-                    <>
-                      <Button variant="outline" size="sm" onClick={() => onIssueToken(a)}>
-                        New token
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => onSuspend(a)}>
-                        Suspend
-                      </Button>
-                    </>
-                  )}
-                  {a.status !== "revoked" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onRevoke(a)}
-                      className="text-danger hover:text-danger-strong"
-                    >
-                      Revoke
-                    </Button>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+                    <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      {a.status === "active" && (
+                        <>
+                          <Button variant="outline" size="sm" onClick={() => onIssueToken(a)}>
+                            New token
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => onSuspend(a)}>
+                            Suspend
+                          </Button>
+                        </>
+                      )}
+                      {a.status !== "revoked" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onRevoke(a)}
+                          className="text-danger hover:text-danger-strong"
+                        >
+                          Revoke
+                        </Button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          {selected && <AgentDetailPanel agent={selected} onClose={() => setSelected(null)} />}
+        </>
+      )}
 
-      {selected && <AgentDetailPanel agent={selected} onClose={() => setSelected(null)} />}
+      {tab === "plans" && <PlansTab agents={agents} setError={setError} />}
+      {tab === "undo" && <UndoTab agents={agents} setError={setError} />}
+      {tab === "dual-key" && <DualKeyTab agents={agents} setError={setError} />}
 
       {showCreate && (
         <CreateAgentDialog
@@ -271,6 +306,392 @@ export function McpAgentsPage(): React.ReactElement {
         />
       )}
     </div>
+  );
+}
+
+/* -- plans tab ---------------------------------------------------- */
+
+interface PlanStep {
+  id: string;
+  seq: number;
+  toolName: string;
+  arguments: Record<string, unknown>;
+  note?: string;
+  status: "pending" | "running" | "succeeded" | "failed" | "skipped";
+  errorMessage?: string;
+  callLogId?: string;
+}
+
+interface Plan {
+  id: string;
+  agentId: string;
+  title: string;
+  summary: string;
+  status: "proposed" | "approved" | "running" | "done" | "failed" | "rejected" | "cancelled";
+  proposedAt: string;
+  approvedAt?: string;
+  approvedByUser?: string;
+  failureReason?: string;
+  steps: PlanStep[];
+}
+
+const PLAN_STATUS_INTENT: Record<Plan["status"], "info" | "success" | "warning" | "danger" | "neutral"> = {
+  proposed: "info",
+  approved: "info",
+  running: "warning",
+  done: "success",
+  failed: "danger",
+  rejected: "neutral",
+  cancelled: "neutral",
+};
+
+function PlansTab({
+  agents,
+  setError,
+}: {
+  agents: Agent[];
+  setError: (s: string | undefined) => void;
+}): React.ReactElement {
+  const [plans, setPlans] = React.useState<Plan[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [autoRollback, setAutoRollback] = React.useState(false);
+  const refresh = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await api<{ plans: Plan[] }>("/mcp/admin/plans");
+      setPlans(r.plans);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [setError]);
+  React.useEffect(() => {
+    void refresh();
+  }, [refresh]);
+  // Poll every 2s while a plan is running so the operator sees
+  // step-by-step progress without having to click refresh.
+  React.useEffect(() => {
+    const hasRunning = plans.some((p) => p.status === "running");
+    if (!hasRunning) return;
+    const t = setInterval(() => void refresh(), 2000);
+    return () => clearInterval(t);
+  }, [plans, refresh]);
+
+  const agentName = (id: string): string => agents.find((a) => a.id === id)?.name ?? id;
+
+  const act = async (id: string, action: "approve" | "reject" | "cancel" | "execute"): Promise<void> => {
+    try {
+      const path = `/mcp/admin/plans/${id}/${action}`;
+      const body = action === "execute" ? JSON.stringify({ autoRollback }) : "{}";
+      await api(path, { method: "POST", body });
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  return (
+    <section className="space-y-3">
+      <div className="rounded-md border border-border-subtle bg-surface-0 px-4 py-2 flex items-center justify-between">
+        <label className="inline-flex items-center gap-2 text-xs text-text-primary">
+          <input
+            type="checkbox"
+            checked={autoRollback}
+            onChange={(e) => setAutoRollback(e.target.checked)}
+          />
+          Auto-rollback on step failure (reverses every succeeded step via the undo log)
+        </label>
+        <Button variant="ghost" size="sm" onClick={refresh}>Refresh</Button>
+      </div>
+      <div className="rounded-lg border border-border bg-surface-0 shadow-sm">
+        <div className="px-4 py-3 border-b border-border-subtle text-sm font-semibold">
+          Plans ({plans.length})
+        </div>
+        {loading ? (
+          <div className="px-4 py-6 text-center text-sm text-text-muted">Loading…</div>
+        ) : plans.length === 0 ? (
+          <div className="px-4 py-6 text-center text-sm text-text-muted">
+            No plans yet. Agents propose plans via plans/propose; you approve them here.
+          </div>
+        ) : (
+          <ul className="divide-y divide-border-subtle">
+            {plans.map((p) => (
+              <li key={p.id} className="px-4 py-3 space-y-2">
+                <div className="flex items-baseline gap-2">
+                  <div className="text-sm font-semibold text-text-primary truncate flex-1">{p.title}</div>
+                  <Badge intent={PLAN_STATUS_INTENT[p.status]}>{p.status}</Badge>
+                  <span className="text-[11px] text-text-muted">{agentName(p.agentId)}</span>
+                </div>
+                {p.summary && <div className="text-xs text-text-muted">{p.summary}</div>}
+                <ol className="text-xs space-y-0.5 pl-4 list-decimal">
+                  {p.steps.map((s) => (
+                    <li
+                      key={s.id}
+                      className={cn(
+                        "font-mono",
+                        s.status === "succeeded" && "text-success-strong",
+                        s.status === "failed" && "text-danger-strong",
+                        s.status === "running" && "text-warning-strong",
+                        s.status === "skipped" && "text-text-muted line-through",
+                      )}
+                    >
+                      {s.toolName}
+                      {s.note && <span className="ml-2 text-[11px] text-text-muted">— {s.note}</span>}
+                      {s.errorMessage && (
+                        <span className="ml-2 text-[11px] text-danger">: {s.errorMessage}</span>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+                {p.failureReason && (
+                  <div className="text-xs text-danger-strong">Failure: {p.failureReason}</div>
+                )}
+                <div className="flex items-center gap-1 pt-1">
+                  {p.status === "proposed" && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => act(p.id, "approve")}>Approve</Button>
+                      <Button variant="ghost" size="sm" onClick={() => act(p.id, "reject")}>Reject</Button>
+                    </>
+                  )}
+                  {p.status === "approved" && (
+                    <Button size="sm" onClick={() => act(p.id, "execute")}>Execute</Button>
+                  )}
+                  {(p.status === "proposed" || p.status === "approved") && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => act(p.id, "cancel")}
+                      className="text-danger hover:text-danger-strong"
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* -- undo tab ----------------------------------------------------- */
+
+interface UndoEntry {
+  id: string;
+  agentId: string;
+  resource: string;
+  recordId: string;
+  op: "create" | "update" | "delete";
+  createdAt: string;
+  expiresAt: string;
+}
+
+function UndoTab({
+  agents,
+  setError,
+}: {
+  agents: Agent[];
+  setError: (s: string | undefined) => void;
+}): React.ReactElement {
+  const [entries, setEntries] = React.useState<UndoEntry[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  const refresh = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await api<{ entries: UndoEntry[] }>("/mcp/admin/undo");
+      setEntries(r.entries);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoading(false);
+    }
+  }, [setError]);
+  React.useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const agentName = (id: string): string => agents.find((a) => a.id === id)?.name ?? id;
+
+  const reverse = async (id: string, force: boolean): Promise<void> => {
+    if (!confirm(force ? "Force-revert? Any human edits since the agent's change will be overwritten." : "Revert?")) return;
+    try {
+      const r = await api<{ ok: boolean; message: string }>(`/mcp/admin/undo/${id}`, {
+        method: "POST",
+        body: JSON.stringify({ force }),
+      });
+      if (!r.ok) setError(r.message);
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-border bg-surface-0 shadow-sm">
+      <div className="px-4 py-3 border-b border-border-subtle text-sm font-semibold">
+        Undo log ({entries.length} reversible — 24h retention)
+      </div>
+      {loading ? (
+        <div className="px-4 py-6 text-center text-sm text-text-muted">Loading…</div>
+      ) : entries.length === 0 ? (
+        <div className="px-4 py-6 text-center text-sm text-text-muted">
+          No reversible mutations in the window.
+        </div>
+      ) : (
+        <ul className="divide-y divide-border-subtle">
+          {entries.map((e) => (
+            <li key={e.id} className="px-4 py-2.5 flex items-center gap-3">
+              <span className="text-xs font-mono text-text-muted shrink-0">
+                {new Date(e.createdAt).toLocaleString()}
+              </span>
+              <span className="text-xs">
+                <Badge intent={e.op === "delete" ? "danger" : e.op === "create" ? "success" : "info"}>
+                  {e.op}
+                </Badge>
+                <span className="ml-1.5 font-mono text-text-primary">
+                  {e.resource}/{e.recordId}
+                </span>
+              </span>
+              <span className="text-[11px] text-text-muted ml-auto">{agentName(e.agentId)}</span>
+              <Button variant="outline" size="sm" onClick={() => reverse(e.id, false)}>
+                Revert
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => reverse(e.id, true)}
+                className="text-danger"
+                title="Force-revert even if a human has edited the record since"
+              >
+                Force
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/* -- dual-key tab ------------------------------------------------- */
+
+function DualKeyTab({
+  agents,
+  setError,
+}: {
+  agents: Agent[];
+  setError: (s: string | undefined) => void;
+}): React.ReactElement {
+  const [agentId, setAgentId] = React.useState(agents[0]?.id ?? "");
+  const [toolName, setToolName] = React.useState("");
+  const [argsJson, setArgsJson] = React.useState('{\n  "id": "<record-id>"\n}');
+  const [ttlMinutes, setTtlMinutes] = React.useState(30);
+  const [issued, setIssued] = React.useState<string | null>(null);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  const submit = async (): Promise<void> => {
+    setSubmitting(true);
+    setError(undefined);
+    setIssued(null);
+    try {
+      let parsedArgs: Record<string, unknown>;
+      try {
+        parsedArgs = JSON.parse(argsJson) as Record<string, unknown>;
+      } catch {
+        setError("arguments must be valid JSON");
+        return;
+      }
+      const r = await api<{ dualKeyToken: string }>("/mcp/admin/dual-key", {
+        method: "POST",
+        body: JSON.stringify({ agentId, toolName, arguments: parsedArgs, ttlMinutes }),
+      });
+      setIssued(r.dualKeyToken);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <section className="rounded-lg border border-border bg-surface-0 shadow-sm">
+      <div className="px-4 py-3 border-b border-border-subtle">
+        <div className="text-sm font-semibold text-text-primary">Issue dual-key token</div>
+        <p className="text-xs text-text-muted leading-relaxed">
+          Pre-approve ONE irreversible call by an agent. The token is bound to the exact (agent, tool, arguments)
+          you specify; reusing it on different arguments is rejected. Single-use, expiring.
+        </p>
+      </div>
+      <div className="p-4 space-y-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs">Agent</Label>
+          <select
+            value={agentId}
+            onChange={(e) => setAgentId(e.target.value)}
+            className="h-8 w-full rounded-md border border-border bg-surface-0 px-2 text-sm"
+          >
+            {agents.filter((a) => a.status === "active").map((a) => (
+              <option key={a.id} value={a.id}>{a.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Tool name</Label>
+          <Input
+            value={toolName}
+            onChange={(e) => setToolName(e.target.value)}
+            placeholder="sales.deal.delete"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Arguments (exact match required)</Label>
+          <Textarea
+            value={argsJson}
+            onChange={(e) => setArgsJson(e.target.value)}
+            rows={5}
+            className="font-mono text-xs"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">TTL (minutes)</Label>
+          <Input
+            type="number"
+            min={1}
+            max={1440}
+            value={ttlMinutes}
+            onChange={(e) => setTtlMinutes(Number(e.target.value) || 30)}
+          />
+        </div>
+        <Button onClick={submit} disabled={submitting || !agentId || !toolName}>
+          {submitting ? "Issuing…" : "Issue token"}
+        </Button>
+        {issued && (
+          <div className="rounded-md border border-warning-strong/30 bg-warning-soft p-3 space-y-2">
+            <div className="text-sm font-semibold text-warning-strong">
+              Dual-key token — copy now, won't be shown again
+            </div>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 font-mono text-xs bg-surface-1 rounded px-2 py-1.5 break-all">
+                {issued}
+              </code>
+              <Button variant="outline" size="sm" onClick={() => void navigator.clipboard.writeText(issued)}>
+                Copy
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setIssued(null)}>
+                Dismiss
+              </Button>
+            </div>
+            <div className="text-[11px] text-warning-strong">
+              The agent passes this in the next tools/call as <code>_meta.dualKeyToken</code>.
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 

@@ -32,6 +32,12 @@ export interface ToolHandlerArgs {
    *  `recordUndo()` so the undo entry can join back to the audit
    *  row — operators see the link in both places. */
   callId: string;
+  /** Fires when the agent sends `notifications/cancelled` for this
+   *  request id. Long-running handlers (HTTP fetch loops, multi-step
+   *  queries) MUST observe this and throw early — `signal.throwIfAborted()`
+   *  between steps is the right pattern. SQLite has no per-statement
+   *  cancellation, so synchronous DB code can only check between calls. */
+  signal: AbortSignal;
 }
 
 export interface ToolHandler {
@@ -112,8 +118,10 @@ export function registerResourceTools(resource: string, displayName?: string): v
     risk: VERB_RISK.list,
     resource,
     scopeAction: "read",
-    async call({ agent, tenantId, args }) {
+    async call({ agent, tenantId, args, signal }) {
+      signal.throwIfAborted();
       const accessible = accessibleRecordIds({ resource, userId: agentMirrorUser(agent), tenantId });
+      signal.throwIfAborted();
       const result = listRecords(resource, {
         page: typeof args.page === "number" ? args.page : 1,
         pageSize: typeof args.pageSize === "number" ? args.pageSize : 25,
@@ -147,7 +155,7 @@ export function registerResourceTools(resource: string, displayName?: string): v
     risk: VERB_RISK.get,
     resource,
     scopeAction: "read",
-    async call({ agent, tenantId, args }) {
+    async call({ agent, tenantId, args, signal }) {
       const id = String(args.id ?? "");
       if (!id) throw new Error(`missing required arg: id`);
       const role = effectiveRole({ resource, recordId: id, userId: agentMirrorUser(agent), tenantId });
@@ -177,7 +185,7 @@ export function registerResourceTools(resource: string, displayName?: string): v
     risk: VERB_RISK.search,
     resource,
     scopeAction: "read",
-    async call({ agent, tenantId, args }) {
+    async call({ agent, tenantId, args, signal }) {
       const accessible = accessibleRecordIds({ resource, userId: agentMirrorUser(agent), tenantId });
       const result = listRecords(resource, {
         page: 1,
@@ -214,7 +222,8 @@ export function registerResourceTools(resource: string, displayName?: string): v
     risk: VERB_RISK.create,
     resource,
     scopeAction: "write",
-    async call({ agent, tenantId, args, callId }) {
+    async call({ agent, tenantId, args, callId, signal }) {
+      signal.throwIfAborted();
       const data = (args.data as Record<string, unknown>) ?? {};
       const id = String(data.id ?? uuid());
       const enriched = {
@@ -258,7 +267,8 @@ export function registerResourceTools(resource: string, displayName?: string): v
     risk: VERB_RISK.update,
     resource,
     scopeAction: "write",
-    async call({ agent, tenantId, args, callId }) {
+    async call({ agent, tenantId, args, callId, signal }) {
+      signal.throwIfAborted();
       const id = String(args.id ?? "");
       if (!id) throw new Error(`missing required arg: id`);
       const role = effectiveRole({ resource, recordId: id, userId: agentMirrorUser(agent), tenantId });
@@ -302,7 +312,8 @@ export function registerResourceTools(resource: string, displayName?: string): v
     risk: "irreversible",
     resource,
     scopeAction: "delete",
-    async call({ agent, tenantId, args, callId }) {
+    async call({ agent, tenantId, args, callId, signal }) {
+      signal.throwIfAborted();
       const id = String(args.id ?? "");
       if (!id) throw new Error(`missing required arg: id`);
       const role = effectiveRole({ resource, recordId: id, userId: agentMirrorUser(agent), tenantId });
