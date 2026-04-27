@@ -1,17 +1,27 @@
 /** Model Context Protocol — wire types we implement.
  *
- *  MCP is JSON-RPC 2.0 over a transport (HTTP, stdio, SSE). The full
- *  spec is large; we implement the production-critical subset:
+ *  MCP is JSON-RPC 2.0 over a transport. We support all three:
+ *    - HTTP        — POST /api/mcp returning JSON-RPC response(s)
+ *    - SSE upgrade — POST /api/mcp with `Accept: text/event-stream`,
+ *                    streams responses + server-initiated requests +
+ *                    notifications on a single long-lived connection
+ *    - stdio       — `scripts/mcp-stdio.ts` Bun bin (NDJSON over
+ *                    stdin/stdout) for local CLI integrations
  *
- *    Lifecycle:    initialize, ping
- *    Tools:        tools/list, tools/call
- *    Resources:    resources/list, resources/read
- *    Notifications: notifications/initialized, notifications/cancelled
- *
- *  Sampling, prompts, logging/setLevel, and server-initiated notifications
- *  are deliberately deferred to a later tier (T4) since they require
- *  bidirectional transport semantics that complicate the security
- *  model. */
+ *  Methods covered:
+ *    Lifecycle:     initialize, ping
+ *    Tools:         tools/list, tools/call
+ *    Resources:     resources/list, resources/read,
+ *                   resources/subscribe, resources/unsubscribe
+ *    Prompts:       prompts/list, prompts/get
+ *    Sampling:      sampling/createMessage (server→client)
+ *    Logging:       logging/setLevel
+ *    Notifications: notifications/initialized,
+ *                   notifications/cancelled (client→server),
+ *                   notifications/resources/updated,
+ *                   notifications/message (server→client)
+ *    Custom RPCs:   notifications/poll (HTTP long-poll fallback),
+ *                   plans/propose, dual-key. */
 
 export const MCP_PROTOCOL_VERSION = "2024-11-05";
 

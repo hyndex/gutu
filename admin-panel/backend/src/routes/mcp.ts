@@ -1,11 +1,21 @@
 /** MCP HTTP transport. Implements the "Streamable HTTP" transport
  *  from the MCP spec — a single endpoint that accepts JSON-RPC over
- *  POST and (optionally) upgrades to Server-Sent Events for streamed
- *  responses.
+ *  POST. The same endpoint upgrades to Server-Sent Events (SSE) when
+ *  the client sends `Accept: text/event-stream`, giving the server a
+ *  push channel for notifications and server-initiated sampling
+ *  requests on the same connection. The plain JSON path remains
+ *  available for clients that don't speak SSE; they can long-poll the
+ *  notification queue via the custom `notifications/poll` RPC.
+ *
+ *  For local CLI / desktop agents, an alternative stdio transport is
+ *  shipped as `scripts/mcp-stdio.ts` — same handler graph, NDJSON over
+ *  stdin/stdout, env-var auth.
  *
  *  Endpoints:
  *    GET  /api/mcp          — discovery: returns server info + auth hint
- *    POST /api/mcp          — JSON-RPC request; returns JSON-RPC response
+ *    POST /api/mcp          — JSON-RPC request; returns JSON-RPC
+ *                             response (default) OR an SSE stream when
+ *                             `Accept: text/event-stream` is set.
  *
  *  Plus the admin endpoints (NOT MCP — these are for human operators):
  *    GET    /api/mcp/admin/agents               — list agents
@@ -43,12 +53,13 @@ import {
   ERR_INVALID_REQUEST,
   ERR_PARSE,
   ERR_UNAUTHORIZED,
+  type JsonRpcNotification,
   type JsonRpcRequest,
   type JsonRpcResponse,
 } from "../lib/mcp/protocol";
 import { handleRequest, issueDualKey } from "../lib/mcp/server";
 import { bootstrapMcpTools } from "../lib/mcp/bootstrap";
-import { getAgentStats, listCalls, logCallEnd, logCallStart } from "../lib/mcp/audit";
+import { getAgentStats, listCalls } from "../lib/mcp/audit";
 import { hashArgs } from "../lib/mcp/idempotency";
 import {
   approvePlan as approvePlanFn,
@@ -61,6 +72,12 @@ import { listUndoableForAgent, undo as undoEntry } from "../lib/mcp/undo";
 import { cancel as cancelRequest } from "../lib/mcp/cancellation";
 import { registerBuiltInPrompts } from "../lib/mcp/prompts";
 import { enqueueExecute } from "../lib/mcp/plan-executor";
+import {
+  cancelPendingForAgent as cancelPendingSamplingForAgent,
+  registerSamplingTransport,
+  resolveSamplingResult,
+} from "../lib/mcp/sampling";
+import { drain } from "../lib/mcp/subscriptions";
 
 // Register the framework's prompt packs at first import.
 registerBuiltInPrompts();
@@ -82,6 +99,12 @@ mcpRoutes.get("/", (c) => {
       url: "/api/mcp",
       method: "POST",
       contentType: "application/json",
+      sseUpgrade: { acceptHeader: "text/event-stream" },
+    },
+    capabilities: {
+      sampling: true,
+      streaming: true,
+      stdio: { bin: "scripts/mcp-stdio.ts", env: "MCP_AGENT_TOKEN" },
     },
   });
 });
@@ -126,19 +149,75 @@ mcpRoutes.post("/", async (c) => {
   // process restart.
   bootstrapMcpTools();
 
-  // 3. Dispatch each request. Notifications (no id) get no response.
+  // 3. Branch on Accept: text/event-stream. SSE upgrade lets the server
+  //    push notifications + sampling requests on the same connection;
+  //    plain JSON keeps the legacy round-trip semantics for clients
+  //    that don't speak SSE.
+  const accept = c.req.header("accept") ?? c.req.header("Accept") ?? "";
+  const wantsSse = accept.includes("text/event-stream");
+
+  if (wantsSse) {
+    return openSseStream({
+      agent: authed.agent,
+      tenantId,
+      envelopes: requests,
+      isBatch: Array.isArray(raw),
+      abortSignal: c.req.raw.signal,
+    });
+  }
+
+  // Plain JSON path.
+  const responses = await dispatchEnvelopes(requests, authed.agent.id, async (request) => {
+    const resp = await handleRequest(request, { agent: authed.agent, tenantId });
+    return resp;
+  });
+
+  return c.json(Array.isArray(raw) ? responses : (responses[0] ?? null));
+});
+
+/** Process a batch of JSON-RPC envelopes. Each envelope can be:
+ *    REQUEST (id + method) — handled, response added to result array
+ *    NOTIFICATION (no id) — handled in-band, no response
+ *    RESPONSE (id + result|error, no method) — routed to the sampling
+ *      pending-promise registry (correlation by id + agentId)
+ *
+ *  The handler is injected so the SSE path can share the dispatch
+ *  logic while keeping its own response-emission strategy. */
+async function dispatchEnvelopes(
+  envelopes: unknown[],
+  agentId: string,
+  handle: (req: JsonRpcRequest) => Promise<JsonRpcResponse>,
+): Promise<JsonRpcResponse[]> {
   const responses: JsonRpcResponse[] = [];
-  for (const r of requests) {
-    if (!isJsonRpcRequest(r)) {
+  for (const r of envelopes) {
+    if (!isJsonRpcEnvelope(r)) {
       responses.push(jsonRpcErr(null, ERR_INVALID_REQUEST, "invalid JSON-RPC envelope"));
       continue;
     }
-    if (r.id === undefined) {
+    // Response from the agent (sampling/createMessage reply, future
+    // server-initiated requests). Has id + result|error, no method.
+    if (typeof (r as { method?: unknown }).method !== "string") {
+      const env = r as {
+        id: string | number;
+        result?: unknown;
+        error?: { code: number; message: string };
+      };
+      // Unmatched responses are silently dropped — late arrivals after
+      // a timeout shouldn't 5xx the transport.
+      resolveSamplingResult({
+        id: String(env.id),
+        agentId,
+        result: env.result as never,
+        error: env.error,
+      });
+      continue;
+    }
+    if ((r as { id?: unknown }).id === undefined) {
       // Notification — no response. Handle the ones we care about
-      // before dropping the rest. `notifications/cancelled` is the
-      // canonical mid-call abort signal in the MCP spec.
-      if (r.method === "notifications/cancelled") {
-        const params = (r as { params?: { requestId?: string | number; reason?: string } }).params;
+      // before dropping the rest.
+      const notif = r as JsonRpcNotification;
+      if (notif.method === "notifications/cancelled") {
+        const params = notif.params as { requestId?: string | number; reason?: string } | undefined;
         if (params?.requestId !== undefined) {
           cancelRequest(params.requestId, params.reason ?? "cancelled by client");
         }
@@ -146,24 +225,204 @@ mcpRoutes.post("/", async (c) => {
       continue;
     }
     try {
-      const resp = await handleRequest(r as JsonRpcRequest, {
-        agent: authed.agent,
-        tenantId,
-      });
+      const resp = await handle(r as JsonRpcRequest);
       responses.push(resp);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      responses.push(jsonRpcErr(r.id ?? null, ERR_INTERNAL, msg));
+      responses.push(jsonRpcErr((r as JsonRpcRequest).id ?? null, ERR_INTERNAL, msg));
     }
   }
+  return responses;
+}
 
-  return c.json(Array.isArray(raw) ? responses : responses[0]);
-});
+/** Open a Server-Sent Events stream for one POST. The stream:
+ *    1. Emits one `message` SSE event per JSON-RPC response from the
+ *       initial batch.
+ *    2. Stays open and emits server→agent messages — sampling requests
+ *       (via the sampling transport hook) and queued notifications
+ *       (drained from the per-agent subscription queue).
+ *    3. Sends keepalive comments every 15s so reverse proxies don't
+ *       idle-close the connection.
+ *    4. On client disconnect (request signal aborts), unregisters the
+ *       sampling transport, cancels any in-flight sampling requests
+ *       for this agent that were routed through this stream, and
+ *       closes the controller.
+ *
+ *  Multiple SSE streams per agent ARE allowed (e.g., for redundancy
+ *  during reconnect). The sampling transport registry broadcasts each
+ *  outgoing request to every active hook, so any open stream will
+ *  carry it. The first hook that successfully writes wins; the others
+ *  no-op the buffered payload. Notification draining is shared, so if
+ *  two streams are open simultaneously, only one gets a given
+ *  notification — clients should not run two streams. */
+function openSseStream(args: {
+  agent: Agent;
+  tenantId: string;
+  envelopes: unknown[];
+  isBatch: boolean;
+  abortSignal: AbortSignal;
+}): Response {
+  const { agent, tenantId, envelopes, abortSignal } = args;
+  const enc = new TextEncoder();
+  let closed = false;
+  let unregisterTransport: (() => void) | null = null;
+  let keepaliveTimer: ReturnType<typeof setInterval> | null = null;
+  let pollTimer: ReturnType<typeof setInterval> | null = null;
+  let abortHandler: (() => void) | null = null;
 
-function isJsonRpcRequest(v: unknown): v is JsonRpcRequest {
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const writeMessage = (payload: unknown): boolean => {
+        if (closed) return false;
+        try {
+          controller.enqueue(
+            enc.encode(`event: message\ndata: ${JSON.stringify(payload)}\n\n`),
+          );
+          return true;
+        } catch {
+          // Controller already closed — happens on race with abort.
+          closed = true;
+          return false;
+        }
+      };
+      const writeComment = (text: string): void => {
+        if (closed) return;
+        try {
+          controller.enqueue(enc.encode(`: ${text}\n\n`));
+        } catch {
+          closed = true;
+        }
+      };
+
+      const cleanup = (): void => {
+        if (closed) return;
+        closed = true;
+        if (keepaliveTimer) clearInterval(keepaliveTimer);
+        if (pollTimer) clearInterval(pollTimer);
+        if (unregisterTransport) {
+          try { unregisterTransport(); } catch { /* ignore */ }
+          unregisterTransport = null;
+        }
+        if (abortHandler) {
+          try { abortSignal.removeEventListener("abort", abortHandler); } catch { /* ignore */ }
+          abortHandler = null;
+        }
+        cancelPendingSamplingForAgent(agent.id, "SSE stream closed");
+        try { controller.close(); } catch { /* already closed */ }
+      };
+
+      // Wire the abort signal first so any sync error during dispatch
+      // still lets the cleanup fire.
+      abortHandler = (): void => cleanup();
+      try {
+        abortSignal.addEventListener("abort", abortHandler);
+      } catch {
+        /* signals from non-standard request impls — best effort */
+      }
+      if (abortSignal.aborted) {
+        cleanup();
+        return;
+      }
+
+      // Register the sampling transport hook BEFORE dispatching the
+      // batch. If `initialize` triggers a server-initiated sampling
+      // request synchronously, the hook must already be live to carry
+      // it (otherwise requestSampling fails-fast with no transport).
+      unregisterTransport = registerSamplingTransport((targetAgentId, request) => {
+        if (targetAgentId !== agent.id) return false;
+        return writeMessage(request);
+      });
+
+      // Hint a non-empty initial event so proxies that buffer until
+      // the first byte don't sit on the response.
+      writeComment("ok");
+
+      // Dispatch the batch.
+      try {
+        const responses = await dispatchEnvelopes(envelopes, agent.id, async (request) => {
+          return handleRequest(request, { agent, tenantId });
+        });
+        for (const resp of responses) {
+          if (closed) break;
+          writeMessage(resp);
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        writeMessage(jsonRpcErr(null, ERR_INTERNAL, msg));
+      }
+
+      // Drain any notifications that were already queued (e.g.,
+      // resource changes between the agent's last poll and this
+      // stream open). After this we rely on the polling interval.
+      const initial = drain(agent.id);
+      for (const n of initial) {
+        if (closed) break;
+        writeMessage(n);
+      }
+
+      if (closed) return;
+
+      // Keepalive comment every 15s — comments are ignored by the
+      // EventSource client but force the TCP/TLS layer to flush, which
+      // keeps reverse proxies (nginx, Cloudflare) from idle-closing.
+      keepaliveTimer = setInterval(() => {
+        if (closed) return;
+        writeComment(`keepalive ${Date.now()}`);
+      }, 15_000);
+
+      // Poll the per-agent notification queue every second. Push
+      // semantics could be wired through subscriptions.ts later — this
+      // keeps the integration small and bounds the worst-case latency
+      // at ~1s, which is fine for human-perceptible UI updates.
+      pollTimer = setInterval(() => {
+        if (closed) return;
+        const pending = drain(agent.id);
+        for (const n of pending) {
+          if (closed) break;
+          writeMessage(n);
+        }
+      }, 1_000);
+    },
+    cancel(): void {
+      // Reader (client) closed the stream — fall through to the abort
+      // handler we wired up in start(). The state is already shared
+      // via the closure-scoped flags, so this just signals the timers.
+      closed = true;
+      if (keepaliveTimer) clearInterval(keepaliveTimer);
+      if (pollTimer) clearInterval(pollTimer);
+      if (unregisterTransport) {
+        try { unregisterTransport(); } catch { /* ignore */ }
+        unregisterTransport = null;
+      }
+      cancelPendingSamplingForAgent(agent.id, "SSE stream cancelled by client");
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no",
+      Connection: "keep-alive",
+    },
+  });
+}
+
+/** Validates the shape of any JSON-RPC envelope: request, notification,
+ *  or response. Doesn't narrow to a specific subtype — call sites do
+ *  that by checking for `method` (request/notification) vs no method
+ *  (response). */
+function isJsonRpcEnvelope(v: unknown): boolean {
   if (!v || typeof v !== "object") return false;
   const o = v as Record<string, unknown>;
-  return o.jsonrpc === "2.0" && typeof o.method === "string";
+  if (o.jsonrpc !== "2.0") return false;
+  // Request or notification: has a method.
+  if (typeof o.method === "string") return true;
+  // Response: has an id (string|number|null) and either result or error.
+  const idType = typeof o.id;
+  const hasId = idType === "string" || idType === "number" || o.id === null;
+  return hasId && ("result" in o || "error" in o);
 }
 
 function jsonRpcErr(id: string | number | null, code: number, message: string): JsonRpcResponse {

@@ -9,7 +9,8 @@
     "start": "bun run src/main.ts",
     "seed": "bun run src/seed/run.ts",
     "reset": "rm -f data.db && bun run seed",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "mcp:stdio": "bun run scripts/mcp-stdio.ts"
   },
   "//gutuPlugins": "Decentralized plugin discovery: every entry is a package import specifier the loader auto-imports at boot. Add a plugin: `bun add @acme/gutu-foo` + add the name here. Override at runtime via env GUTU_PLUGINS=...",
   "gutuPlugins": [
