@@ -22,11 +22,16 @@ import { VERB_RISK } from "./risk";
 import type { ToolDefinition, ContentBlock } from "./protocol";
 import type { Agent } from "./agents";
 import { uuid } from "../id";
+import { recordUndo } from "./undo";
 
 export interface ToolHandlerArgs {
   agent: Agent;
   tenantId: string;
   args: Record<string, unknown>;
+  /** Audit row id for this call. Mutation tools pass it to
+   *  `recordUndo()` so the undo entry can join back to the audit
+   *  row — operators see the link in both places. */
+  callId: string;
 }
 
 export interface ToolHandler {
@@ -209,7 +214,7 @@ export function registerResourceTools(resource: string, displayName?: string): v
     risk: VERB_RISK.create,
     resource,
     scopeAction: "write",
-    async call({ agent, tenantId, args }) {
+    async call({ agent, tenantId, args, callId }) {
       const data = (args.data as Record<string, unknown>) ?? {};
       const id = String(data.id ?? uuid());
       const enriched = {
@@ -221,6 +226,16 @@ export function registerResourceTools(resource: string, displayName?: string): v
         updatedAt: new Date().toISOString(),
       };
       insertRecord(resource, id, enriched);
+      recordUndo({
+        callId,
+        agentId: agent.id,
+        tenantId,
+        resource,
+        recordId: id,
+        op: "create",
+        beforeState: null,
+        afterState: enriched,
+      });
       return {
         content: [{ type: "text", text: `Created ${resource}/${id}.` }],
         resultSummary: `created id=${id}`,
@@ -243,13 +258,14 @@ export function registerResourceTools(resource: string, displayName?: string): v
     risk: VERB_RISK.update,
     resource,
     scopeAction: "write",
-    async call({ agent, tenantId, args }) {
+    async call({ agent, tenantId, args, callId }) {
       const id = String(args.id ?? "");
       if (!id) throw new Error(`missing required arg: id`);
       const role = effectiveRole({ resource, recordId: id, userId: agentMirrorUser(agent), tenantId });
       if (!role || !roleAtLeast(role, "editor")) {
         throw new Error(`forbidden: agent ${agent.id} has no write access to ${resource}/${id}`);
       }
+      const before = getRecord(resource, id);
       const data = (args.data as Record<string, unknown>) ?? {};
       const next = updateRecord(resource, id, {
         ...data,
@@ -257,6 +273,16 @@ export function registerResourceTools(resource: string, displayName?: string): v
         updatedBy: `agent:${agent.id}`,
       });
       if (!next) throw new Error(`not-found: ${resource}/${id}`);
+      recordUndo({
+        callId,
+        agentId: agent.id,
+        tenantId,
+        resource,
+        recordId: id,
+        op: "update",
+        beforeState: before ?? null,
+        afterState: next,
+      });
       return {
         content: [{ type: "text", text: `Updated ${resource}/${id}.` }],
         resultSummary: `updated id=${id}`,
@@ -276,15 +302,27 @@ export function registerResourceTools(resource: string, displayName?: string): v
     risk: "irreversible",
     resource,
     scopeAction: "delete",
-    async call({ agent, tenantId, args }) {
+    async call({ agent, tenantId, args, callId }) {
       const id = String(args.id ?? "");
       if (!id) throw new Error(`missing required arg: id`);
       const role = effectiveRole({ resource, recordId: id, userId: agentMirrorUser(agent), tenantId });
       if (!role || !roleAtLeast(role, "owner")) {
         throw new Error(`forbidden: agent ${agent.id} has no delete access to ${resource}/${id}`);
       }
+      // Capture the before-state BEFORE the delete so undo can restore it.
+      const before = getRecord(resource, id);
       const ok = deleteRecord(resource, id);
       if (!ok) throw new Error(`not-found: ${resource}/${id}`);
+      recordUndo({
+        callId,
+        agentId: agent.id,
+        tenantId,
+        resource,
+        recordId: id,
+        op: "delete",
+        beforeState: before ?? null,
+        afterState: null,
+      });
       return {
         content: [{ type: "text", text: `Deleted ${resource}/${id}.` }],
         resultSummary: `deleted id=${id}`,

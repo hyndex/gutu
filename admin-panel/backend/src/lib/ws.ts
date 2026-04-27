@@ -93,6 +93,18 @@ export function broadcastResourceChange(
     actor,
     at: new Date().toISOString(),
   });
+  // Also notify any MCP agents subscribed to this resource. Lazy-import
+  // to keep `lib/ws.ts` independent of the MCP module graph (so
+  // `lib/ws` can be imported by code that runs before the MCP tables
+  // are migrated).
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { broadcastResourceChanged } = require("./mcp/subscriptions") as { broadcastResourceChanged: (uri: string) => number };
+    broadcastResourceChanged(`gutu://resource/${resource}/${id}`);
+    broadcastResourceChanged(`gutu://resource/${resource}`);
+  } catch {
+    /* MCP subsystem not loaded — silent ignore */
+  }
 }
 
 /** Close every socket attached to a given tenant. Used when a tenant is

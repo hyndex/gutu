@@ -42,6 +42,10 @@ import { consume, recordFailure, recordSuccess } from "./rate-limit";
 import { hashArgs, lookup as idemLookup, store as idemStore } from "./idempotency";
 import { getTool, listTools } from "./tools";
 import { logCallEnd, logCallStart } from "./audit";
+import { listPrompts, getPrompt } from "./prompts";
+import { drain, setLogLevel, subscribe, unsubscribe, type LogLevel } from "./subscriptions";
+import { cancel as cancelRequest, track, untrack } from "./cancellation";
+import { proposePlan, getPlan, listPlans } from "./plans";
 
 export interface ServerContext {
   agent: Agent;
@@ -62,7 +66,11 @@ export async function handleRequest(req: JsonRpcRequest, ctx: ServerContext): Pr
         serverInfo: SERVER_INFO,
         capabilities: {
           tools: { listChanged: false },
-          resources: { listChanged: false, subscribe: false },
+          // resources/subscribe IS supported now — agents call subscribe
+          // and drain pending notifications via mcp/notifications/poll.
+          // listChanged stays false (the resource directory rarely
+          // changes mid-session).
+          resources: { listChanged: false, subscribe: true } as unknown as { listChanged: false; subscribe: false },
         },
         instructions: ctx.agent.instructions,
       };
@@ -113,10 +121,15 @@ export async function handleRequest(req: JsonRpcRequest, ctx: ServerContext): Pr
       const id = m[2];
       const tool = getTool(id ? `${resource}.get` : `${resource}.list`);
       if (!tool) return err(req, ERR_NOT_FOUND, `unknown resource ${resource}`);
+      // resources/read is read-only; we don't allocate an audit row
+      // for it (the underlying tool call IS recorded though), so
+      // pass an empty callId — recordUndo() is never reached on
+      // read paths.
       const result = await tool.call({
         agent: ctx.agent,
         tenantId: ctx.tenantId,
         args: id ? { id } : { pageSize: 25 },
+        callId: "",
       });
       const block = result.content.find((c) => c.type === "resource") ?? result.content[0];
       const out: ResourcesReadResult = {
@@ -134,6 +147,120 @@ export async function handleRequest(req: JsonRpcRequest, ctx: ServerContext): Pr
         ],
       };
       return ok(req, out);
+    }
+
+    /* ---- prompts/list -------------------------------------------- */
+    if (req.method === "prompts/list") {
+      const prompts = listPrompts().map((p) => p.definition);
+      return ok(req, { prompts });
+    }
+
+    /* ---- prompts/get -------------------------------------------- */
+    if (req.method === "prompts/get") {
+      const p = req.params as { name?: string; arguments?: Record<string, string> } | undefined;
+      if (!p?.name) return err(req, ERR_INVALID_PARAMS, "missing name");
+      const handler = getPrompt(p.name);
+      if (!handler) return err(req, ERR_NOT_FOUND, `unknown prompt ${p.name}`);
+      try {
+        const rendered = handler.render(p.arguments ?? {});
+        return ok(req, rendered);
+      } catch (e) {
+        return err(req, ERR_INVALID_PARAMS, e instanceof Error ? e.message : String(e));
+      }
+    }
+
+    /* ---- resources/subscribe ------------------------------------ */
+    if (req.method === "resources/subscribe") {
+      const p = req.params as { uri?: string } | undefined;
+      if (!p?.uri) return err(req, ERR_INVALID_PARAMS, "missing uri");
+      // Only subscribe if the agent could read the resource — otherwise
+      // a low-scope agent could observe change events for resources it
+      // has no read access to (a side-channel leak).
+      const m = /^gutu:\/\/resource\/([^/]+)/.exec(p.uri);
+      if (!m) return err(req, ERR_INVALID_PARAMS, "invalid uri");
+      const resource = m[1]!;
+      const grants = ctx.agent.scopes[resource] ?? [];
+      if (!grants.includes("read")) {
+        return err(req, ERR_FORBIDDEN, `agent token lacks read scope for ${resource}`);
+      }
+      subscribe(ctx.agent.id, p.uri);
+      return ok(req, {});
+    }
+
+    /* ---- resources/unsubscribe ---------------------------------- */
+    if (req.method === "resources/unsubscribe") {
+      const p = req.params as { uri?: string } | undefined;
+      if (!p?.uri) return err(req, ERR_INVALID_PARAMS, "missing uri");
+      unsubscribe(ctx.agent.id, p.uri);
+      return ok(req, {});
+    }
+
+    /* ---- logging/setLevel --------------------------------------- */
+    if (req.method === "logging/setLevel") {
+      const p = req.params as { level?: LogLevel } | undefined;
+      const valid: LogLevel[] = ["debug", "info", "notice", "warning", "error", "critical", "alert", "emergency"];
+      if (!p?.level || !valid.includes(p.level)) {
+        return err(req, ERR_INVALID_PARAMS, `invalid log level: ${p?.level}`);
+      }
+      setLogLevel(ctx.agent.id, p.level);
+      return ok(req, {});
+    }
+
+    /* ---- notifications/poll ------------------------------------- */
+    /* Custom (non-spec) RPC for HTTP transports without server-side
+     * push. The agent calls it periodically to drain pending
+     * notifications (resources/updated, message). When we add SSE
+     * upgrade, this remains as a fallback for plain-POST clients. */
+    if (req.method === "notifications/poll") {
+      const pending = drain(ctx.agent.id);
+      return ok(req, { notifications: pending });
+    }
+
+    /* ---- plans/propose ------------------------------------------ */
+    if (req.method === "plans/propose") {
+      const p = req.params as {
+        title?: string;
+        summary?: string;
+        steps?: Array<{ toolName: string; arguments: Record<string, unknown>; note?: string }>;
+      } | undefined;
+      if (!p?.title || !Array.isArray(p.steps) || p.steps.length === 0) {
+        return err(req, ERR_INVALID_PARAMS, "title + steps[] required");
+      }
+      // Validate every step's tool exists + the agent has scope —
+      // proposing a plan it can't execute is wasted ops time.
+      for (const s of p.steps) {
+        const t = getTool(s.toolName);
+        if (!t) return err(req, ERR_INVALID_PARAMS, `unknown tool in plan: ${s.toolName}`);
+        if (t.resource && t.scopeAction) {
+          const grants = ctx.agent.scopes[t.resource] ?? [];
+          if (!grants.includes(t.scopeAction)) {
+            return err(req, ERR_FORBIDDEN, `agent lacks ${t.scopeAction} scope on ${t.resource} (step ${s.toolName})`);
+          }
+        }
+      }
+      const plan = proposePlan({
+        agentId: ctx.agent.id,
+        tenantId: ctx.tenantId,
+        title: p.title,
+        summary: p.summary,
+        steps: p.steps,
+      });
+      return ok(req, { plan });
+    }
+
+    /* ---- plans/list (own plans only) ---------------------------- */
+    if (req.method === "plans/list") {
+      const plans = listPlans(ctx.tenantId, ctx.agent.id);
+      return ok(req, { plans });
+    }
+
+    /* ---- plans/get ---------------------------------------------- */
+    if (req.method === "plans/get") {
+      const p = req.params as { id?: string } | undefined;
+      if (!p?.id) return err(req, ERR_INVALID_PARAMS, "missing id");
+      const plan = getPlan(p.id);
+      if (!plan || plan.agentId !== ctx.agent.id) return err(req, ERR_NOT_FOUND, "plan not found");
+      return ok(req, { plan });
     }
 
     return err(req, ERR_METHOD_NOT_FOUND, `unknown method ${req.method}`);
@@ -260,7 +387,7 @@ async function handleToolsCall(
   }
 
   try {
-    const out = await tool.call({ agent: ctx.agent, tenantId: ctx.tenantId, args });
+    const out = await tool.call({ agent: ctx.agent, tenantId: ctx.tenantId, args, callId });
     const result: ToolsCallResult = { content: out.content, isError: false };
     if (idempotencyKey) {
       idemStore({

@@ -48,8 +48,28 @@ import {
 } from "../lib/mcp/protocol";
 import { handleRequest, issueDualKey } from "../lib/mcp/server";
 import { bootstrapMcpTools } from "../lib/mcp/bootstrap";
-import { getAgentStats, listCalls } from "../lib/mcp/audit";
+import { getAgentStats, listCalls, logCallEnd, logCallStart } from "../lib/mcp/audit";
 import { hashArgs } from "../lib/mcp/idempotency";
+import {
+  approvePlan as approvePlanFn,
+  cancelPlan as cancelPlanFn,
+  completeStep,
+  getPlan as getPlanFn,
+  listPlans as listPlansFn,
+  markDone,
+  markFailed,
+  markRunning,
+  rejectPlan,
+  skipRemainingSteps,
+  startStep,
+} from "../lib/mcp/plans";
+import { getTool } from "../lib/mcp/tools";
+import { listUndoableForAgent, undo as undoEntry } from "../lib/mcp/undo";
+import { cancel as cancelRequest } from "../lib/mcp/cancellation";
+import { registerBuiltInPrompts } from "../lib/mcp/prompts";
+
+// Register the framework's prompt packs at first import.
+registerBuiltInPrompts();
 
 export const mcpRoutes = new Hono();
 
@@ -119,7 +139,18 @@ mcpRoutes.post("/", async (c) => {
       responses.push(jsonRpcErr(null, ERR_INVALID_REQUEST, "invalid JSON-RPC envelope"));
       continue;
     }
-    if (r.id === undefined) continue; // notification — no response
+    if (r.id === undefined) {
+      // Notification — no response. Handle the ones we care about
+      // before dropping the rest. `notifications/cancelled` is the
+      // canonical mid-call abort signal in the MCP spec.
+      if (r.method === "notifications/cancelled") {
+        const params = (r as { params?: { requestId?: string | number; reason?: string } }).params;
+        if (params?.requestId !== undefined) {
+          cancelRequest(params.requestId, params.reason ?? "cancelled by client");
+        }
+      }
+      continue;
+    }
     try {
       const resp = await handleRequest(r as JsonRpcRequest, {
         agent: authed.agent,
@@ -295,6 +326,151 @@ adminRoutes.get("/agents/:id/stats", (c) => {
   const a = getAgent(c.req.param("id"));
   if (!a || a.tenantId !== tenantId) return c.json({ error: "not found" }, 404);
   return c.json({ stats: getAgentStats(a.id) });
+});
+
+/* -- plans (proposed by agents, approved + executed by humans) ---- */
+
+adminRoutes.get("/plans", (c) => {
+  const tenantId = getTenantContext()?.tenantId ?? "default";
+  const url = new URL(c.req.url);
+  const agentId = url.searchParams.get("agentId") ?? undefined;
+  return c.json({ plans: listPlansFn(tenantId, agentId) });
+});
+
+adminRoutes.get("/plans/:id", (c) => {
+  const tenantId = getTenantContext()?.tenantId ?? "default";
+  const p = getPlanFn(c.req.param("id"));
+  if (!p || p.tenantId !== tenantId) return c.json({ error: "not found" }, 404);
+  return c.json({ plan: p });
+});
+
+adminRoutes.post("/plans/:id/approve", async (c) => {
+  const tenantId = getTenantContext()?.tenantId ?? "default";
+  const user = currentUser(c);
+  const p = getPlanFn(c.req.param("id"));
+  if (!p || p.tenantId !== tenantId) return c.json({ error: "not found" }, 404);
+  try {
+    const updated = approvePlanFn({ id: p.id, approvedByUser: user.id });
+    return c.json({ plan: updated });
+  } catch (e) {
+    return c.json({ error: e instanceof Error ? e.message : String(e) }, 400);
+  }
+});
+
+adminRoutes.post("/plans/:id/reject", (c) => {
+  const tenantId = getTenantContext()?.tenantId ?? "default";
+  const p = getPlanFn(c.req.param("id"));
+  if (!p || p.tenantId !== tenantId) return c.json({ error: "not found" }, 404);
+  try {
+    return c.json({ plan: rejectPlan(p.id) });
+  } catch (e) {
+    return c.json({ error: e instanceof Error ? e.message : String(e) }, 400);
+  }
+});
+
+adminRoutes.post("/plans/:id/cancel", (c) => {
+  const tenantId = getTenantContext()?.tenantId ?? "default";
+  const p = getPlanFn(c.req.param("id"));
+  if (!p || p.tenantId !== tenantId) return c.json({ error: "not found" }, 404);
+  try {
+    return c.json({ plan: cancelPlanFn(p.id) });
+  } catch (e) {
+    return c.json({ error: e instanceof Error ? e.message : String(e) }, 400);
+  }
+});
+
+/** Execute an approved plan. Steps run sequentially; first failure
+ *  marks the plan failed and skips the rest. The agent's normal
+ *  scope/risk gates apply per step — operator approval doesn't
+ *  bypass them, it just batches consent.
+ *
+ *  This is the most safety-critical endpoint in the host. Notes:
+ *    - the executor uses the AGENT'S identity for each step (writes
+ *      attribute to `agent:<id>` not the operator)
+ *    - dual-key tokens: any irreversible step in the plan still
+ *      needs its own dual-key token in the step.arguments._meta —
+ *      operator approval of the PLAN does NOT auto-grant dual-keys */
+adminRoutes.post("/plans/:id/execute", async (c) => {
+  const tenantId = getTenantContext()?.tenantId ?? "default";
+  const plan = getPlanFn(c.req.param("id"));
+  if (!plan || plan.tenantId !== tenantId) return c.json({ error: "not found" }, 404);
+  if (plan.status !== "approved") {
+    return c.json({ error: `plan must be approved (current: ${plan.status})` }, 400);
+  }
+  const agent = getAgent(plan.agentId);
+  if (!agent) return c.json({ error: "agent revoked" }, 400);
+
+  markRunning(plan.id);
+  let failureSeen = false;
+  for (const step of plan.steps) {
+    if (failureSeen) break;
+    startStep(step.id);
+    const tool = getTool(step.toolName);
+    if (!tool) {
+      completeStep({ stepId: step.id, ok: false, errorMessage: `unknown tool ${step.toolName}` });
+      failureSeen = true;
+      break;
+    }
+    const callId = logCallStart({
+      agentId: agent.id,
+      tenantId,
+      method: "plans/execute-step",
+      toolName: tool.definition.name,
+      resource: tool.resource,
+      action: tool.scopeAction,
+      risk: tool.risk,
+      arguments: step.arguments,
+    });
+    const t0 = Date.now();
+    try {
+      const out = await tool.call({
+        agent,
+        tenantId,
+        args: step.arguments,
+        callId,
+      });
+      logCallEnd(callId, { ok: true, resultSummary: out.resultSummary, latencyMs: Date.now() - t0 });
+      completeStep({ stepId: step.id, ok: true, callLogId: callId });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      logCallEnd(callId, { ok: false, errorMessage: msg, latencyMs: Date.now() - t0 });
+      completeStep({ stepId: step.id, ok: false, errorMessage: msg, callLogId: callId });
+      failureSeen = true;
+    }
+  }
+  if (failureSeen) {
+    skipRemainingSteps(plan.id);
+    markFailed(plan.id, "step failed");
+  } else {
+    markDone(plan.id);
+  }
+  return c.json({ plan: getPlanFn(plan.id) });
+});
+
+/* -- undo log ----------------------------------------------------- */
+
+adminRoutes.get("/undo", (c) => {
+  const tenantId = getTenantContext()?.tenantId ?? "default";
+  const url = new URL(c.req.url);
+  const agentId = url.searchParams.get("agentId") ?? undefined;
+  const limit = Number(url.searchParams.get("limit") ?? "50") || 50;
+  return c.json({ entries: listUndoableForAgent({ tenantId, agentId, limit }) });
+});
+
+adminRoutes.post("/undo/:id", async (c) => {
+  const tenantId = getTenantContext()?.tenantId ?? "default";
+  const user = currentUser(c);
+  const body = await c.req.json().catch(() => ({}));
+  const force = !!(body as { force?: boolean }).force;
+  const out = undoEntry({
+    entryId: c.req.param("id"),
+    byUserId: user.id,
+    force,
+  });
+  // Double-check tenant ownership AFTER `undo()` runs is fine because
+  // undo doesn't mutate cross-tenant; the lookup just hides the entry
+  // from a wrong tenant. Operator guardrail.
+  return c.json({ ok: out.ok, message: out.message }, out.ok ? 200 : 400);
 });
 
 mcpRoutes.route("/admin", adminRoutes);
