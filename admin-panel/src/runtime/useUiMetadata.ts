@@ -145,3 +145,50 @@ export function refreshUiMetadata(): void {
   CACHE.tools = undefined;
   notify();
 }
+
+/** Merge a page's seed resource list with the live registry. The
+ *  registry takes precedence (its labels reflect the owning plugin's
+ *  intent); seeded entries fill in resources the registry hasn't
+ *  surfaced yet (rare, mostly the document surfaces).
+ *
+ *  Seed shape matches the existing per-page descriptors — we accept a
+ *  generic `T extends { id; label }` so each page keeps its own
+ *  group/category typing. The mapper builds a registry-flavoured
+ *  `T` from the lighter `UiResource`. Returns a sorted, deduped list.
+ *
+ *  Use case: every page that hardcoded a 10–20-resource RESOURCES
+ *  array now passes that array as `seed` and gets back the live
+ *  union — same shape, more entries, plugin-aware labels. */
+export function useMergedUiResources<T extends { id: string; label: string }>(
+  seed: ReadonlyArray<T>,
+  mapFromUi: (r: UiResource) => T,
+  options?: { writableOnly?: boolean; sortKey?: (t: T) => string },
+): T[] {
+  const { data: live } = useUiResources();
+  const writableOnly = options?.writableOnly ?? true;
+  const sortKey = options?.sortKey ?? ((t) => `${t.label.toLowerCase()}|${t.id}`);
+  return React.useMemo<T[]>(() => {
+    const seedById = new Map(seed.map((s) => [s.id, s]));
+    const out: T[] = [];
+    const seen = new Set<string>();
+    // Live first — registry wins on label conflicts. We retain the
+    // seed entry verbatim when present so per-page hand-tuned labels
+    // and category overrides survive.
+    for (const r of live) {
+      if (writableOnly && !(r.actions ?? []).includes("write")) continue;
+      const seedHit = seedById.get(r.id);
+      out.push(seedHit ?? mapFromUi(r));
+      seen.add(r.id);
+    }
+    // Then the seeds the registry didn't surface (cold start, or
+    // resources without a write tool that the page still wants to
+    // expose).
+    for (const s of seed) {
+      if (!seen.has(s.id)) {
+        out.push(s);
+        seen.add(s.id);
+      }
+    }
+    return out.sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+  }, [live, seed, mapFromUi, writableOnly, sortKey]);
+}
