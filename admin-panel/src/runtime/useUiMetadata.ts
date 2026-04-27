@@ -143,7 +143,72 @@ export function useUiLocales(): ReturnType<typeof useResource<"locales">> {
 export function refreshUiMetadata(): void {
   CACHE.resources = undefined;
   CACHE.tools = undefined;
+  FIELDS_CACHE.clear();
   notify();
+}
+
+/* ---- per-resource field discovery (separate cache per resource) -- */
+
+export interface UiField {
+  key: string;
+  kind?: string;
+  label?: string;
+}
+
+interface FieldsCacheEntry { at: number; data: UiField[]; promise?: Promise<UiField[]> }
+const FIELDS_CACHE = new Map<string, FieldsCacheEntry>();
+
+async function fetchFieldsOnce(resource: string): Promise<UiField[]> {
+  const existing = FIELDS_CACHE.get(resource);
+  if (existing && Date.now() - existing.at < TTL_MS) return existing.data;
+  if (existing?.promise) return existing.promise;
+  const url = `/ui/fields/${encodeURIComponent(resource)}`;
+  const promise = apiFetch<{ rows: UiField[] }>(url)
+    .then((r) => {
+      FIELDS_CACHE.set(resource, { at: Date.now(), data: r.rows });
+      notify();
+      return r.rows;
+    })
+    .catch((err) => {
+      // Cache failure briefly — picker still falls back to free-text
+      // entry while the endpoint recovers.
+      FIELDS_CACHE.set(resource, { at: Date.now() - (TTL_MS - 5_000), data: [] });
+      notify();
+      throw err;
+    });
+  FIELDS_CACHE.set(resource, { at: existing?.at ?? 0, data: existing?.data ?? [], promise });
+  return promise;
+}
+
+/** Hook that fetches the field list for a resource. Empty `resource`
+ *  is a no-op — callers gate on whether they have an active resource
+ *  before showing the picker. */
+export function useUiFields(resource: string | undefined): {
+  data: UiField[]; loading: boolean; error?: string;
+} {
+  const [, setTick] = React.useState(0);
+  const [error, setError] = React.useState<string | undefined>();
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    const sub = (): void => setTick((t) => t + 1);
+    SUBSCRIBERS.add(sub);
+    return () => { SUBSCRIBERS.delete(sub); };
+  }, []);
+
+  React.useEffect(() => {
+    if (!resource) return;
+    const cached = FIELDS_CACHE.get(resource);
+    if (cached && Date.now() - cached.at < TTL_MS) return;
+    setLoading(true);
+    fetchFieldsOnce(resource)
+      .then(() => setError(undefined))
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setLoading(false));
+  }, [resource]);
+
+  const data = resource ? FIELDS_CACHE.get(resource)?.data ?? [] : [];
+  return { data, loading, error };
 }
 
 /** Merge a page's seed resource list with the live registry. The

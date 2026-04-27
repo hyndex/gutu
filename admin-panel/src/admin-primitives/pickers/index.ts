@@ -8,3 +8,5 @@ export { CronBuilder } from "./CronBuilder";
 export type { CronBuilderProps } from "./CronBuilder";
 export { KeyValueEditor } from "./KeyValueEditor";
 export type { KeyValueEditorProps } from "./KeyValueEditor";
+export { FieldPathPicker } from "./FieldPathPicker";
+export type { FieldPathPickerProps } from "./FieldPathPicker";

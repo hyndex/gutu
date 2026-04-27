@@ -23,6 +23,7 @@ import { requireAuth } from "../middleware/auth";
 import { listUiResources } from "../lib/ui/metadata";
 import { listTools } from "../lib/mcp/tools";
 import { bootstrapMcpTools } from "../lib/mcp/bootstrap";
+import { db } from "../db";
 
 export const uiMetadataRoutes = new Hono();
 uiMetadataRoutes.use("*", requireAuth);
@@ -167,3 +168,89 @@ const LOCALES: Array<{ code: string; name: string }> = [
 ];
 
 uiMetadataRoutes.get("/locales", (c) => c.json({ rows: LOCALES }));
+
+/* ---- per-resource field discovery -------------------------------- */
+
+/** Field-name hints for a resource, used by condition + filter
+ *  pickers (notification rules, workflow filters). Two sources:
+ *
+ *    1. `field_metadata` rows for this resource + tenant — these are
+ *       the custom fields a tenant has explicitly defined, so the
+ *       label is good. Type is the field kind.
+ *    2. Top-level keys discovered from up to 50 recent records of the
+ *       resource. Captures system fields (`status`, `createdAt`,
+ *       `tenantId`) and any field a writer has set without it being
+ *       declared in metadata.
+ *
+ *  Both sources are merged; metadata wins on conflict. The output is
+ *  intentionally a flat key list — nested paths (`customer.id`) are
+ *  surfaced one level deep for object-typed values, keeping the UI
+ *  picker shallow without a full schema crawl. */
+uiMetadataRoutes.get("/fields/:resource", (c) => {
+  const resource = c.req.param("resource");
+  if (!resource || !/^[a-z][a-z0-9_.-]*$/i.test(resource)) {
+    return c.json({ error: "invalid resource" }, 400);
+  }
+  type FieldRow = { key: string; kind?: string; label?: string };
+  const out = new Map<string, FieldRow>();
+
+  // Custom fields from field_metadata.
+  try {
+    const metaRows = db
+      .prepare(
+        `SELECT key, kind, label FROM field_metadata
+         WHERE resource = ? ORDER BY position ASC, key ASC LIMIT 200`,
+      )
+      .all(resource) as Array<{ key: string; kind: string; label: string }>;
+    for (const r of metaRows) {
+      out.set(r.key, { key: r.key, kind: r.kind, label: r.label });
+    }
+  } catch {
+    // field_metadata table may not exist on a fresh install; tolerate.
+  }
+
+  // System keys from sample records.
+  try {
+    const recordRows = db
+      .prepare(
+        `SELECT data FROM records WHERE resource = ?
+         ORDER BY updated_at DESC LIMIT 50`,
+      )
+      .all(resource) as Array<{ data: string }>;
+    for (const row of recordRows) {
+      let parsed: Record<string, unknown> | undefined;
+      try {
+        parsed = JSON.parse(row.data) as Record<string, unknown>;
+      } catch {
+        continue;
+      }
+      for (const [k, v] of Object.entries(parsed)) {
+        if (!out.has(k)) {
+          out.set(k, { key: k, kind: typeofForUi(v) });
+        }
+        // One-level nested path discovery for object-typed values
+        // (e.g. customer.id, customer.email).
+        if (v && typeof v === "object" && !Array.isArray(v)) {
+          for (const k2 of Object.keys(v as Record<string, unknown>)) {
+            const nested = `${k}.${k2}`;
+            if (!out.has(nested)) {
+              out.set(nested, { key: nested, kind: typeofForUi((v as Record<string, unknown>)[k2]) });
+            }
+          }
+        }
+      }
+    }
+  } catch {
+    // records table is core; failure here means a deeper problem,
+    // but the picker should still degrade gracefully.
+  }
+
+  return c.json({ rows: Array.from(out.values()).sort((a, b) => a.key.localeCompare(b.key)) });
+});
+
+function typeofForUi(v: unknown): string {
+  if (v === null) return "null";
+  if (Array.isArray(v)) return "array";
+  if (typeof v === "object") return "object";
+  return typeof v;
+}
