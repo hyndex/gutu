@@ -27,6 +27,7 @@
  *    - No cross-object joins on custom relations. (Twenty also
  *      doesn't really do these efficiently.) */
 
+import type { SQLQueryBindings } from "bun:sqlite";
 import { db, nowIso } from "../db";
 import { uuid } from "./id";
 
@@ -235,7 +236,7 @@ export function updateFieldMetadata(
     .get(id, tenantId) as FieldRow | undefined;
   if (!existing) return null;
   const fields: string[] = [];
-  const args: unknown[] = [];
+  const args: SQLQueryBindings[] = [];
   if (patch.label !== undefined) { fields.push("label = ?"); args.push(patch.label.slice(0, 200)); }
   if (patch.kind !== undefined) { fields.push("kind = ?"); args.push(patch.kind); }
   if (patch.options !== undefined) { fields.push("options = ?"); args.push(JSON.stringify(patch.options)); }

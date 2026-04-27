@@ -38,7 +38,7 @@ attachmentsRoutes.get("/:messageId/:attId", async (c) => {
     const driver = await driverFor({ connectionId: rec.connectionId, tenantId: tenantId() });
     const bytes = await driver.getAttachmentBytes(rec.providerMessageId, attId);
     const safeName = att.filename.replace(/[\r\n";]/g, "_");
-    return new Response(bytes, {
+    return new Response(bytes as BodyInit, {
       status: 200,
       headers: {
         "Content-Type": att.contentType || "application/octet-stream",
@@ -75,7 +75,7 @@ attachmentsRoutes.get("/inline/:attId", async (c) => {
     try {
       const driver = await driverFor({ connectionId: rec.connectionId, tenantId: tenantId() });
       const bytes = await driver.getAttachmentBytes(rec.providerMessageId, att.providerAttachmentId);
-      return new Response(bytes, {
+      return new Response(bytes as BodyInit, {
         status: 200,
         headers: {
           "Content-Type": att.contentType || "application/octet-stream",

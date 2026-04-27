@@ -7,6 +7,7 @@
  *  set the resource list endpoint uses, so users only count what they're
  *  allowed to see. Tenant isolation is enforced the same way. */
 
+import type { SQLQueryBindings } from "bun:sqlite";
 import { Hono } from "hono";
 import { z } from "zod";
 import { requireAuth, currentUser } from "../middleware/auth";
@@ -61,7 +62,7 @@ function computeMetric(
   tenantId: string,
 ): number {
   const where: string[] = ["resource = ?"];
-  const bindings: unknown[] = [resource];
+  const bindings: SQLQueryBindings[] = [resource];
 
   // ACL gate — same shape `listRecords` uses.
   const placeholders = Array.from({ length: accessibleIds.size }, () => "?").join(",");

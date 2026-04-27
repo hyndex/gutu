@@ -16,6 +16,7 @@
  *  sequence, all-or-nothing — a failure mid-execution rolls back the
  *  prior steps via the undo log. */
 
+import type { SQLQueryBindings } from "bun:sqlite";
 import { db } from "../../db";
 import { uuid } from "../id";
 
@@ -199,7 +200,7 @@ export function proposePlan(args: ProposePlanArgs): Plan {
 }
 
 export function listPlans(tenantId: string, agentId?: string): Plan[] {
-  const params: unknown[] = [tenantId];
+  const params: SQLQueryBindings[] = [tenantId];
   let where = `WHERE tenant_id = ?`;
   if (agentId) {
     where += ` AND agent_id = ?`;

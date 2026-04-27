@@ -15,10 +15,43 @@ async function setup() {
   resetConfig();
   const { migrate } = await import("../../src/migrations");
   migrate();
+
+  // Pin dbx() to the SAME bun:sqlite handle as src/db.ts so all
+  // migrations + queries hit one in-memory db (see editors test for
+  // the failure mode this prevents).
+  const dbMod = await import("../../src/db");
+  const { setDbxForTests } = await import("../../src/dbx");
+  const { SqliteDbx } = await import("../../src/dbx/sqlite");
+  setDbxForTests(new SqliteDbx(dbMod.db));
+
   const tenancyMig = await import("../../src/tenancy/migrations");
   await tenancyMig.migrateGlobal();
 
-  const { db } = await import("../../src/db");
+  // Run plugin migrations that the resource routes depend on at runtime
+  // (field_metadata, editor_acl, erp-actions tables, plus every plugin
+  // the ERP test exercises through HTTP).
+  const { runPluginMigrations, mountPluginRoutes, loadPlugins } = await import("../../src/host/plugin-contract");
+  const plugins = await Promise.all([
+    import("@gutu-plugin/field-metadata-core"),
+    import("@gutu-plugin/editor-core"),
+    import("@gutu-plugin/erp-actions-core"),
+    import("@gutu-plugin/sales-core"),
+    import("@gutu-plugin/accounting-core"),
+    import("@gutu-plugin/inventory-core"),
+    import("@gutu-plugin/manufacturing-core"),
+    import("@gutu-plugin/treasury-core"),
+    import("@gutu-plugin/hr-payroll-core"),
+    import("@gutu-plugin/e-invoicing-core"),
+    import("@gutu-plugin/template-core"),
+    import("@gutu-plugin/notifications-core"),
+    import("@gutu-plugin/pricing-tax-core"),
+    import("@gutu-plugin/record-links-core"),
+    import("@gutu-plugin/timeline-core"),
+  ]);
+  const ordered = loadPlugins(plugins.map((p) => p.hostPlugin));
+  await runPluginMigrations(ordered);
+
+  const db = dbMod.db;
   const tenantId = `tenant-erp-actions-${Date.now()}`;
   const token = `erp-actions-token-${Date.now()}`;
   db.exec(`PRAGMA foreign_keys = OFF`);
@@ -41,7 +74,9 @@ async function setup() {
   ).run(token, tenantId);
 
   const { createApp } = await import("../../src/server");
-  return { app: createApp(), tenantId, token, db };
+  const app = createApp();
+  mountPluginRoutes(ordered, app);
+  return { app, tenantId, token, db };
 }
 
 beforeAll(async () => {

@@ -1,7 +1,7 @@
 /** /api/mail/shared-inbox — assignment + comments + SLA. */
 
 import { Hono } from "hono";
-import { requireAuth } from "../../middleware/auth";
+import { requireAuth, currentUser } from "../../middleware/auth";
 import { db, nowIso } from "../../db";
 import { uuid } from "../../lib/id";
 import { recordAudit } from "../../lib/audit";
@@ -52,7 +52,7 @@ sharedRoutes.post("/comments", async (c) => {
     body.threadId,
     userIdOf(c),
     tenantId(),
-    String((c.get("user") as { email?: string })?.email ?? userIdOf(c)),
+    String(currentUser(c).email ?? userIdOf(c)),
     body.body,
     JSON.stringify(body.mentions ?? []),
     nowIso(),

@@ -26,7 +26,7 @@ exportImportRoutes.get("/eml/:messageId", (c) => {
   const eml = exportEml(rec);
   recordAudit({ actor: userIdOf(c), action: "mail.export.eml", resource: "mail.message", recordId: id });
   const safeName = (rec.subject ?? rec.id).replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 60);
-  return new Response(eml, {
+  return new Response(eml as BodyInit, {
     status: 200,
     headers: {
       "Content-Type": "message/rfc822",
@@ -52,7 +52,7 @@ exportImportRoutes.get("/mbox/thread/:threadId", (c) => {
   if (msgs.length === 0) return errorResponse(c, 404, "not-found", "thread not found");
   const mbox = exportMbox(msgs);
   recordAudit({ actor: userIdOf(c), action: "mail.export.mbox.thread", resource: "mail.thread", recordId: id, payload: { count: msgs.length } });
-  return new Response(mbox, {
+  return new Response(mbox as BodyInit, {
     status: 200,
     headers: {
       "Content-Type": "application/mbox",
@@ -76,7 +76,7 @@ exportImportRoutes.get("/mbox/folder/:folder", (c) => {
   const msgs = rows.map((r) => JSON.parse(r.data) as StoredMessage);
   const mbox = exportMbox(msgs);
   recordAudit({ actor: userIdOf(c), action: "mail.export.mbox.folder", resource: "mail.message", payload: { folder, count: msgs.length } });
-  return new Response(mbox, {
+  return new Response(mbox as BodyInit, {
     status: 200,
     headers: {
       "Content-Type": "application/mbox",

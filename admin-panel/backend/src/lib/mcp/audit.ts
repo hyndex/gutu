@@ -11,6 +11,7 @@
  *  (not on the critical path); the `mcp_call_log` write IS on the
  *  critical path because we read it back for the agent dashboard. */
 
+import type { SQLQueryBindings } from "bun:sqlite";
 import { db } from "../../db";
 import { uuid } from "../id";
 import type { Risk } from "./risk";
@@ -143,7 +144,7 @@ function rowToCall(r: DbRow): CallLogRow {
 
 export function listCalls(args: { tenantId: string; agentId?: string; limit?: number }): CallLogRow[] {
   const limit = Math.max(1, Math.min(args.limit ?? 100, 500));
-  const params: unknown[] = [args.tenantId];
+  const params: SQLQueryBindings[] = [args.tenantId];
   let where = `WHERE tenant_id = ?`;
   if (args.agentId) {
     where += ` AND agent_id = ?`;

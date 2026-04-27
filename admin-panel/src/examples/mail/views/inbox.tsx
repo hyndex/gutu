@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Inbox, Send as SendIcon, FileText, Archive, Trash2, AlertOctagon, Star, Clock, Tag, Plus, Sparkles, Zap, Keyboard } from "lucide-react";
+import { Inbox, Send as SendIcon, FileText, Archive, Trash2, AlertOctagon, Star, Clock, Tag, Plus, Sparkles, Zap, Keyboard, type LucideIcon } from "lucide-react";
 import { Badge } from "@/primitives/Badge";
 import { Button } from "@/primitives/Button";
 import { Spinner } from "@/primitives/Spinner";
@@ -24,7 +24,7 @@ interface RouteParts {
   connectionId?: string;
 }
 
-const SYSTEM_FOLDERS: { id: string; label: string; icon: React.ComponentType<{ size?: number }> }[] = [
+const SYSTEM_FOLDERS: { id: string; label: string; icon: LucideIcon }[] = [
   { id: "inbox", label: "Inbox", icon: Inbox },
   { id: "starred", label: "Starred", icon: Star },
   { id: "snoozed", label: "Snoozed", icon: Clock },
@@ -286,7 +286,7 @@ function ScopeSwitcher({
   );
 }
 
-function NavLink({ hash, icon: Icon, label }: { hash: string; icon: React.ComponentType<{ size?: number }>; label: string }): React.ReactElement {
+function NavLink({ hash, icon: Icon, label }: { hash: string; icon: LucideIcon; label: string }): React.ReactElement {
   return (
     <button
       type="button"

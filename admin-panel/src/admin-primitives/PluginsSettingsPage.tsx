@@ -104,14 +104,14 @@ export function PluginsSettingsPage() {
                     <span>{p.manifest?.label ?? p.id}</span>
                     <span className="text-xs text-text-muted font-mono">v{p.version}</span>
                     <StatusPill status={p.status} />
-                    {!p.enabledForTenant && <Badge intent="muted">Disabled for tenant</Badge>}
+                    {!p.enabledForTenant && <Badge intent="neutral">Disabled for tenant</Badge>}
                   </CardTitle>
                   {p.manifest?.description && (
                     <CardDescription>{p.manifest.description}</CardDescription>
                   )}
                 </div>
                 <Button
-                  variant={p.enabledForTenant ? "secondary" : "default"}
+                  variant={p.enabledForTenant ? "outline" : "primary"}
                   disabled={busy === p.id || p.status === "quarantined"}
                   onClick={() => setEnabled(p.id, !p.enabledForTenant)}
                 >
@@ -131,7 +131,7 @@ export function PluginsSettingsPage() {
               {(p.manifest?.permissions?.length ?? 0) > 0 && (
                 <div className="flex flex-wrap gap-1">
                   {p.manifest!.permissions!.map((perm) => (
-                    <Badge key={perm} intent="muted" className="font-mono text-xs">{perm}</Badge>
+                    <Badge key={perm} intent="neutral" className="font-mono text-xs">{perm}</Badge>
                   ))}
                 </div>
               )}
@@ -151,6 +151,6 @@ export function PluginsSettingsPage() {
 function StatusPill({ status }: { status: PluginRow["status"] }) {
   if (status === "loaded") return <Badge intent="success">loaded</Badge>;
   if (status === "quarantined") return <Badge intent="danger">quarantined</Badge>;
-  if (status === "disabled") return <Badge intent="muted">disabled</Badge>;
-  return <Badge intent="muted">{status}</Badge>;
+  if (status === "disabled") return <Badge intent="neutral">disabled</Badge>;
+  return <Badge intent="neutral">{status}</Badge>;
 }

@@ -18,6 +18,7 @@
  *  role found, so a user who is both an explicit editor AND part of a
  *  tenant-viewer fallback ends up with editor (the higher role). */
 
+import type { SQLQueryBindings } from "bun:sqlite";
 import { db, nowIso } from "../db";
 
 export type SubjectKind = "user" | "tenant" | "public-link" | "public";
@@ -151,7 +152,7 @@ export function effectiveRole(args: {
   userId: string;
   tenantId: string | null;
 }): Role | null {
-  const params: unknown[] = [args.resource, args.recordId, "user", args.userId];
+  const params: SQLQueryBindings[] = [args.resource, args.recordId, "user", args.userId];
   let q =
     `SELECT role FROM editor_acl
      WHERE resource = ? AND record_id = ?
@@ -196,7 +197,7 @@ export function accessibleRecordIds(args: {
   userId: string;
   tenantId: string | null;
 }): Set<string> {
-  const params: unknown[] = [args.resource, "user", args.userId];
+  const params: SQLQueryBindings[] = [args.resource, "user", args.userId];
   let q =
     `SELECT DISTINCT record_id FROM editor_acl
      WHERE resource = ?

@@ -66,7 +66,7 @@ export async function sendPush(args: SendArgs): Promise<SendResult> {
   const res = await fetch(args.subscription.endpoint, {
     method: "POST",
     headers,
-    body: encrypted,
+    body: new Uint8Array(encrypted) as BodyInit,
   });
   const text = await res.text().catch(() => "");
   return { ok: res.ok, status: res.status, bodyText: text };

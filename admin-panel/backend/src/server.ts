@@ -117,7 +117,7 @@ export function createApp() {
 
   app.notFound((c) => c.json({ error: "not found" }, 404));
   app.onError((err, c) => {
-    const traceId = c.get("requestId") ?? "";
+    const traceId = (c.get("requestId" as never) as string | undefined) ?? "";
     console.error(`[api][${traceId}] error`, err);
     return c.json({
       error: err instanceof Error ? err.message : "unknown",

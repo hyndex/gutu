@@ -21,6 +21,7 @@
  *    - Each hit carries enough info to render a Cmd+K row: title,
  *      subtitle, icon hint (resource-derived), URL hint, and the
  *      matched field for highlighting. */
+import type { SQLQueryBindings } from "bun:sqlite";
 import { Hono } from "hono";
 import { requireAuth, currentUser } from "../middleware/auth";
 import { getTenantContext } from "../tenancy/context";
@@ -116,7 +117,7 @@ searchRoutes.get("/", (c) => {
   const resourceFilter = filterResources && filterResources.length > 0
     ? `AND resource IN (${filterResources.map(() => "?").join(",")})`
     : "";
-  const args: unknown[] = [`%${q.toLowerCase()}%`];
+  const args: SQLQueryBindings[] = [`%${q.toLowerCase()}%`];
   if (filterResources) args.push(...filterResources);
 
   // Pull candidate hits with a single LIKE — fast on the index for

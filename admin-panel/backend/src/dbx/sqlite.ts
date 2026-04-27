@@ -12,12 +12,19 @@ export class SqliteDbx implements Dbx {
   readonly kind = "sqlite" as const;
   private readonly db: Database;
 
-  constructor(path: string) {
-    this.db = new Database(path, { create: true });
-    this.db.exec("PRAGMA journal_mode = WAL;");
-    this.db.exec("PRAGMA foreign_keys = ON;");
-    this.db.exec("PRAGMA synchronous = NORMAL;");
-    this.db.exec("PRAGMA busy_timeout = 5000;");
+  /** Construct from a path (production) or wrap an existing handle
+   *  (tests — share the singleton in `src/db.ts` so dbx() and `db`
+   *  always see the same in-memory state). */
+  constructor(pathOrHandle: string | Database) {
+    if (typeof pathOrHandle === "string") {
+      this.db = new Database(pathOrHandle, { create: true });
+      this.db.exec("PRAGMA journal_mode = WAL;");
+      this.db.exec("PRAGMA foreign_keys = ON;");
+      this.db.exec("PRAGMA synchronous = NORMAL;");
+      this.db.exec("PRAGMA busy_timeout = 5000;");
+    } else {
+      this.db = pathOrHandle;
+    }
   }
 
   async run(sql: string, params: readonly SqlParam[] = []): Promise<DbxExecResult> {

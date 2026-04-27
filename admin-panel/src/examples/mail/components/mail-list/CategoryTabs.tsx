@@ -5,11 +5,11 @@
  *  selection survives reload. */
 
 import * as React from "react";
-import { Inbox, Tag, Users, RefreshCcw, MessageCircle } from "lucide-react";
+import { Inbox, Tag, Users, RefreshCcw, MessageCircle, type LucideIcon } from "lucide-react";
 
 export type CategoryKey = "primary" | "promotions" | "social" | "updates" | "forums";
 
-const CATEGORIES: { key: CategoryKey; label: string; icon: React.ComponentType<{ size?: number }> }[] = [
+const CATEGORIES: { key: CategoryKey; label: string; icon: LucideIcon }[] = [
   { key: "primary", label: "Primary", icon: Inbox },
   { key: "promotions", label: "Promotions", icon: Tag },
   { key: "social", label: "Social", icon: Users },

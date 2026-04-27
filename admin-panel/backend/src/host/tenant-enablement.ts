@@ -82,9 +82,9 @@ export function listPluginEnablement(tenantId: string): Array<{
  *  for the current tenant. Plugins wrap their routers with this. */
 export function pluginGate(pluginId: string) {
   return async (c: Context, next: Next) => {
-    let tenantId: string;
-    try { tenantId = getTenantContext().tenantId; }
-    catch { return next(); /* unauth path — let auth middleware handle it */ }
+    const ctx = getTenantContext();
+    if (!ctx) return next(); /* unauth path — let auth middleware handle it */
+    const tenantId = ctx.tenantId;
 
     if (!isPluginEnabled(tenantId, pluginId)) {
       return c.json({

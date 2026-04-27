@@ -13,7 +13,7 @@ export const googleWebhookRoutes = new Hono();
 googleWebhookRoutes.post("/", async (c) => {
   let body: { message?: { data?: string; messageId?: string }; subscription?: string } = {};
   try { body = await c.req.json(); } catch { return c.text("bad json", 400); }
-  if (!body.message?.data) return c.text("ok", 204);
+  if (!body.message?.data) return c.body(null, 204);
   let payload: { emailAddress?: string; historyId?: string } = {};
   try {
     const decoded = Buffer.from(body.message.data, "base64").toString("utf8");
@@ -21,7 +21,7 @@ googleWebhookRoutes.post("/", async (c) => {
   } catch {
     return c.text("bad payload", 400);
   }
-  if (!payload.emailAddress) return c.text("ok", 204);
+  if (!payload.emailAddress) return c.body(null, 204);
   // Find connection by email + provider.
   const rows = db
     .prepare(
@@ -33,7 +33,7 @@ googleWebhookRoutes.post("/", async (c) => {
   for (const row of rows) {
     enqueueSync(row.id);
   }
-  return c.text("ok", 204);
+  return c.body(null, 204);
 });
 
 function enqueueSync(connectionId: string): void {

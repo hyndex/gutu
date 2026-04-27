@@ -9,7 +9,7 @@
  *    DELETE /strings/:id                 delete one
  */
 
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { requireAuth } from "../middleware/auth";
 import { getTenantContext } from "../tenancy/context";
 import {
@@ -29,7 +29,7 @@ function tenantId(): string {
   return getTenantContext()?.tenantId ?? "default";
 }
 
-function handle(err: unknown, c: Parameters<Parameters<typeof i18nRoutes.get>[1]>[0]) {
+function handle(err: unknown, c: Context) {
   if (err instanceof I18nError) return c.json({ error: err.message, code: err.code }, 400);
   throw err;
 }

@@ -55,13 +55,22 @@ async function setup() {
     defaultTenantId: tenantId,
   });
 
+  // Pin dbx() to the SAME bun:sqlite handle as src/db.ts. Otherwise
+  // `migrateGlobal()` opens a separate connection (especially harmful
+  // when DB_PATH=":memory:" — every Database(":memory:") is its own
+  // isolated DB, so migrations land in one db while reads happen in
+  // another).
+  const dbMod = await import("../../src/db");
+  const { setDbxForTests } = await import("../../src/dbx");
+  const { SqliteDbx } = await import("../../src/dbx/sqlite");
+  setDbxForTests(new SqliteDbx(dbMod.db));
+
   // Run the global migrations (adds tenants/memberships tables) BEFORE
   // we try to add a session — the tenancy migrations enrich `sessions`
   // with the tenant_id column on existing installs.
   const tenancyMig = await import("../../src/tenancy/migrations");
   await tenancyMig.migrateGlobal();
   // Ensure the default tenant exists in the global schema with the test id.
-  const dbMod = await import("../../src/db");
   const db = dbMod.db;
   // Bypass FK checks while we wipe + reseed for the test fixture.
   db.exec(`PRAGMA foreign_keys = OFF`);
@@ -84,15 +93,21 @@ async function setup() {
      VALUES ('test-token', 'user-1', '${tenantId}', '2026-01-01T00:00:00.000Z', '2099-01-01T00:00:00.000Z', 'test', '127.0.0.1')`,
   );
 
-  // Force-import the editors route AFTER env is configured so its module
-  // captures the patched limits.
-  const editorsMod = await import("../../src/routes/editors");
-  editorsMod.__test__.resetThrottles();
+  // Force-import the editor-core plugin AFTER env is configured so its
+  // module captures the patched limits, then run its migrations + mount
+  // it via the plugin contract — same path production uses.
+  const editorCorePkg = await import("@gutu-plugin/editor-core");
+  const editorCore = editorCorePkg.hostPlugin;
+  editorCorePkg.__test__.resetThrottles();
+  const { runPluginMigrations, mountPluginRoutes, loadPlugins } = await import("../../src/host/plugin-contract");
+  const ordered = loadPlugins([editorCore]);
+  await runPluginMigrations(ordered);
 
-  // Fresh app for the tests.
+  // Fresh app for the tests, then mount the editor plugin's routes.
   const { createApp } = await import("../../src/server");
   const app = createApp();
-  return { app, dataDir, tenantId, db };
+  mountPluginRoutes(ordered, app);
+  return { app, dataDir, tenantId, db, editorTestHooks: editorCorePkg.__test__ };
 }
 
 beforeAll(async () => { app = await setup(); });
@@ -105,10 +120,9 @@ afterAll(async () => {
     await rm(app.dataDir, { recursive: true, force: true });
   }
 });
-beforeEach(async () => {
+beforeEach(() => {
   // Reset throttles between tests so cooldown doesn't leak.
-  const editorsMod = await import("../../src/routes/editors");
-  editorsMod.__test__.resetThrottles();
+  app.editorTestHooks.resetThrottles();
 });
 
 function authedFetch(input: string, init: RequestInit = {}): Promise<Response> {

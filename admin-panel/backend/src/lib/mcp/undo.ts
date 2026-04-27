@@ -13,6 +13,7 @@
  *  by the GC task — by then the record has been touched by other
  *  parties and an undo would clobber human edits. */
 
+import type { SQLQueryBindings } from "bun:sqlite";
 import { db } from "../../db";
 import { uuid } from "../id";
 import { getRecord, insertRecord, updateRecord, deleteRecord } from "../query";
@@ -130,7 +131,7 @@ export function recordUndo(args: {
 
 export function listUndoableForAgent(args: { tenantId: string; agentId?: string; limit?: number }): UndoEntry[] {
   const limit = Math.max(1, Math.min(args.limit ?? 50, 200));
-  const params: unknown[] = [args.tenantId];
+  const params: SQLQueryBindings[] = [args.tenantId];
   let where = `WHERE tenant_id = ? AND reverted_at IS NULL AND expires_at > ?`;
   params.push(new Date().toISOString());
   if (args.agentId) {

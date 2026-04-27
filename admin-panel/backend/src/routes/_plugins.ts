@@ -39,7 +39,9 @@ pluginsRoutes.use("*", requireAuth);
 pluginsRoutes.get("/", async (c) => {
   const health = await checkPluginHealth(CURRENT_PLUGINS);
   const records = listPluginRecords();
-  const tenantId = getTenantContext().tenantId;
+  const ctx = getTenantContext();
+  if (!ctx) return c.json({ error: "no tenant context" }, 400);
+  const tenantId = ctx.tenantId;
   const out = records.map((r) => ({
     id: r.plugin.id,
     version: r.plugin.version,
@@ -63,8 +65,9 @@ pluginsRoutes.get("/_leases", (c) => c.json({ rows: listLeases() }));
 pluginsRoutes.get("/_ws-routes", (c) => c.json({ rows: listWsRoutes() }));
 
 pluginsRoutes.get("/_enablement", (c) => {
-  const tenantId = getTenantContext().tenantId;
-  return c.json({ rows: listPluginEnablement(tenantId) });
+  const ctx = getTenantContext();
+  if (!ctx) return c.json({ error: "no tenant context" }, 400);
+  return c.json({ rows: listPluginEnablement(ctx.tenantId) });
 });
 
 pluginsRoutes.post("/_enablement", async (c) => {
@@ -78,8 +81,9 @@ pluginsRoutes.post("/_enablement", async (c) => {
   if (typeof body.pluginId !== "string" || typeof body.enabled !== "boolean") {
     return c.json({ error: "pluginId (string) + enabled (boolean) required" }, 400);
   }
-  const tenantId = getTenantContext().tenantId;
-  setPluginEnabled(tenantId, body.pluginId, body.enabled, body.settings);
+  const ctx = getTenantContext();
+  if (!ctx) return c.json({ error: "no tenant context" }, 400);
+  setPluginEnabled(ctx.tenantId, body.pluginId, body.enabled, body.settings);
   return c.json({ ok: true, pluginId: body.pluginId, enabled: body.enabled });
 });
 

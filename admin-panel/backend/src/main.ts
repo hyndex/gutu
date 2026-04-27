@@ -276,7 +276,12 @@ function pickColor(userId: string): string {
   return COLOR_PALETTE[h % COLOR_PALETTE.length];
 }
 
-Bun.serve({
+/** Discriminated union covering both WebSocket flavours we serve. The
+ *  Bun.serve generic forces `data` to a single type, so we widen here
+ *  and discriminate inside the handlers. */
+type SocketData = YjsSocketData | { userId: string; tenantId: string };
+
+Bun.serve<SocketData>({
   port,
   hostname: "127.0.0.1",
   async fetch(req, server) {
@@ -312,24 +317,21 @@ Bun.serve({
     async open(ws) {
       // Discriminate by socket data shape — Yjs sockets carry resource+
       // recordId, shell sockets don't.
-      const data = ws.data as { resource?: string };
-      if (data && typeof data.resource === "string") {
+      if ("resource" in ws.data && typeof ws.data.resource === "string") {
         await yjsOnOpen(ws as never);
       } else {
         registerSocket(ws as never);
       }
     },
     async close(ws) {
-      const data = ws.data as { resource?: string };
-      if (data && typeof data.resource === "string") {
+      if ("resource" in ws.data && typeof ws.data.resource === "string") {
         await yjsOnClose(ws as never);
       } else {
         unregisterSocket(ws as never);
       }
     },
     message(ws, message) {
-      const data = ws.data as { resource?: string };
-      if (data && typeof data.resource === "string") {
+      if ("resource" in ws.data && typeof ws.data.resource === "string") {
         yjsOnMessage(ws as never, message);
       }
       // Shell sockets don't accept inbound messages.

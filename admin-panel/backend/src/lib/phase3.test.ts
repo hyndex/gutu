@@ -724,7 +724,7 @@ describe("i18n", () => {
 
 describe("awesome-bar", () => {
   it("returns nav + record + domain hits ranked by score", async () => {
-    const aw = await import("./awesome-bar");
+    const aw = await import("../host/awesome-bar");
     const gl = await import("@gutu-plugin/accounting-core");
     const tenant = "t-aw";
     gl.createAccount({
@@ -758,7 +758,7 @@ describe("awesome-bar", () => {
   });
 
   it("returns empty for empty query", async () => {
-    const aw = await import("./awesome-bar");
+    const aw = await import("../host/awesome-bar");
     expect(aw.searchAwesome({ tenantId: "t-aw", query: "" }).length).toBe(0);
   });
 });

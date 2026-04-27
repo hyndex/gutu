@@ -89,6 +89,201 @@ const RISK_LABEL: Record<Agent["riskCeiling"], string> = {
 
 type Tab = "agents" | "plans" | "undo" | "dual-key";
 
+/** Connection snippets shown ONCE after a token is issued. The token
+ *  itself is irrecoverable after this banner is dismissed; the helper
+ *  shows the three transports (HTTP JSON-RPC, HTTP+SSE, stdio bin) so
+ *  operators can hand the right one-liner to the AI agent owner. */
+function ConnectAgentSnippet({
+  token,
+  onDismiss,
+}: {
+  token: string;
+  onDismiss: () => void;
+}): React.ReactElement {
+  const [copied, setCopied] = React.useState<string | null>(null);
+  const origin = typeof window !== "undefined" ? window.location.origin : "https://your-host";
+  const endpoint = `${origin}/api/mcp`;
+
+  const httpCurl = `curl -X POST '${endpoint}' \\
+  -H 'Authorization: Bearer ${token}' \\
+  -H 'Content-Type: application/json' \\
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"my-agent","version":"1.0.0"}}}'`;
+
+  const sseCurl = `curl -N -X POST '${endpoint}' \\
+  -H 'Authorization: Bearer ${token}' \\
+  -H 'Content-Type: application/json' \\
+  -H 'Accept: text/event-stream' \\
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"my-agent","version":"1.0.0"}}}'`;
+
+  const stdioCmd = `MCP_AGENT_TOKEN='${token}' bun run mcp:stdio`;
+
+  const claudeDesktopCfg = JSON.stringify(
+    {
+      mcpServers: {
+        gutu: {
+          command: "bun",
+          args: ["run", "mcp:stdio"],
+          env: { MCP_AGENT_TOKEN: token },
+          cwd: "/path/to/admin-panel/backend",
+        },
+      },
+    },
+    null,
+    2,
+  );
+
+  const copy = (label: string, text: string): void => {
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(label);
+      setTimeout(() => setCopied(null), 1500);
+    });
+  };
+
+  return (
+    <div className="rounded-md border border-warning-strong/30 bg-warning-soft p-3 space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm font-semibold text-warning-strong">
+          New token issued — copy it now, you won't see it again
+        </div>
+        <Button variant="ghost" size="sm" onClick={onDismiss}>
+          Dismiss
+        </Button>
+      </div>
+
+      {/* Bare token row — quickest path for clients that already know
+          how to wire MCP themselves. */}
+      <div className="flex items-center gap-2">
+        <code className="flex-1 font-mono text-xs bg-surface-1 rounded px-2 py-1.5 break-all">
+          {token}
+        </code>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => copy("token", token)}
+        >
+          {copied === "token" ? "Copied" : "Copy token"}
+        </Button>
+      </div>
+
+      <details className="rounded-md border border-border-subtle bg-surface-0 p-2 text-xs" open>
+        <summary className="cursor-pointer font-semibold text-text-primary py-1 px-1">
+          Connect a CLI agent
+        </summary>
+        <div className="space-y-3 pt-2 px-1 pb-1 text-text-secondary">
+          <p className="leading-relaxed">
+            The Gutu MCP host speaks three transports from one bearer token.
+            Pick the one that fits the agent runtime, then keep the token in a
+            secrets store — these snippets paste it inline only as a starter.
+          </p>
+
+          {/* HTTP plain JSON */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="font-medium text-text-primary">
+                1. HTTP — POST a JSON-RPC envelope
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copy("http", httpCurl)}
+              >
+                {copied === "http" ? "Copied" : "Copy"}
+              </Button>
+            </div>
+            <pre className="overflow-x-auto rounded bg-surface-1 px-2 py-1.5 font-mono text-[11px] leading-relaxed text-text-primary whitespace-pre">
+{httpCurl}
+            </pre>
+            <p className="text-[11px] text-text-muted">
+              Returns a single JSON response. Use{" "}
+              <code className="font-mono">notifications/poll</code> in a loop
+              to drain change notifications.
+            </p>
+          </div>
+
+          {/* SSE upgrade */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="font-medium text-text-primary">
+                2. SSE upgrade — long-lived push channel
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copy("sse", sseCurl)}
+              >
+                {copied === "sse" ? "Copied" : "Copy"}
+              </Button>
+            </div>
+            <pre className="overflow-x-auto rounded bg-surface-1 px-2 py-1.5 font-mono text-[11px] leading-relaxed text-text-primary whitespace-pre">
+{sseCurl}
+            </pre>
+            <p className="text-[11px] text-text-muted">
+              Same endpoint, but with{" "}
+              <code className="font-mono">Accept: text/event-stream</code>.
+              Each <code className="font-mono">message</code> SSE event carries
+              a JSON-RPC response, server-initiated sampling request, or
+              resource-updated notification.
+            </p>
+          </div>
+
+          {/* stdio bin */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="font-medium text-text-primary">
+                3. stdio — for Claude Desktop / local CLI agents
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copy("stdio", stdioCmd)}
+              >
+                {copied === "stdio" ? "Copied" : "Copy"}
+              </Button>
+            </div>
+            <pre className="overflow-x-auto rounded bg-surface-1 px-2 py-1.5 font-mono text-[11px] leading-relaxed text-text-primary whitespace-pre">
+{stdioCmd}
+            </pre>
+            <p className="text-[11px] text-text-muted">
+              Newline-delimited JSON over stdin/stdout. Run from{" "}
+              <code className="font-mono">admin-panel/backend</code>. The
+              parent agent process owns the lifecycle — the bin exits cleanly
+              on stdin EOF or SIGTERM.
+            </p>
+          </div>
+
+          {/* Claude Desktop config */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="font-medium text-text-primary">
+                Claude Desktop config snippet
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copy("claude", claudeDesktopCfg)}
+              >
+                {copied === "claude" ? "Copied" : "Copy"}
+              </Button>
+            </div>
+            <pre className="overflow-x-auto rounded bg-surface-1 px-2 py-1.5 font-mono text-[11px] leading-relaxed text-text-primary whitespace-pre">
+{claudeDesktopCfg}
+            </pre>
+            <p className="text-[11px] text-text-muted">
+              Paste into{" "}
+              <code className="font-mono">
+                ~/Library/Application Support/Claude/claude_desktop_config.json
+              </code>{" "}
+              (macOS) or the Windows equivalent. Update{" "}
+              <code className="font-mono">cwd</code> to the absolute path of
+              this repo's <code className="font-mono">admin-panel/backend</code>.
+            </p>
+          </div>
+        </div>
+      </details>
+    </div>
+  );
+}
+
 export function McpAgentsPage(): React.ReactElement {
   const [tab, setTab] = React.useState<Tab>("agents");
   const [agents, setAgents] = React.useState<Agent[]>([]);
@@ -193,32 +388,7 @@ export function McpAgentsPage(): React.ReactElement {
       )}
 
       {issuedToken && (
-        <div className="rounded-md border border-warning-strong/30 bg-warning-soft p-3 space-y-2">
-          <div className="text-sm font-semibold text-warning-strong">
-            New token — copy it now, you won't see it again
-          </div>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 font-mono text-xs bg-surface-1 rounded px-2 py-1.5 break-all">
-              {issuedToken}
-            </code>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                void navigator.clipboard.writeText(issuedToken);
-              }}
-            >
-              Copy
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIssuedToken(null)}
-            >
-              Dismiss
-            </Button>
-          </div>
-        </div>
+        <ConnectAgentSnippet token={issuedToken} onDismiss={() => setIssuedToken(null)} />
       )}
 
       {/* AGENTS TAB */}

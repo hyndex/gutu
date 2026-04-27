@@ -35,7 +35,7 @@ export async function subscribeToPush(): Promise<{ id: string } | { error: strin
   if (!key.configured || !key.publicKey) return { error: "Server VAPID key not configured" };
   const subscription = await reg.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(key.publicKey),
+    applicationServerKey: urlBase64ToUint8Array(key.publicKey) as BufferSource,
   });
   const json = subscription.toJSON() as { endpoint?: string; expirationTime?: number | null; keys?: Record<string, string> };
   if (!json.endpoint || !json.keys) return { error: "Subscription missing endpoint or keys" };

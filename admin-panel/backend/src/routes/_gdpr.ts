@@ -23,7 +23,9 @@ gdprRoutes.use("*", requireAuth);
 gdprRoutes.post("/export", async (c) => {
   const user = currentUser(c);
   if (user.role !== "admin") return c.json({ error: "admin role required" }, 403);
-  const tenantId = getTenantContext().tenantId;
+  const ctx = getTenantContext();
+  if (!ctx) return c.json({ error: "no tenant context" }, 400);
+  const tenantId = ctx.tenantId;
   const body = (await c.req.json().catch(() => ({}))) as { subjectId?: string };
   if (typeof body.subjectId !== "string" || body.subjectId.length === 0) {
     return c.json({ error: "subjectId required", code: "invalid-argument" }, 400);
@@ -64,7 +66,9 @@ gdprRoutes.post("/export", async (c) => {
 gdprRoutes.post("/delete", async (c) => {
   const user = currentUser(c);
   if (user.role !== "admin") return c.json({ error: "admin role required" }, 403);
-  const tenantId = getTenantContext().tenantId;
+  const ctx = getTenantContext();
+  if (!ctx) return c.json({ error: "no tenant context" }, 400);
+  const tenantId = ctx.tenantId;
   const body = (await c.req.json().catch(() => ({}))) as { subjectId?: string; confirm?: string };
   if (typeof body.subjectId !== "string" || body.subjectId.length === 0) {
     return c.json({ error: "subjectId required" }, 400);
