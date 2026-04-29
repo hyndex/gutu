@@ -75,6 +75,24 @@ export const hostPlugin: HostPlugin = {
     { mountPath: "/fleet", router: fleetRoutes },
   ],
 
+  // Resources this plugin owns. Auto-registered into the UI metadata
+  // catalog at `loadPlugins()` time and feeds the host's resource-write
+  // gate's dynamic namespace allow-list. Without this declaration,
+  // POSTs to a fresh DB return 404 until a record exists.
+  //
+  // Bare strings = `{ id: <string> }` shorthand. Full descriptors can
+  // also tweak label/group/icon/actions for the picker UI.
+  //
+  // The id MUST match `<plugin>.<entity>` (lowercase, optional hyphens);
+  // anything else is dropped with a clear warning at boot. Wrong:
+  // "Fleet" or "fleet". Right: "fleet.vehicle".
+  resources: [
+    "fleet.vehicle",
+    "fleet.driver",
+    "fleet.route",
+    { id: "fleet.telemetry-event", label: "Telemetry event", group: "Fleet" },
+  ],
+
   // WebSocket handlers — auto-mounted at /api/ws/<path>.
   ws: [
     {
@@ -165,6 +183,60 @@ start: (ctx) => {
 Boot fails fast if a `consumes` ID isn't `provided` by any loaded plugin.
 Swap implementations without touching consumer code.
 
+## Declaring resources
+
+Every record-shaped entity your plugin owns is a *resource*. The
+host's generic `/api/resources/:resource/...` endpoints (list, get,
+create, update, delete, restore, destroy) operate on resources by id.
+Declare them so:
+
+1. The picker UI (resource select, scope tree, tool picker) renders
+   labels and groups instead of raw ids.
+2. The host's resource-write gate accepts POSTs to your namespace
+   from the first request — even on a fresh DB, before any record
+   has been written.
+3. Operators can audit "what each plugin contributes" via
+   `/api/_plugins`.
+
+```ts
+resources: [
+  // Bare-string shorthand = `{ id: <string> }`. Use this for the
+  // common case where the picker label can be inferred from the id.
+  "fleet.vehicle",
+  "fleet.driver",
+  "fleet.route",
+  // Full descriptor for fields the host can't infer. Group is shown
+  // in the resource picker tree; actions trim the picker's chips.
+  {
+    id: "fleet.telemetry-event",
+    label: "Telemetry event",
+    group: "Fleet",
+    actions: ["read"],
+  },
+],
+```
+
+**Naming convention** — `<plugin-namespace>.<entity>` in lowercase
+with optional hyphens. The host's `loadPlugins` rejects anything else
+(logs `[plugin-host] ... skipping` and continues). Examples:
+
+| OK                                | Not OK             | Why                              |
+|-----------------------------------|--------------------|----------------------------------|
+| `accounting.invoice`              | `accounting`       | No entity                         |
+| `field-service.parts-request`     | `Field-Service.X`  | Uppercase                         |
+| `crm.lead`                        | `crm.lead.v2`      | Two dots                          |
+| `fleet.vehicle`                   | `_fleet.vehicle`   | Leading underscore                |
+
+**Two namespaces, one plugin** — perfectly fine. `editor-core`
+declares `spreadsheet.workbook`, `document.page`, `slides.deck`,
+`collab.page`, `whiteboard.canvas` because those are five distinct
+record kinds backed by the same plugin.
+
+**Plugin without resources** — also fine. Cross-cutting plugins
+(`favorites-core`, `field-metadata-core`, `record-links-core`,
+`saved-views-core`, `timeline-core`) own their own DB tables but
+not entries in the resource catalog. Just omit `resources`.
+
 ## Permissions
 
 Manifest `permissions` are recorded at load time and enforced at host
@@ -232,10 +304,16 @@ bun run dev:ui
 ## Lifecycle order
 
 ```
-boot:     loadPlugins → migrate → installIfNeeded → mountRoutes → start
+boot:     loadPlugins → register resources → migrate → installIfNeeded → mountRoutes → start
 runtime:  request → drain check → trace → security → body cap → rate limit → metrics → CORS → tenant → plugin route
 SIGTERM:  /api/ready flips 503 → drainMiddleware refuses new → wait inflight → stopPlugins → exit
 ```
+
+Resources are registered eagerly inside `loadPlugins` (BEFORE
+`migrate`) so the picker UI and the resource-write gate see the
+catalog from request 1. Plugins do NOT need to call
+`ctx.ui.registerResource(...)` from `start()` for the same data —
+keeping the declaration on the manifest is the canonical path.
 
 ## Health + observability
 
