@@ -1,0 +1,129 @@
+{
+  "id": "pack-marketplace",
+  "version": "1.0.0",
+  "label": "Marketplace clone pack",
+  "description": "Multi-seller marketplace template (Amazon/Flipkart/Meesho-shaped).",
+  "plugins": [
+    "auth-core",
+    "org-tenant-core",
+    "role-policy-core",
+    "audit-core",
+    "workflow-core",
+    "jobs-core",
+    "notifications-core",
+    "product-catalog-core",
+    "pricing-tax-core",
+    "sales-core",
+    "inventory-core",
+    "payments-core",
+    "accounting-core",
+    "treasury-core",
+    "support-service-core",
+    "business-portals-core",
+    "commerce-storefront-core",
+    "marketplace-core",
+    "reviews-ratings-core",
+    "trust-safety-core",
+    "wallet-ledger-core",
+    "promotions-loyalty-core",
+    "analytics-bi-core",
+    "search-core"
+  ],
+  "surfaces": [
+    "customer-web-storefront",
+    "seller-portal",
+    "operator-admin",
+    "support-console",
+    "finance-settlement-console"
+  ],
+  "roles": [
+    {
+      "id": "platform_admin",
+      "label": "Platform admin",
+      "permissions": [
+        "*"
+      ]
+    },
+    {
+      "id": "marketplace_operator",
+      "label": "Marketplace operator",
+      "permissions": [
+        "marketplace.*",
+        "audit.read"
+      ]
+    },
+    {
+      "id": "seller_admin",
+      "label": "Seller admin",
+      "permissions": [
+        "marketplace.seller-stores.*",
+        "marketplace.listings.*",
+        "marketplace.offers.*"
+      ]
+    },
+    {
+      "id": "seller_catalog_manager",
+      "label": "Seller catalog manager",
+      "permissions": [
+        "product-catalog.*.read",
+        "marketplace.listings.write"
+      ]
+    },
+    {
+      "id": "seller_fulfillment_user",
+      "label": "Seller fulfillment user",
+      "permissions": [
+        "sales.*.read",
+        "inventory.*.write"
+      ]
+    },
+    {
+      "id": "customer",
+      "label": "Customer",
+      "permissions": [
+        "storefront.*",
+        "sales.*.read"
+      ]
+    },
+    {
+      "id": "support_agent",
+      "label": "Support agent",
+      "permissions": [
+        "support-service.*",
+        "sales.*.read"
+      ]
+    },
+    {
+      "id": "finance_operator",
+      "label": "Finance operator",
+      "permissions": [
+        "accounting.*",
+        "treasury.*",
+        "marketplace.settlements.*"
+      ]
+    },
+    {
+      "id": "trust_safety_moderator",
+      "label": "Trust & Safety moderator",
+      "permissions": [
+        "trust.*"
+      ]
+    }
+  ],
+  "dashboards": [
+    "GMV",
+    "orders-by-seller",
+    "seller-sla",
+    "returns-and-disputes",
+    "settlement-liability",
+    "catalog-moderation-queue"
+  ],
+  "acceptanceTests": [
+    "seller-onboarding-happy-path",
+    "multi-seller-cart-split",
+    "payment-failure-rollback",
+    "refund-after-delivery",
+    "settlement-excludes-disputes",
+    "suspended-seller-listings-hidden"
+  ]
+}

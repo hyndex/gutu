@@ -1,0 +1,98 @@
+{
+  "id": "pack-quick-commerce",
+  "version": "1.0.0",
+  "label": "Quick commerce clone pack",
+  "description": "Dark-store / instant-commerce template (Blinkit/Instamart/Zepto-shaped).",
+  "plugins": [
+    "auth-core",
+    "org-tenant-core",
+    "role-policy-core",
+    "audit-core",
+    "workflow-core",
+    "jobs-core",
+    "notifications-core",
+    "product-catalog-core",
+    "inventory-core",
+    "sales-core",
+    "pricing-tax-core",
+    "commerce-storefront-core",
+    "quick-commerce-core",
+    "last-mile-dispatch-core",
+    "payments-core",
+    "pos-core",
+    "procurement-core",
+    "geospatial-routing-core",
+    "realtime-presence-core",
+    "promotions-loyalty-core",
+    "analytics-bi-core"
+  ],
+  "surfaces": [
+    "customer-app",
+    "dark-store-picker",
+    "packer-console",
+    "rider-console",
+    "ops-control-tower"
+  ],
+  "roles": [
+    {
+      "id": "ops_admin",
+      "label": "Operations admin",
+      "permissions": [
+        "*"
+      ]
+    },
+    {
+      "id": "store_manager",
+      "label": "Dark-store manager",
+      "permissions": [
+        "quick-commerce.dark-stores.*",
+        "inventory.*"
+      ]
+    },
+    {
+      "id": "picker",
+      "label": "Picker",
+      "permissions": [
+        "quick-commerce.picker-tasks.*"
+      ]
+    },
+    {
+      "id": "packer",
+      "label": "Packer",
+      "permissions": [
+        "quick-commerce.packer-tasks.*"
+      ]
+    },
+    {
+      "id": "rider",
+      "label": "Rider",
+      "permissions": [
+        "dispatch.delivery-jobs.*",
+        "dispatch.proof-of-delivery.write"
+      ]
+    },
+    {
+      "id": "customer",
+      "label": "Customer",
+      "permissions": [
+        "storefront.*",
+        "sales.*.read"
+      ]
+    }
+  ],
+  "dashboards": [
+    "orders-per-minute",
+    "store-load-state",
+    "picker-throughput",
+    "rider-utilization",
+    "stock-out-rate"
+  ],
+  "acceptanceTests": [
+    "address-maps-to-serviceable-store",
+    "stock-reservation-prevents-oversell",
+    "picker-substitution-changes-total",
+    "eta-promise-fails-safely-when-paused",
+    "delivery-handoff-updates-customer-state",
+    "expired-item-cannot-be-picked"
+  ]
+}

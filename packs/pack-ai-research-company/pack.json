@@ -1,0 +1,82 @@
+{
+  "id": "pack-ai-research-company",
+  "version": "1.0.0",
+  "label": "AI research company clone pack",
+  "description": "Research-ops template for AI/medicine/finance/electronics labs.",
+  "plugins": [
+    "auth-core",
+    "org-tenant-core",
+    "role-policy-core",
+    "audit-core",
+    "research-ops-core",
+    "dataset-governance-core",
+    "model-registry-core",
+    "experiment-tracking-core",
+    "regulated-ai-compliance-core",
+    "ai-core",
+    "ai-assist-core",
+    "ai-rag",
+    "ai-evals",
+    "ai-skills-core",
+    "execution-workspaces-core",
+    "knowledge-core",
+    "projects-core",
+    "files-core",
+    "quality-core",
+    "analytics-bi-core",
+    "workflow-core"
+  ],
+  "surfaces": [
+    "research-workspace",
+    "dataset-catalog",
+    "experiment-dashboard",
+    "model-registry",
+    "compliance-console"
+  ],
+  "roles": [
+    {
+      "id": "research_lead",
+      "label": "Research lead",
+      "permissions": [
+        "research.*",
+        "models.*"
+      ]
+    },
+    {
+      "id": "researcher",
+      "label": "Researcher",
+      "permissions": [
+        "research.experiments.*",
+        "experiments.*",
+        "datasets.*.read"
+      ]
+    },
+    {
+      "id": "data_steward",
+      "label": "Data steward",
+      "permissions": [
+        "datasets.*"
+      ]
+    },
+    {
+      "id": "compliance_officer",
+      "label": "Compliance officer",
+      "permissions": [
+        "regulated-ai.*",
+        "audit.*.read"
+      ]
+    }
+  ],
+  "dashboards": [
+    "experiments-per-week",
+    "model-eval-coverage",
+    "dataset-license-state",
+    "open-incidents"
+  ],
+  "acceptanceTests": [
+    "experiment-cant-use-unapproved-dataset",
+    "model-cant-approve-without-evals",
+    "consent-withdrawal-triggers-lineage-review",
+    "evidence-pack-completeness"
+  ]
+}

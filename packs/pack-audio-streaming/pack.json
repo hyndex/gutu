@@ -1,0 +1,65 @@
+{
+  "id": "pack-audio-streaming",
+  "version": "1.0.0",
+  "label": "Audio streaming clone pack",
+  "description": "Audio-first streaming template (KukuFM/PocketFM/Audible-shaped).",
+  "plugins": [
+    "auth-core",
+    "org-tenant-core",
+    "role-policy-core",
+    "audit-core",
+    "media-streaming-core",
+    "media-processing-core",
+    "entitlements-core",
+    "subscriptions-core",
+    "payments-core",
+    "content-core",
+    "files-core",
+    "storage-core",
+    "search-core",
+    "recommendations-core",
+    "usage-metering-core",
+    "analytics-bi-core",
+    "reviews-ratings-core"
+  ],
+  "surfaces": [
+    "listener-app",
+    "creator-studio",
+    "subscription-dashboard"
+  ],
+  "roles": [
+    {
+      "id": "platform_admin",
+      "label": "Platform admin",
+      "permissions": [
+        "*"
+      ]
+    },
+    {
+      "id": "creator",
+      "label": "Creator",
+      "permissions": [
+        "media.audio-shows.*",
+        "media.chapters.*"
+      ]
+    },
+    {
+      "id": "listener",
+      "label": "Listener",
+      "permissions": [
+        "media.playback-sessions.write",
+        "media.progress.*"
+      ]
+    }
+  ],
+  "dashboards": [
+    "listener-minutes",
+    "show-completion-rate",
+    "subscription-conversions"
+  ],
+  "acceptanceTests": [
+    "trial-listener-can-play-allowed-shows",
+    "premium-show-blocked-without-plan",
+    "playback-progress-survives-disconnect"
+  ]
+}

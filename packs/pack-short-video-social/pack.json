@@ -1,0 +1,77 @@
+{
+  "id": "pack-short-video-social",
+  "version": "1.0.0",
+  "label": "Short-video social clone pack",
+  "description": "TikTok/Reels-shaped short-form video template.",
+  "plugins": [
+    "auth-core",
+    "org-tenant-core",
+    "role-policy-core",
+    "audit-core",
+    "short-video-core",
+    "social-graph-core",
+    "posts-engagement-core",
+    "feed-core",
+    "recommendations-core",
+    "media-processing-core",
+    "trust-safety-core",
+    "messaging-core",
+    "notifications-core",
+    "analytics-bi-core",
+    "wallet-ledger-core",
+    "ads-campaign-core"
+  ],
+  "surfaces": [
+    "creator-app",
+    "viewer-app",
+    "moderation-console",
+    "creator-analytics",
+    "ads-manager"
+  ],
+  "roles": [
+    {
+      "id": "platform_admin",
+      "label": "Platform admin",
+      "permissions": [
+        "*"
+      ]
+    },
+    {
+      "id": "creator",
+      "label": "Creator",
+      "permissions": [
+        "short-video.*.self",
+        "media-processing.*.write"
+      ]
+    },
+    {
+      "id": "viewer",
+      "label": "Viewer",
+      "permissions": [
+        "short-video.watch-events.write",
+        "feeds.fetch"
+      ]
+    },
+    {
+      "id": "moderator",
+      "label": "Moderator",
+      "permissions": [
+        "trust.*"
+      ]
+    }
+  ],
+  "dashboards": [
+    "watch-time-per-user",
+    "completion-rate",
+    "trending-sounds",
+    "moderation-queue-depth"
+  ],
+  "acceptanceTests": [
+    "upload-creates-processing-job",
+    "video-cant-publish-before-safe",
+    "watch-events-feed-ranking",
+    "blocked-user-content-hidden",
+    "takedown-removes-from-feeds",
+    "duet-source-deletion-handled"
+  ]
+}

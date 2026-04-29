@@ -1,0 +1,82 @@
+{
+  "id": "pack-media-streaming",
+  "version": "1.0.0",
+  "label": "Media streaming clone pack",
+  "description": "OTT/audio/video streaming template (Netflix/Prime/Disney/Hotstar/KukuFM/PocketFM-shaped).",
+  "plugins": [
+    "auth-core",
+    "org-tenant-core",
+    "role-policy-core",
+    "audit-core",
+    "media-streaming-core",
+    "media-processing-core",
+    "entitlements-core",
+    "subscriptions-core",
+    "payments-core",
+    "content-core",
+    "files-core",
+    "storage-core",
+    "search-core",
+    "recommendations-core",
+    "usage-metering-core",
+    "analytics-bi-core",
+    "reviews-ratings-core",
+    "trust-safety-core"
+  ],
+  "surfaces": [
+    "viewer-app",
+    "admin-content-studio",
+    "rights-management-console",
+    "subscription-dashboard",
+    "playback-analytics"
+  ],
+  "roles": [
+    {
+      "id": "platform_admin",
+      "label": "Platform admin",
+      "permissions": [
+        "*"
+      ]
+    },
+    {
+      "id": "content_editor",
+      "label": "Content editor",
+      "permissions": [
+        "media.*",
+        "content.*"
+      ]
+    },
+    {
+      "id": "rights_manager",
+      "label": "Rights manager",
+      "permissions": [
+        "media.rights-windows.*",
+        "media.age-ratings.*"
+      ]
+    },
+    {
+      "id": "subscriber",
+      "label": "Subscriber",
+      "permissions": [
+        "media.playback-sessions.write",
+        "media.progress.*",
+        "media.watchlists.*"
+      ]
+    }
+  ],
+  "dashboards": [
+    "mau",
+    "playback-success-rate",
+    "concurrent-streams",
+    "trending-titles",
+    "rights-window-expirations"
+  ],
+  "acceptanceTests": [
+    "no-entitlement-blocks-playback",
+    "trial-user-allowed-content",
+    "region-restricted-title-denied",
+    "playback-heartbeat-updates-progress",
+    "concurrent-stream-limit-blocks-extra",
+    "removed-title-disappears-from-feeds"
+  ]
+}

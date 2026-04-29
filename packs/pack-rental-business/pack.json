@@ -1,0 +1,78 @@
+{
+  "id": "pack-rental-business",
+  "version": "1.0.0",
+  "label": "Rental business clone pack",
+  "description": "Car/equipment/property/fashion rental template.",
+  "plugins": [
+    "auth-core",
+    "org-tenant-core",
+    "role-policy-core",
+    "audit-core",
+    "rental-core",
+    "booking-core",
+    "assets-core",
+    "contracts-core",
+    "payments-core",
+    "accounting-core",
+    "maintenance-cmms-core",
+    "support-service-core",
+    "crm-core",
+    "business-portals-core",
+    "geospatial-routing-core",
+    "reviews-ratings-core",
+    "trust-safety-core"
+  ],
+  "surfaces": [
+    "customer-booking-app",
+    "operator-asset-calendar",
+    "inspection-mobile-app",
+    "damage-claim-console"
+  ],
+  "roles": [
+    {
+      "id": "rental_admin",
+      "label": "Rental admin",
+      "permissions": [
+        "*"
+      ]
+    },
+    {
+      "id": "operator",
+      "label": "Operator",
+      "permissions": [
+        "rental.*",
+        "assets.*",
+        "maintenance-cmms.*"
+      ]
+    },
+    {
+      "id": "inspector",
+      "label": "Inspector",
+      "permissions": [
+        "rental.checkout-inspections.*",
+        "rental.checkin-inspections.*",
+        "rental.damage-claims.*"
+      ]
+    },
+    {
+      "id": "customer",
+      "label": "Customer",
+      "permissions": [
+        "rental.reservations.self"
+      ]
+    }
+  ],
+  "dashboards": [
+    "fleet-utilization",
+    "deposit-state",
+    "damage-claim-mttr",
+    "late-return-rate"
+  ],
+  "acceptanceTests": [
+    "double-booking-blocked",
+    "deposit-hold-required",
+    "return-inspection-opens-claim",
+    "late-return-blocks-next-booking",
+    "maintenance-block-hides-asset"
+  ]
+}

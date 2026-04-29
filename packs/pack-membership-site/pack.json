@@ -1,0 +1,67 @@
+{
+  "id": "pack-membership-site",
+  "version": "1.0.0",
+  "label": "Membership site clone pack",
+  "description": "MemberPress-shaped paid-community template.",
+  "plugins": [
+    "auth-core",
+    "org-tenant-core",
+    "role-policy-core",
+    "audit-core",
+    "membership-access-core",
+    "entitlements-core",
+    "content-core",
+    "community-core",
+    "subscriptions-core",
+    "payments-core",
+    "business-portals-core",
+    "page-builder-core",
+    "forms-core",
+    "notifications-core",
+    "promotions-loyalty-core",
+    "analytics-bi-core"
+  ],
+  "surfaces": [
+    "member-portal",
+    "admin-membership-console",
+    "content-admin",
+    "billing-dashboard"
+  ],
+  "roles": [
+    {
+      "id": "site_owner",
+      "label": "Site owner",
+      "permissions": [
+        "*"
+      ]
+    },
+    {
+      "id": "content_creator",
+      "label": "Content creator",
+      "permissions": [
+        "content.*",
+        "membership.protected-content.*"
+      ]
+    },
+    {
+      "id": "member",
+      "label": "Member",
+      "permissions": [
+        "membership.member-states.self",
+        "content.*.read"
+      ]
+    }
+  ],
+  "dashboards": [
+    "mrr",
+    "trial-conversion",
+    "drip-progress",
+    "churn"
+  ],
+  "acceptanceTests": [
+    "paid-tier-grants-gated-content",
+    "failed-renewal-grace-policy",
+    "drip-respects-tenant-timezone",
+    "cancelled-member-keeps-paid-period"
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "id": "pack-ride-hailing",
+  "version": "1.0.0",
+  "label": "Ride-hailing clone pack",
+  "description": "Real-time ride-hailing template (Uber/Ola/Rapido-shaped).",
+  "plugins": [
+    "auth-core",
+    "org-tenant-core",
+    "role-policy-core",
+    "audit-core",
+    "workflow-core",
+    "notifications-core",
+    "mobility-rides-core",
+    "geospatial-routing-core",
+    "realtime-presence-core",
+    "payments-core",
+    "wallet-ledger-core",
+    "reviews-ratings-core",
+    "trust-safety-core",
+    "support-service-core",
+    "analytics-bi-core",
+    "assets-core"
+  ],
+  "surfaces": [
+    "rider-app",
+    "driver-app",
+    "dispatch-control-tower",
+    "safety-console",
+    "finance-payout-console"
+  ],
+  "roles": [
+    {
+      "id": "platform_admin",
+      "label": "Platform admin",
+      "permissions": [
+        "*"
+      ]
+    },
+    {
+      "id": "dispatch_operator",
+      "label": "Dispatch operator",
+      "permissions": [
+        "rides.*",
+        "dispatch.*"
+      ]
+    },
+    {
+      "id": "safety_operator",
+      "label": "Safety operator",
+      "permissions": [
+        "trust.*",
+        "rides.safety-incidents.*",
+        "rides.lost-item-cases.*"
+      ]
+    },
+    {
+      "id": "driver",
+      "label": "Driver",
+      "permissions": [
+        "rides.drivers.self",
+        "rides.trips.*",
+        "wallet.accounts.self"
+      ]
+    },
+    {
+      "id": "rider",
+      "label": "Rider",
+      "permissions": [
+        "rides.riders.self",
+        "rides.trips.*"
+      ]
+    },
+    {
+      "id": "finance_operator",
+      "label": "Finance operator",
+      "permissions": [
+        "wallet.payouts.*",
+        "accounting.*.read"
+      ]
+    }
+  ],
+  "dashboards": [
+    "active-trips",
+    "fare-estimate-accuracy",
+    "driver-acceptance-rate",
+    "safety-incident-mttr",
+    "wallet-payout-state"
+  ],
+  "acceptanceTests": [
+    "driver-online-makes-matchable",
+    "fare-estimate-locks-quote",
+    "driver-accepts-only-one-trip",
+    "trip-state-transitions-enforced",
+    "safety-incident-escalates-workflow",
+    "wallet-payout-records-commission"
+  ]
+}

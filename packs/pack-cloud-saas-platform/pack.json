@@ -1,0 +1,79 @@
+{
+  "id": "pack-cloud-saas-platform",
+  "version": "1.0.0",
+  "label": "Cloud / SaaS platform clone pack",
+  "description": "Vercel/Heroku/Supabase/Cloudflare-shaped developer platform template.",
+  "plugins": [
+    "auth-core",
+    "org-tenant-core",
+    "role-policy-core",
+    "audit-core",
+    "cloud-platform-core",
+    "entitlements-core",
+    "usage-metering-core",
+    "payments-core",
+    "subscriptions-core",
+    "storage-core",
+    "storage-s3",
+    "jobs-core",
+    "workflow-core",
+    "analytics-bi-core",
+    "dashboard-core",
+    "notifications-core",
+    "trust-safety-core"
+  ],
+  "surfaces": [
+    "developer-dashboard",
+    "project-environment-console",
+    "deployment-logs",
+    "usage-billing-page",
+    "incidents-status"
+  ],
+  "roles": [
+    {
+      "id": "platform_admin",
+      "label": "Platform admin",
+      "permissions": [
+        "*"
+      ]
+    },
+    {
+      "id": "developer",
+      "label": "Developer",
+      "permissions": [
+        "cloud.*.self",
+        "cloud.deployments.write"
+      ]
+    },
+    {
+      "id": "billing_admin",
+      "label": "Billing admin",
+      "permissions": [
+        "payments.*",
+        "subscriptions.*",
+        "usage.*"
+      ]
+    },
+    {
+      "id": "abuse_operator",
+      "label": "Abuse operator",
+      "permissions": [
+        "trust.*",
+        "cloud.deployments.suspend"
+      ]
+    }
+  ],
+  "dashboards": [
+    "deployments-per-day",
+    "build-success-rate",
+    "billed-usage",
+    "open-incidents"
+  ],
+  "acceptanceTests": [
+    "tenant-quota-blocks-deployment",
+    "usage-events-aggregate-into-billing",
+    "secret-rotation-invalidates-old",
+    "rollback-restores-prior",
+    "abusive-deployment-can-be-suspended"
+  ]
+}

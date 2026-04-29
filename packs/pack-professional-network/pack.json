@@ -1,0 +1,74 @@
+{
+  "id": "pack-professional-network",
+  "version": "1.0.0",
+  "label": "Professional network clone pack",
+  "description": "LinkedIn-shaped professional network template.",
+  "plugins": [
+    "auth-core",
+    "org-tenant-core",
+    "role-policy-core",
+    "audit-core",
+    "professional-network-core",
+    "social-graph-core",
+    "posts-engagement-core",
+    "feed-core",
+    "messaging-core",
+    "forms-core",
+    "crm-core",
+    "hr-payroll-core",
+    "ads-campaign-core",
+    "recommendations-core",
+    "analytics-bi-core"
+  ],
+  "surfaces": [
+    "member-profile",
+    "company-page",
+    "jobs-board",
+    "recruiter-console",
+    "ads-lead-console"
+  ],
+  "roles": [
+    {
+      "id": "platform_admin",
+      "label": "Platform admin",
+      "permissions": [
+        "*"
+      ]
+    },
+    {
+      "id": "member",
+      "label": "Member",
+      "permissions": [
+        "professional.profiles.self",
+        "professional.applications.write"
+      ]
+    },
+    {
+      "id": "recruiter",
+      "label": "Recruiter",
+      "permissions": [
+        "professional.job-posts.*",
+        "professional.recruiter-pipelines.*"
+      ]
+    },
+    {
+      "id": "page_admin",
+      "label": "Company page admin",
+      "permissions": [
+        "professional.company-pages.*"
+      ]
+    }
+  ],
+  "dashboards": [
+    "active-jobs",
+    "recruiter-funnel",
+    "endorsement-graph",
+    "ad-conversions"
+  ],
+  "acceptanceTests": [
+    "job-post-respects-targeting",
+    "candidate-privacy-honored",
+    "endorsement-abuse-detected",
+    "company-page-ownership-transfer"
+  ]
+}

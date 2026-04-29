@@ -1,0 +1,75 @@
+{
+  "id": "pack-social-network",
+  "version": "1.0.0",
+  "label": "Social network clone pack",
+  "description": "Facebook/Instagram-shaped social template.",
+  "plugins": [
+    "auth-core",
+    "org-tenant-core",
+    "role-policy-core",
+    "audit-core",
+    "social-graph-core",
+    "posts-engagement-core",
+    "feed-core",
+    "messaging-core",
+    "notifications-core",
+    "trust-safety-core",
+    "content-core",
+    "community-core",
+    "files-core",
+    "storage-core",
+    "analytics-bi-core",
+    "ads-campaign-core"
+  ],
+  "surfaces": [
+    "user-app",
+    "group-page-admin",
+    "moderation-console",
+    "ads-manager"
+  ],
+  "roles": [
+    {
+      "id": "platform_admin",
+      "label": "Platform admin",
+      "permissions": [
+        "*"
+      ]
+    },
+    {
+      "id": "user",
+      "label": "User",
+      "permissions": [
+        "social.*.self",
+        "engagement.*.write",
+        "messaging.*"
+      ]
+    },
+    {
+      "id": "page_admin",
+      "label": "Page admin",
+      "permissions": [
+        "social.pages.*"
+      ]
+    },
+    {
+      "id": "moderator",
+      "label": "Moderator",
+      "permissions": [
+        "trust.*",
+        "engagement.*.delete"
+      ]
+    }
+  ],
+  "dashboards": [
+    "dau",
+    "post-engagement-rate",
+    "abuse-report-volume",
+    "ads-revenue"
+  ],
+  "acceptanceTests": [
+    "follow-fanout-correct",
+    "blocked-user-content-hidden",
+    "post-deletion-removes-from-feed",
+    "moderation-takedown-propagates-quickly"
+  ]
+}

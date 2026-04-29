@@ -1,0 +1,95 @@
+{
+  "id": "pack-food-delivery",
+  "version": "1.0.0",
+  "label": "Food delivery clone pack",
+  "description": "Restaurant marketplace + food order template (Zomato/Swiggy-shaped).",
+  "plugins": [
+    "auth-core",
+    "org-tenant-core",
+    "role-policy-core",
+    "audit-core",
+    "workflow-core",
+    "notifications-core",
+    "restaurant-delivery-core",
+    "last-mile-dispatch-core",
+    "commerce-storefront-core",
+    "product-catalog-core",
+    "pricing-tax-core",
+    "sales-core",
+    "payments-core",
+    "pos-core",
+    "reviews-ratings-core",
+    "support-service-core",
+    "geospatial-routing-core",
+    "realtime-presence-core",
+    "promotions-loyalty-core",
+    "analytics-bi-core"
+  ],
+  "surfaces": [
+    "customer-app",
+    "restaurant-portal",
+    "kot-kitchen-screen",
+    "rider-app",
+    "support-console"
+  ],
+  "roles": [
+    {
+      "id": "platform_admin",
+      "label": "Platform admin",
+      "permissions": [
+        "*"
+      ]
+    },
+    {
+      "id": "restaurant_owner",
+      "label": "Restaurant owner",
+      "permissions": [
+        "restaurants.outlets.*",
+        "restaurants.menus.*"
+      ]
+    },
+    {
+      "id": "kitchen_user",
+      "label": "Kitchen user",
+      "permissions": [
+        "restaurants.kitchen-tickets.*"
+      ]
+    },
+    {
+      "id": "rider",
+      "label": "Rider",
+      "permissions": [
+        "dispatch.delivery-jobs.*"
+      ]
+    },
+    {
+      "id": "customer",
+      "label": "Customer",
+      "permissions": [
+        "storefront.*"
+      ]
+    },
+    {
+      "id": "support_agent",
+      "label": "Support agent",
+      "permissions": [
+        "support-service.*"
+      ]
+    }
+  ],
+  "dashboards": [
+    "restaurant-acceptance-sla",
+    "kot-state-funnel",
+    "rider-eta-accuracy",
+    "complaint-rate",
+    "menu-availability"
+  ],
+  "acceptanceTests": [
+    "outlet-state-affects-menu",
+    "modifiers-validate-at-checkout",
+    "restaurant-accepts-within-sla",
+    "kot-state-drives-rider-assignment",
+    "complaint-triggers-partial-refund",
+    "rating-only-after-completion"
+  ]
+}
