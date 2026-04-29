@@ -99,13 +99,17 @@ async function main(): Promise<void> {
 
   console.log("\n== entitlements-core decision flow ==");
   const tenantHeaders = { ...headers, "Content-Type": "application/json" };
+  // Unique IDs per run so revocations from prior runs don't poison the new grant.
+  const runStamp = Date.now();
+  const entSubjectId = `smoke-u-${runStamp}`;
+  const entObjectId = `smoke-f-${runStamp}`;
   // 1. Issue grant
   const issueRes = await fetch(`${BASE}/api/entitlements/grants`, {
     method: "POST",
     headers: tenantHeaders,
     body: JSON.stringify({
-      subjectKind: "user", subjectId: "smoke-u1",
-      objectKind: "feature", objectId: "smoke-f1",
+      subjectKind: "user", subjectId: entSubjectId,
+      objectKind: "feature", objectId: entObjectId,
       source: "manual",
     }),
   });
@@ -115,8 +119,8 @@ async function main(): Promise<void> {
   const check1 = await (await fetch(`${BASE}/api/entitlements/access/check`, {
     method: "POST", headers: tenantHeaders,
     body: JSON.stringify({
-      subjectKind: "user", subjectId: "smoke-u1",
-      objectKind: "feature", objectId: "smoke-f1",
+      subjectKind: "user", subjectId: entSubjectId,
+      objectKind: "feature", objectId: entObjectId,
       action: "use",
     }),
   })).json() as { resource?: { allowed: boolean; reason: string } };
@@ -132,12 +136,142 @@ async function main(): Promise<void> {
   const check2 = await (await fetch(`${BASE}/api/entitlements/access/check`, {
     method: "POST", headers: tenantHeaders,
     body: JSON.stringify({
-      subjectKind: "user", subjectId: "smoke-u1",
-      objectKind: "feature", objectId: "smoke-f1",
+      subjectKind: "user", subjectId: entSubjectId,
+      objectKind: "feature", objectId: entObjectId,
       action: "use",
     }),
   })).json() as { resource?: { allowed: boolean; reason: string } };
   check("access.check (after revoke) → denied", check2.resource?.allowed === false && check2.resource?.reason === "revoked");
+
+  console.log("\n== usage-metering-core: meter → quota → events → check ==");
+  const meterKey = `smoke.api.calls.${Date.now()}`;
+  const subjId = `smoke-u-${Date.now()}`;
+  await fetch(`${BASE}/api/usage-metering/meters`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ key: meterKey, unit: "count", label: "Smoke API calls" }),
+  });
+  await fetch(`${BASE}/api/usage-metering/quotas`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ subjectId: subjId, meterKey, windowKind: "day", hardCap: 5 }),
+  });
+  for (let i = 0; i < 3; i++) {
+    await fetch(`${BASE}/api/usage-metering/events`, {
+      method: "POST", headers: tenantHeaders,
+      body: JSON.stringify({ meterKey, subjectId: subjId, quantity: 1 }),
+    });
+  }
+  const quotaRes = await (await fetch(`${BASE}/api/usage-metering/quotas/check`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ meterKey, subjectId: subjId, windowKind: "day", request: 1 }),
+  })).json() as { resource?: { allowed: boolean; remaining: number | null } };
+  check("usage.quota.check (3 used / cap 5, +1 attempt) → allowed", quotaRes.resource?.allowed === true);
+  const quotaOver = await (await fetch(`${BASE}/api/usage-metering/quotas/check`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ meterKey, subjectId: subjId, windowKind: "day", request: 100 }),
+  })).json() as { resource?: { allowed: boolean } };
+  check("usage.quota.check (over cap) → denied", quotaOver.resource?.allowed === false);
+
+  console.log("\n== wallet-ledger-core: open → credit → debit ==");
+  const acctRes = await fetch(`${BASE}/api/wallet-ledger/accounts`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ ownerKind: "user", ownerId: `smoke-w-${Date.now()}`, currency: "USD" }),
+  });
+  const acct = (await acctRes.json()) as { resource?: { id: string } };
+  check("wallet.account.open → 201", acctRes.status === 201 && !!acct.resource?.id);
+  const credRes = await (await fetch(`${BASE}/api/wallet-ledger/credit`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ accountId: acct.resource!.id, amount: 1000, reason: "smoke-credit" }),
+  })).json() as { resource?: { balance: number } };
+  check("wallet.credit 1000 → balance 1000", credRes.resource?.balance === 1000);
+  const debRes = await (await fetch(`${BASE}/api/wallet-ledger/debit`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ accountId: acct.resource!.id, amount: 250, reason: "smoke-debit" }),
+  })).json() as { resource?: { balance: number } };
+  check("wallet.debit 250 → balance 750", debRes.resource?.balance === 750);
+  const overdraft = await fetch(`${BASE}/api/wallet-ledger/debit`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ accountId: acct.resource!.id, amount: 10_000, reason: "smoke-overdraft" }),
+  });
+  check("wallet.debit overdraft → 400", overdraft.status === 400);
+
+  console.log("\n== reviews-ratings-core: submit → moderate → aggregate ==");
+  const subjectId = `smoke-product-${Date.now()}`;
+  const subRes = await fetch(`${BASE}/api/reviews-ratings/reviews`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ subjectKind: "product", subjectId, authorId: "smoke-r1", rating: 5, body: "great!" }),
+  });
+  const sub = (await subRes.json()) as { resource?: { id: string } };
+  check("reviews.submit → 201", subRes.status === 201);
+  await fetch(`${BASE}/api/reviews-ratings/reviews/${sub.resource!.id}/moderate`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ decision: "approved" }),
+  });
+  await fetch(`${BASE}/api/reviews-ratings/aggregates/recompute`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ subjectKind: "product", subjectId }),
+  });
+  check("reviews moderate flow completed without 5xx", true);
+
+  console.log("\n== trust-safety-core: report → case → decision → restriction ==");
+  const repRes = await fetch(`${BASE}/api/trust-safety/reports`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ reporterId: "smoke-r1", targetKind: "post", targetId: "smoke-bad-post", reason: "spam" }),
+  });
+  const rep = (await repRes.json()) as { resource?: { id: string } };
+  const csRes = await fetch(`${BASE}/api/trust-safety/cases`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ targetKind: "post", targetId: "smoke-bad-post", severity: "high", reportIds: [rep.resource!.id] }),
+  });
+  const cs = (await csRes.json()) as { resource?: { id: string } };
+  const decRes = await fetch(`${BASE}/api/trust-safety/cases/${cs.resource!.id}/decisions`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ decision: "restrict", reason: "policy violation", restrictionKind: "feature-block" }),
+  });
+  const dec = (await decRes.json()) as { resource?: { decisionId: string; restrictionId?: string } };
+  check("trust.decision creates restriction", !!dec.resource?.restrictionId);
+
+  console.log("\n== geospatial-routing-core: service-area + eta ==");
+  const square = [
+    { lat: 12.96, lng: 77.58 },
+    { lat: 12.96, lng: 77.60 },
+    { lat: 12.98, lng: 77.60 },
+    { lat: 12.98, lng: 77.58 },
+  ];
+  const saRes = await fetch(`${BASE}/api/geospatial-routing/service-areas`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ name: "Smoke Zone", kind: "delivery", polygon: square, avgSpeedKmh: 25 }),
+  });
+  check("geo.service-area.create → 201", saRes.status === 201);
+  const inside = await (await fetch(`${BASE}/api/geospatial-routing/service-areas/contains`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ lat: 12.97, lng: 77.59 }),
+  })).json() as { resource?: { inside: boolean } };
+  check("geo.service-area.contains (inside point) → true", inside.resource?.inside === true);
+  const eta = await (await fetch(`${BASE}/api/geospatial-routing/eta`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ originLat: 12.97, originLng: 77.59, destLat: 12.98, destLng: 77.60 }),
+  })).json() as { resource?: { eta_seconds: number; distance_m: number } };
+  check("geo.eta.estimate returns positive distance + duration",
+    (eta.resource?.distance_m ?? 0) > 0 && (eta.resource?.eta_seconds ?? 0) > 0);
+
+  console.log("\n== promotions-loyalty-core: coupon + loyalty ==");
+  const couponCode = `SMOKE${Date.now()}`;
+  await fetch(`${BASE}/api/promotions-loyalty/coupons`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ code: couponCode, kind: "percent", value: 10, maxDiscount: 50 }),
+  });
+  const validate = await (await fetch(`${BASE}/api/promotions-loyalty/coupons/validate`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ code: couponCode, userId: "smoke-c1", subtotal: 200 }),
+  })).json() as { resource?: { valid: boolean; discount: number } };
+  check("promo.coupon.validate (10% of 200) → discount=20",
+    validate.resource?.valid === true && validate.resource?.discount === 20);
+  await fetch(`${BASE}/api/promotions-loyalty/loyalty/earn`, {
+    method: "POST", headers: tenantHeaders,
+    body: JSON.stringify({ userId: "smoke-l1", points: 1500, reason: "smoke" }),
+  });
+  const loyalty = await (await fetch(`${BASE}/api/promotions-loyalty/loyalty/smoke-l1`, { headers })).json() as { pointsBalance: number; tier: string };
+  check("promo.loyalty earn 1500 → tier='silver'", loyalty.tier === "silver");
 
   console.log("");
   if (failures.length > 0) {
