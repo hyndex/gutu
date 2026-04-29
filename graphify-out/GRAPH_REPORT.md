@@ -1,12 +1,12 @@
-# Graph Report - Framework  (2026-04-29)
+# Graph Report - Framework  (2026-04-30)
 
 ## Corpus Check
-- 4188 files · ~6,943,126 words
+- 4324 files · ~6,968,058 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 9691 nodes · 15060 edges · 78 communities detected
-- Extraction: 69% EXTRACTED · 31% INFERRED · 0% AMBIGUOUS · INFERRED: 4705 edges (avg confidence: 0.8)
+- 9855 nodes · 15204 edges · 78 communities detected
+- Extraction: 69% EXTRACTED · 31% INFERRED · 0% AMBIGUOUS · INFERRED: 4781 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -90,13 +90,13 @@
 - [[_COMMUNITY_Community 88|Community 88]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `String()` - 253 edges
-2. `parse()` - 234 edges
-3. `replace()` - 203 edges
+1. `String()` - 254 edges
+2. `parse()` - 246 edges
+3. `replace()` - 207 edges
 4. `normalizePrefix()` - 145 edges
-5. `set()` - 128 edges
-6. `all()` - 127 edges
-7. `nowIso()` - 121 edges
+5. `all()` - 131 edges
+6. `nowIso()` - 129 edges
+7. `set()` - 128 edges
 8. `normalizeActionInput()` - 114 edges
 9. `useEffect()` - 103 edges
 10. `parseWebhookEvent()` - 102 edges
@@ -106,214 +106,214 @@
   admin-panel/backend/src/seed/manufacturing-extended.ts → plugins/gutu-plugin-erp-actions-core/framework/builtin-plugins/erp-actions-core/src/host-plugin/routes/erp-actions.ts
 - `money()` --calls--> `round()`  [INFERRED]
   admin-panel/backend/src/seed/procurement-extended.ts → plugins/gutu-plugin-erp-actions-core/framework/builtin-plugins/erp-actions-core/src/host-plugin/routes/erp-actions.ts
+- `withLeadership()` --calls--> `tick()`  [INFERRED]
+  admin-panel/backend/src/host/leader.ts → plugins/gutu-plugin-notifications-core/framework/builtin-plugins/notifications-core/src/host-plugin/lib/notification-scheduler.ts
+- `listPluginEnablement()` --calls--> `all()`  [INFERRED]
+  admin-panel/backend/src/host/tenant-enablement.ts → plugins/gutu-plugin-analytics-bi-core/framework/builtin-plugins/analytics-bi-core/src/host-plugin/routes/analytics-bi.ts
 - `lifecycleSnapshot()` --calls--> `round()`  [INFERRED]
   admin-panel/backend/src/host/lifecycle.ts → plugins/gutu-plugin-erp-actions-core/framework/builtin-plugins/erp-actions-core/src/host-plugin/routes/erp-actions.ts
-- `checkPluginHealth()` --calls--> `all()`  [INFERRED]
-  admin-panel/backend/src/host/plugin-contract.ts → plugins/gutu-plugin-analytics-bi-core/framework/builtin-plugins/analytics-bi-core/src/host-plugin/routes/analytics-bi.ts
-- `rowToStep()` --calls--> `parse()`  [INFERRED]
-  admin-panel/backend/src/lib/mcp/plans.ts → plugins/gutu-plugin-e-invoicing-core/scripts/docs-summary.mjs
 
 ## Communities
 
 ### Community 0 - "Community 0"
 Cohesion: 0.01
-Nodes (512): accessibleRecordIds(), clampRole(), effectiveRole(), globalRoleCeiling(), grantAcl(), listAcl(), purgeAclForRecord(), revokeAcl() (+504 more)
+Nodes (571): accessibleRecordIds(), clampRole(), effectiveRole(), globalRoleCeiling(), grantAcl(), listAcl(), purgeAclForRecord(), revokeAcl() (+563 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.01
-Nodes (265): canLaunchZone(), canRunAction(), canSeeField(), canSeeWidget(), canUseBuilder(), canUseCommand(), canViewPage(), canViewReport() (+257 more)
+Nodes (313): canLaunchZone(), canRunAction(), canSeeField(), canSeeWidget(), canUseBuilder(), canUseCommand(), canViewPage(), canViewReport() (+305 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.01
-Nodes (317): cloneAccount(), cloneEntry(), clonePeriod(), createErpAccountingRuntime(), daysBetween(), defaultNormalBalance(), defineErpAccount(), signedAmount() (+309 more)
+Nodes (303): cloneAccount(), cloneEntry(), clonePeriod(), createErpAccountingRuntime(), daysBetween(), defaultNormalBalance(), defineErpAccount(), signedAmount() (+295 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.01
-Nodes (174): AdminInner(), AdminRoot(), PermissionsRoot(), PlaygroundUI(), AIInsightPanel(), AppShell(), buildCrumbs(), ExternalViewRenderer() (+166 more)
+Nodes (202): AdminInner(), AdminRoot(), PermissionsRoot(), PlaygroundUI(), AIInsightPanel(), AppShell(), buildCrumbs(), ExternalViewRenderer() (+194 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.01
-Nodes (206): runOrError(), safeJson(), apiBase(), createEditorRecord(), createPublicLink(), deleteEditorRecord(), fetchEditorRecord(), fetchSnapshot() (+198 more)
+Nodes (204): fmtCurrency(), mockKpis(), mockSeries(), money(), fmtCurrency(), mockKpis(), mockSeries(), AiEvalsRunDetailPage() (+196 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.01
-Nodes (192): runContractScenario(), runLifecycleScenario(), normalize(), layoutNodes(), setZoom(), toSnakeCase(), String(), discoverPluginSpecs() (+184 more)
+Nodes (167): decodeEncodedWords(), formatAddress(), formatAddresses(), isValidEmail(), normalizeEmail(), normalizeSubject(), parseAddress(), parseAddressList() (+159 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.01
-Nodes (136): AdvancedDataTable(), loadState(), addLeaf(), AdvancedFilterBuilder(), emit(), emptyLeaf(), isLeaf(), removeAt() (+128 more)
+Nodes (203): runOrError(), safeJson(), apiBase(), createEditorRecord(), createPublicLink(), deleteEditorRecord(), fetchEditorRecord(), fetchSnapshot() (+195 more)
 
 ### Community 7 - "Community 7"
 Cohesion: 0.01
-Nodes (155): decodeEncodedWords(), formatAddress(), formatAddresses(), isValidEmail(), normalizeEmail(), normalizeSubject(), parseAddress(), parseAddressList() (+147 more)
+Nodes (219): api(), login(), main(), record(), safe(), scenarioAuthGuards(), scenarioCrudEdges(), scenarioDiscovery() (+211 more)
 
 ### Community 8 - "Community 8"
 Cohesion: 0.01
-Nodes (151): fetchAll(), monthKey(), num(), str(), aggregate(), bucketKey(), computeAggregation(), evalFilter() (+143 more)
+Nodes (167): isRecord(), normalizeEvent(), sanitizeJson(), asSeries(), decide(), evaluateConditions(), evaluatePolicyConditions(), finalize() (+159 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.02
-Nodes (144): fmtCurrency(), mockKpis(), mockSeries(), money(), fmtCurrency(), mockKpis(), mockSeries(), AiEvalsRunDetailPage() (+136 more)
+Cohesion: 0.01
+Nodes (148): fetchAll(), monthKey(), num(), str(), aggregate(), bucketKey(), computeAggregation(), evalFilter() (+140 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.02
-Nodes (125): isRecord(), normalizeEvent(), sanitizeJson(), asSeries(), countBadges(), parse(), assertRepositoryBoundary(), calculateNextRunAt() (+117 more)
+Cohesion: 0.01
+Nodes (113): AdvancedDataTable(), loadState(), addLeaf(), AdvancedFilterBuilder(), emit(), emptyLeaf(), isLeaf(), removeAt() (+105 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.02
-Nodes (156): bankAccounts(), bankTransactions(), budgets(), code(), costCenters(), count(), currencyRates(), dunning() (+148 more)
+Nodes (101): applyEncryption(), bufferUpTo(), concat(), existsFile(), fromS3StorageClass(), LocalStorageAdapter, nodeToWebStream(), renderPrefix() (+93 more)
 
 ### Community 12 - "Community 12"
-Cohesion: 0.03
-Nodes (88): applyEncryption(), bufferUpTo(), concat(), existsFile(), fromS3StorageClass(), LocalStorageAdapter, nodeToWebStream(), renderPrefix() (+80 more)
+Cohesion: 0.02
+Nodes (135): bankAccounts(), bankTransactions(), budgets(), code(), costCenters(), count(), currencyRates(), dunning() (+127 more)
 
 ### Community 13 - "Community 13"
 Cohesion: 0.03
-Nodes (147): checkCatalog(), checkPluginDocs(), main(), missingHeadings(), placeholderFailures(), buildImportList(), capitalize(), createDocsCheckScript() (+139 more)
+Nodes (137): checkCatalog(), checkPluginDocs(), main(), missingHeadings(), placeholderFailures(), buildImportList(), capitalize(), createDocsCheckScript() (+129 more)
 
 ### Community 14 - "Community 14"
 Cohesion: 0.02
-Nodes (96): score(), searchAwesome(), subtitleOf(), titleOf(), execute(), run(), computeBounds(), LineSeries() (+88 more)
+Nodes (132): buildAccountingCoreMigrationSql(), buildAccountingCoreRollbackSql(), buildAiAssistCoreMigrationSql(), buildAiAssistCoreRollbackSql(), buildAnalyticsBiCoreMigrationSql(), buildAnalyticsBiCoreRollbackSql(), buildAssetsCoreMigrationSql(), buildAssetsCoreRollbackSql() (+124 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.02
-Nodes (132): buildAccountingCoreMigrationSql(), buildAccountingCoreRollbackSql(), buildAiAssistCoreMigrationSql(), buildAiAssistCoreRollbackSql(), buildAnalyticsBiCoreMigrationSql(), buildAnalyticsBiCoreRollbackSql(), buildAssetsCoreMigrationSql(), buildAssetsCoreRollbackSql() (+124 more)
+Nodes (77): envEnum(), envFlag(), envInt(), loadConfig(), resetConfig(), t(), dbx(), authedFetch() (+69 more)
 
 ### Community 16 - "Community 16"
-Cohesion: 0.03
-Nodes (119): buildAccountingCoreSqliteMigrationSql(), buildAccountingCoreSqliteRollbackSql(), buildAiAssistCoreSqliteMigrationSql(), buildAiAssistCoreSqliteRollbackSql(), buildAnalyticsBiCoreSqliteMigrationSql(), buildAnalyticsBiCoreSqliteRollbackSql(), buildAssetsCoreSqliteMigrationSql(), buildAssetsCoreSqliteRollbackSql() (+111 more)
+Cohesion: 0.02
+Nodes (77): buildViews(), buildCompactControlRoom(), buildControlRoom(), formViewFromZod(), humanize(), inferField(), unwrap(), zodKind() (+69 more)
 
 ### Community 17 - "Community 17"
 Cohesion: 0.03
-Nodes (106): ActiveRunsWidget(), acknowledgeRunnerHandoff(), AgentBudgetExceededError, AgentReplayMismatchError, AgentToolDeniedError, AiProviderError, appendAgentStep(), approveCheckpoint() (+98 more)
+Nodes (119): buildAccountingCoreSqliteMigrationSql(), buildAccountingCoreSqliteRollbackSql(), buildAiAssistCoreSqliteMigrationSql(), buildAiAssistCoreSqliteRollbackSql(), buildAnalyticsBiCoreSqliteMigrationSql(), buildAnalyticsBiCoreSqliteRollbackSql(), buildAssetsCoreSqliteMigrationSql(), buildAssetsCoreSqliteRollbackSql() (+111 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.03
-Nodes (94): close(), closeDbx(), setDbxForTests(), resetRoomManager(), RoomManager, trigger(), RestFallbackProvider, openPrintableDocument() (+86 more)
+Cohesion: 0.02
+Nodes (88): compileBiQuery(), createBiChart(), createBiDashboard(), createBiSchedule(), createBiShare(), createBiSpace(), drillDownBiQuery(), fetchBiCatalog() (+80 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.03
-Nodes (69): handleApply(), compileBiQuery(), createBiChart(), createBiDashboard(), createBiSchedule(), createBiShare(), createBiSpace(), drillDownBiQuery() (+61 more)
-
-### Community 20 - "Community 20"
-Cohesion: 0.03
-Nodes (74): envEnum(), envFlag(), envInt(), loadConfig(), resetConfig(), locales(), t(), dbx() (+66 more)
-
-### Community 21 - "Community 21"
 Cohesion: 0.04
 Nodes (9): assertUnsupportedOperation(), normalizeWebhookStatus(), parseGenericWebhookEvent(), readRecordField(), readStatusField(), readStringField(), safeJsonParse(), parseWebhookEvent() (+1 more)
 
-### Community 22 - "Community 22"
+### Community 20 - "Community 20"
 Cohesion: 0.03
 Nodes (4): amendRecord(), placeRecordOnHold(), releaseRecordHold(), reverseRecord()
 
-### Community 23 - "Community 23"
+### Community 21 - "Community 21"
 Cohesion: 0.02
 Nodes (2): createGeneratedProviderAdapter(), createProviderAdapter()
 
-### Community 24 - "Community 24"
+### Community 22 - "Community 22"
 Cohesion: 0.02
 Nodes (1): mapProviderStatus()
 
-### Community 25 - "Community 25"
+### Community 23 - "Community 23"
+Cohesion: 0.05
+Nodes (62): close(), api(), login(), main(), record(), safe(), scenarioApiTokens(), scenarioCmdK() (+54 more)
+
+### Community 24 - "Community 24"
 Cohesion: 0.04
-Nodes (57): api(), login(), main(), record(), safe(), scenarioAuthGuards(), scenarioCrudEdges(), scenarioDiscovery() (+49 more)
+Nodes (18): main(), read_cell_value(), read_shared_strings(), asAttachment(), ImageDetail(), onKey(), ImapClient, ImapError (+10 more)
+
+### Community 25 - "Community 25"
+Cohesion: 0.05
+Nodes (75): buildDependencyContractsFromLists(), dedupeList(), deriveSuggestedPackIds(), main(), renderActions(), renderAdminContributions(), renderAdminPage(), renderBusinessPackAutomation() (+67 more)
 
 ### Community 26 - "Community 26"
-Cohesion: 0.04
-Nodes (19): logout(), main(), read_cell_value(), read_shared_strings(), asAttachment(), ImageDetail(), onKey(), ImapClient (+11 more)
+Cohesion: 0.05
+Nodes (59): copyRequestId(), actionRequiredExample(), buildProviderRecord(), classifySupportLevel(), countSeriousImplementedOperations(), createFirstWaveReadinessReport(), createSupportMatrix(), deriveAdvertisedCapabilities() (+51 more)
 
 ### Community 27 - "Community 27"
-Cohesion: 0.04
-Nodes (49): ErrorBoundary, compileDraft(), compileEmailDraft(), createCommunicationIdempotencyKey(), createEmailTemplateRegistry(), createLocalCommunicationProviderRegistry(), createRetryDecision(), defineCommunicationRoute() (+41 more)
-
-### Community 28 - "Community 28"
-Cohesion: 0.05
-Nodes (58): accountingImbalance(), assertSafeJson(), buildErpDocumentRender(), buildErpPostingReport(), buildMappedTargetRecord(), cloneJson(), collectPrintableRecord(), escapeHtml() (+50 more)
-
-### Community 29 - "Community 29"
-Cohesion: 0.05
-Nodes (60): copyRequestId(), actionRequiredExample(), buildProviderRecord(), classifySupportLevel(), countSeriousImplementedOperations(), createFirstWaveReadinessReport(), createSupportMatrix(), deriveAdvertisedCapabilities() (+52 more)
-
-### Community 30 - "Community 30"
 Cohesion: 0.09
 Nodes (3): checkPlaceholders(), requireFile(), requireHeadings()
 
-### Community 31 - "Community 31"
+### Community 28 - "Community 28"
 Cohesion: 0.05
-Nodes (28): AnalyticsEmitterImpl, createAnalytics(), ensureSessionId(), Toolbar(), ToolbarButton(), createRuntime(), cryptoId(), RuntimeProvider() (+20 more)
+Nodes (29): AnalyticsEmitterImpl, createAnalytics(), ensureSessionId(), Toolbar(), ToolbarButton(), createRuntime(), cryptoId(), RuntimeProvider() (+21 more)
+
+### Community 29 - "Community 29"
+Cohesion: 0.08
+Nodes (49): createPaymentIdempotencyKey(), metricCard(), PaymentsOverviewAdminPage(), PaymentsProvidersAdminPage(), PaymentsRecordsAdminPage(), PaymentsRefundsAdminPage(), PaymentsWebhooksAdminPage(), renderMetricGrid() (+41 more)
+
+### Community 30 - "Community 30"
+Cohesion: 0.08
+Nodes (31): definePlugin(), isV2Plugin(), buildPluginContext(), CapabilityError, createContributionStore(), makeAnalytics(), makeAssetResolver(), makeContributions() (+23 more)
+
+### Community 31 - "Community 31"
+Cohesion: 0.1
+Nodes (39): accountingImbalance(), assertSafeJson(), buildErpDocumentRender(), buildErpPostingReport(), buildMappedTargetRecord(), cloneJson(), collectPrintableRecord(), escapeHtml() (+31 more)
 
 ### Community 32 - "Community 32"
 Cohesion: 0.13
 Nodes (38): aggregateMetric(), aggregateSnapshots(), applyFilters(), applySorts(), clampLimit(), clone(), compareValues(), compileMetricQuerySql() (+30 more)
 
 ### Community 33 - "Community 33"
-Cohesion: 0.16
-Nodes (37): api(), login(), main(), record(), safe(), scenarioApiTokens(), scenarioCmdK(), scenarioContacts() (+29 more)
+Cohesion: 0.11
+Nodes (33): compileDraft(), compileEmailDraft(), createCommunicationIdempotencyKey(), createLocalCommunicationProviderRegistry(), createRetryDecision(), defineCommunicationRoute(), defineInAppCompiler(), definePushCompiler() (+25 more)
 
 ### Community 34 - "Community 34"
-Cohesion: 0.11
-Nodes (24): buildPluginContext(), CapabilityError, createContributionStore(), makeAnalytics(), makeAssetResolver(), makeContributions(), makeI18n(), makeLogger() (+16 more)
-
-### Community 35 - "Community 35"
-Cohesion: 0.11
-Nodes (32): withLeadership(), BACKOFF_MS(), dispatchOne(), drainOnce(), loop(), markStatus(), parseJson(), pickReady() (+24 more)
-
-### Community 36 - "Community 36"
 Cohesion: 0.1
 Nodes (29): adaptLegacyUiRegistry(), humanizeSlug(), inferGroupId(), inferPageKind(), inferWorkspaceId(), lastStaticAdminSegment(), toStableId(), createRegistry() (+21 more)
 
-### Community 37 - "Community 37"
-Cohesion: 0.09
-Nodes (13): bootstrapStorage(), localDefaultConfig(), parseStorageBackendsEnv(), s3DefaultFromEnv(), dispatchForRead(), dispatchForWrite(), hydrateFromRows(), resolveSecrets() (+5 more)
-
-### Community 38 - "Community 38"
+### Community 35 - "Community 35"
 Cohesion: 0.1
 Nodes (24): applyStructuredFilter(), bufferToFloat32(), buildPostgresTsQuery(), createSearchResultPage(), escapeRegExp(), magnitude(), normalizeSearchQuery(), runFts() (+16 more)
 
-### Community 39 - "Community 39"
-Cohesion: 0.15
-Nodes (30): assertAuditHealthy(), assertCertificationHealthy(), assertConsumerSmokeHealthy(), copyCoreRoot(), copyRepoRoots(), createAuditReport(), discoverCorePackageIds(), discoverPackages() (+22 more)
-
-### Community 40 - "Community 40"
+### Community 36 - "Community 36"
 Cohesion: 0.12
 Nodes (27): advances(), appraisals(), attendance(), code(), count(), departments(), designations(), employees() (+19 more)
 
-### Community 41 - "Community 41"
+### Community 37 - "Community 37"
 Cohesion: 0.08
 Nodes (1): BusinessAdminPage()
 
-### Community 42 - "Community 42"
-Cohesion: 0.15
-Nodes (15): bootstrapMailJobs(), registerMailCleanup(), registerMailIndex(), registerMailPush(), registerMailReconcile(), registerMailSend(), registerMailSnooze(), registerMailSubscription() (+7 more)
+### Community 38 - "Community 38"
+Cohesion: 0.08
+Nodes (1): seedState()
 
-### Community 43 - "Community 43"
+### Community 39 - "Community 39"
 Cohesion: 0.17
 Nodes (18): createNavigationContract(), findMatchingZone(), isPathPrefixMatch(), listDeepLinks(), matchesRoutePattern(), matchesZone(), normalizeHref(), resolveNavigationTarget() (+10 more)
 
-### Community 44 - "Community 44"
-Cohesion: 0.17
-Nodes (9): AccessDenied, ChecksumMismatch, InvalidKey, isRetryableByDefault(), isStorageError(), ObjectNotFound, PayloadTooLarge, StorageError (+1 more)
-
-### Community 45 - "Community 45"
+### Community 40 - "Community 40"
 Cohesion: 0.16
 Nodes (3): emptySummary(), sanitizeFilename(), validateCreateInput()
 
-### Community 46 - "Community 46"
+### Community 41 - "Community 41"
+Cohesion: 0.17
+Nodes (9): AccessDenied, ChecksumMismatch, InvalidKey, isRetryableByDefault(), isStorageError(), ObjectNotFound, PayloadTooLarge, StorageError (+1 more)
+
+### Community 42 - "Community 42"
+Cohesion: 0.2
+Nodes (14): cannedResponses(), code(), count(), csatResponses(), escalations(), kbArticles(), personName(), pick() (+6 more)
+
+### Community 43 - "Community 43"
+Cohesion: 0.14
+Nodes (6): bootstrapStorage(), localDefaultConfig(), parseStorageBackendsEnv(), s3DefaultFromEnv(), getEditorBridge(), register()
+
+### Community 44 - "Community 44"
 Cohesion: 0.27
 Nodes (10): handleInstall(), remove(), addTrustedKey(), base64ToBytes(), computeSRI384(), loadTrustedKeys(), removeTrustedKey(), saveTrustedKeys() (+2 more)
 
-### Community 47 - "Community 47"
+### Community 45 - "Community 45"
+Cohesion: 0.18
+Nodes (7): computeBounds(), LineSeries(), project(), yFor(), buildBomTree(), expandAll(), buildTreeFromFlat()
+
+### Community 46 - "Community 46"
 Cohesion: 0.15
 Nodes (6): ConfigurationError, NotSupportedError, PaymentError, ProviderError, TransportError, WebhookVerificationError
 
-### Community 48 - "Community 48"
+### Community 47 - "Community 47"
 Cohesion: 0.31
 Nodes (7): buildCartesianChartOption(), ChartSurface(), countChartSeries(), createBarChartOption(), createLineChartOption(), createStackedBarChartOption(), createTrendChartOption()
 
-### Community 49 - "Community 49"
+### Community 48 - "Community 48"
 Cohesion: 0.56
 Nodes (7): assertCatalogArtifactPolicy(), assertCatalogShape(), assertChannelShape(), assertPluginPresentationMetadata(), assertRemoteAsset(), assertSignedArtifact(), assertSortedAndUnique()
+
+### Community 49 - "Community 49"
+Cohesion: 0.64
+Nodes (6): compareVersions(), expandShorthand(), parseVersion(), satisfies(), satisfiesAnd(), satisfiesComparator()
 
 ### Community 50 - "Community 50"
 Cohesion: 0.43
@@ -340,8 +340,8 @@ Cohesion: 0.52
 Nodes (6): globRoots(), listStandaloneRoots(), listTrackedOffenders(), listVisibleStandaloneStatus(), runGit(), safeList()
 
 ### Community 57 - "Community 57"
-Cohesion: 0.53
-Nodes (5): containsLookalike(), looksLikeBrandImpersonation(), parseAuthResults(), phishHeuristics(), splitMethods()
+Cohesion: 0.43
+Nodes (5): filterCommandPaletteItems(), groupCommandPaletteItems(), normalizeQuery(), PlatformCommandPalette(), rankCommandPaletteItems()
 
 ### Community 58 - "Community 58"
 Cohesion: 0.33
@@ -430,11 +430,13 @@ Nodes (1): cn()
 ## Knowledge Gaps
 - **3 isolated node(s):** `GoogleAuthError`, `MicrosoftAuthError`, `AiQuotaError`
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 23`** (103 nodes): `createGeneratedProviderAdapter()`, `createProviderAdapter()`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`
+- **Thin community `Community 21`** (103 nodes): `createGeneratedProviderAdapter()`, `createProviderAdapter()`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`, `adapter.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 24`** (101 nodes): `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mapProviderStatus()`
+- **Thin community `Community 22`** (101 nodes): `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mappers.ts`, `mapProviderStatus()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 41`** (26 nodes): `BusinessAdminPage()`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`
+- **Thin community `Community 37`** (26 nodes): `BusinessAdminPage()`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`, `main.page.tsx`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 38`** (26 nodes): `seedState()`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`, `main.service.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 52`** (7 nodes): `PluginBoundary.js`, `PluginBoundary.tsx`, `DefaultFallback()`, `PluginBoundary`, `.componentDidCatch()`, `.getDerivedStateFromError()`, `.render()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -474,17 +476,17 @@ Nodes (1): cn()
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `String()` connect `Community 5` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 6`, `Community 7`, `Community 8`, `Community 9`, `Community 10`, `Community 11`, `Community 12`, `Community 13`, `Community 14`, `Community 17`, `Community 18`, `Community 19`, `Community 20`, `Community 21`, `Community 23`, `Community 25`, `Community 26`, `Community 27`, `Community 28`, `Community 29`, `Community 32`, `Community 33`, `Community 35`, `Community 39`, `Community 40`, `Community 46`?**
-  _High betweenness centrality (0.108) - this node is a cross-community bridge._
-- **Why does `replace()` connect `Community 7` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 5`, `Community 6`, `Community 9`, `Community 10`, `Community 11`, `Community 12`, `Community 13`, `Community 14`, `Community 17`, `Community 18`, `Community 19`, `Community 20`, `Community 25`, `Community 26`, `Community 28`, `Community 29`, `Community 30`, `Community 31`, `Community 32`, `Community 34`, `Community 35`, `Community 36`, `Community 38`, `Community 39`, `Community 40`, `Community 45`, `Community 46`?**
-  _High betweenness centrality (0.091) - this node is a cross-community bridge._
-- **Why does `parse()` connect `Community 10` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 5`, `Community 6`, `Community 7`, `Community 12`, `Community 13`, `Community 14`, `Community 17`, `Community 19`, `Community 21`, `Community 23`, `Community 25`, `Community 27`, `Community 28`, `Community 29`, `Community 31`, `Community 32`, `Community 33`, `Community 35`, `Community 37`, `Community 39`, `Community 46`?**
+- **Why does `String()` connect `Community 7` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 5`, `Community 6`, `Community 8`, `Community 9`, `Community 10`, `Community 11`, `Community 12`, `Community 13`, `Community 15`, `Community 16`, `Community 18`, `Community 19`, `Community 21`, `Community 23`, `Community 24`, `Community 26`, `Community 29`, `Community 31`, `Community 32`, `Community 36`, `Community 42`, `Community 44`?**
+  _High betweenness centrality (0.105) - this node is a cross-community bridge._
+- **Why does `replace()` connect `Community 5` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 6`, `Community 7`, `Community 8`, `Community 11`, `Community 12`, `Community 13`, `Community 15`, `Community 16`, `Community 18`, `Community 23`, `Community 24`, `Community 25`, `Community 26`, `Community 27`, `Community 28`, `Community 30`, `Community 31`, `Community 32`, `Community 34`, `Community 35`, `Community 36`, `Community 40`, `Community 44`, `Community 49`?**
+  _High betweenness centrality (0.069) - this node is a cross-community bridge._
+- **Why does `parse()` connect `Community 8` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 5`, `Community 6`, `Community 7`, `Community 10`, `Community 11`, `Community 13`, `Community 16`, `Community 18`, `Community 19`, `Community 21`, `Community 23`, `Community 26`, `Community 28`, `Community 29`, `Community 31`, `Community 32`, `Community 43`, `Community 44`?**
   _High betweenness centrality (0.066) - this node is a cross-community bridge._
-- **Are the 252 inferred relationships involving `String()` (e.g. with `setup()` and `code()`) actually correct?**
-  _`String()` has 252 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 169 inferred relationships involving `parse()` (e.g. with `readGutuPlugins()` and `migrate()`) actually correct?**
-  _`parse()` has 169 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 201 inferred relationships involving `replace()` (e.g. with `personEmail()` and `personEmail()`) actually correct?**
-  _`replace()` has 201 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 127 inferred relationships involving `set()` (e.g. with `authedFetch()` and `authedFetch()`) actually correct?**
-  _`set()` has 127 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 253 inferred relationships involving `String()` (e.g. with `setup()` and `code()`) actually correct?**
+  _`String()` has 253 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 181 inferred relationships involving `parse()` (e.g. with `readGutuPlugins()` and `migrate()`) actually correct?**
+  _`parse()` has 181 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 205 inferred relationships involving `replace()` (e.g. with `personEmail()` and `personEmail()`) actually correct?**
+  _`replace()` has 205 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 129 inferred relationships involving `all()` (e.g. with `setup()` and `migrate()`) actually correct?**
+  _`all()` has 129 INFERRED edges - model-reasoned connections that need verification._
